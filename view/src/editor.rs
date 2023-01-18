@@ -5,7 +5,9 @@ pub struct Editor {
 }
 impl Editor {
     pub fn new() -> Self {
-        Self { _screen: Screen {} }
+        Self {
+            _screen: Screen::new(),
+        }
     }
     pub fn run(&self) {
         while let Some(key) = Screen::getch() {
