@@ -33,6 +33,7 @@ impl Screen {
         std::io::stdout().execute(cmd).unwrap();
     }
     fn flush() {
+        use std::io::Write;
         std::io::stdout().flush().unwrap();
     }
 }

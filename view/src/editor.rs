@@ -1,10 +1,13 @@
 use crate::screen::Screen;
 
-struct Editor {
+pub struct Editor {
     _screen: Screen,
 }
 impl Editor {
-    fn run(&self) {
+    pub fn new() -> Self {
+        Self { _screen: Screen {} }
+    }
+    pub fn run(&self) {
         while let Some(key) = Screen::getch() {
             Screen::print_string(format!("{}", key));
         }

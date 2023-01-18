@@ -1,6 +1,8 @@
 mod editor;
 mod screen;
 
+pub use editor::Editor;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
