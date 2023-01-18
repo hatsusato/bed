@@ -1,3 +1,4 @@
+mod editor;
 mod screen;
 
 pub fn add(left: usize, right: usize) -> usize {

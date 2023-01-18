@@ -1,6 +1,6 @@
 use crossterm::event::{Event, KeyCode};
 
-struct Screen {}
+pub struct Screen {}
 impl Screen {
     pub fn getch() -> Option<char> {
         if let Ok(Event::Key(key)) = crossterm::event::read() {
