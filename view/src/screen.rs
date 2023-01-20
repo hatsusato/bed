@@ -1,4 +1,4 @@
-use crossterm::{cursor, event, terminal, Command};
+use crossterm::{cursor, event, style, terminal, Command};
 
 struct AlternateScreen {}
 impl AlternateScreen {
@@ -53,9 +53,13 @@ impl Screen {
         }
     }
     pub fn print_string(msg: String) {
-        use crossterm::style::Print;
+        use style::Print;
         Self::queue(Print(msg));
         Self::flush();
+    }
+    pub fn move_cursor(x: u16, y: u16) {
+        use cursor::MoveTo;
+        Self::queue(MoveTo(x, y));
     }
     pub fn getch() -> Option<char> {
         use event::{Event::Key, KeyCode::*};

@@ -1,5 +1,7 @@
 mod block;
 
+pub use block::Block;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }

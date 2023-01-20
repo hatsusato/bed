@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 crossterm = "0.25.0"
+util = { version = "0.1.0", path = "../util" }
