@@ -1,22 +1,25 @@
 use crate::screen::Screen;
+use exec::Exec;
 use state::State;
+use std::cell::Cell;
 
 pub struct Editor {
     _screen: Screen,
-    state: State,
+    state: Cell<State>,
 }
 impl Editor {
     pub fn new() -> Self {
         Self {
             _screen: Screen::new(),
-            state: State::new(),
+            state: Cell::new(State::new()),
         }
     }
     pub fn run(&mut self) {
         loop {
-            Screen::print_block(self.state.block());
+            let state = self.state.get_mut();
+            Screen::print_block(state.block());
             match Screen::getch() {
-                Some(key) => self.state.push(key),
+                Some(key) => Exec::exec(key, state),
                 None => return,
             }
         }
