@@ -1,4 +1,5 @@
 mod ptr;
+mod reg;
 mod state;
 
 pub use state::State;

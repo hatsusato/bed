@@ -5,6 +5,8 @@ pub struct State {
     memory: Block<u8>,
     pub block: u8,
     pub coord: u8,
+    pub data: u8,
+    pub acc: u8,
 }
 impl State {
     pub fn new() -> Self {
@@ -12,6 +14,8 @@ impl State {
             memory: Block::new(0),
             block: 0,
             coord: 0,
+            data: 0,
+            acc: 0,
         }
     }
     pub fn exec(&mut self, inst: Inst) {
@@ -22,6 +26,10 @@ impl State {
             Down => self.down(),
             Up => self.up(),
             Right => self.right(),
+            Add => self.add(),
+            Sub => self.sub(),
+            Mul => self.mul(),
+            Div => self.div(),
         }
     }
     pub fn push(&mut self, key: char) {
