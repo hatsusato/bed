@@ -3,12 +3,14 @@ use util::Block;
 
 pub struct State {
     memory: Block<u8>,
-    coord: u8,
+    pub block: u8,
+    pub coord: u8,
 }
 impl State {
     pub fn new() -> Self {
         Self {
             memory: Block::new(0),
+            block: 0,
             coord: 0,
         }
     }
@@ -16,10 +18,10 @@ impl State {
         use Inst::*;
         match inst {
             Nop => (),
-            Left => self.coord -= 1,
-            Down => self.coord += 16,
-            Up => self.coord -= 16,
-            Right => self.coord += 1,
+            Left => self.left(),
+            Down => self.down(),
+            Up => self.up(),
+            Right => self.right(),
         }
     }
     pub fn push(&mut self, key: char) {
