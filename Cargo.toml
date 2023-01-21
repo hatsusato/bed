@@ -2,6 +2,7 @@
 
 members = [
     "main",
+    "state",
     "util",
     "view",
 ]

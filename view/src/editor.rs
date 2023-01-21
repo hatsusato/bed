@@ -1,27 +1,24 @@
 use crate::screen::Screen;
-use util::Block;
+use state::State;
 
 pub struct Editor {
     _screen: Screen,
-    block: Block<u8>,
-    cursor: u8,
+    state: State,
 }
 impl Editor {
     pub fn new() -> Self {
         Self {
             _screen: Screen::new(),
-            block: Block::new(0),
-            cursor: 0,
+            state: State::new(),
         }
     }
     pub fn run(&mut self) {
         loop {
-            Screen::print_block(&self.block);
+            Screen::print_block(self.state.block());
             match Screen::getch() {
-                Some(key) => self.block[self.cursor] = key as u8,
+                Some(key) => self.state.push(key),
                 None => return,
             }
-            self.cursor += 1;
         }
     }
 }
