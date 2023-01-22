@@ -23,7 +23,9 @@ impl State {
         self.set_reg((self.data as u16) * (self.acc as u16), SHIFT);
     }
     pub fn div(&mut self) {
-        if 0 < self.data {
+        if self.data == 0 {
+            self.raise();
+        } else {
             self.set_reg(self.acc as u16, self.data as u16);
         }
     }

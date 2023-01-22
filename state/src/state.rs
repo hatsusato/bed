@@ -10,6 +10,7 @@ pub struct State {
     coord: u8,
     data: u8,
     acc: u8,
+    error: bool,
 }
 impl State {
     pub fn new() -> Self {
@@ -19,6 +20,7 @@ impl State {
             coord: 0,
             data: 0,
             acc: 0,
+            error: false,
         }
     }
     pub fn exec(&mut self, inst: Inst) {
@@ -41,5 +43,8 @@ impl State {
     }
     pub fn block(&self) -> &Block<u8> {
         return &self.memory;
+    }
+    fn raise(&mut self) {
+        self.error = true;
     }
 }
