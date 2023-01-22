@@ -1,18 +1,21 @@
+mod ptr;
+mod reg;
+
 use inst::Inst;
 use util::Block;
 
 pub struct State {
     memory: Block<u8>,
-    pub block: u8,
-    pub coord: u8,
-    pub data: u8,
-    pub acc: u8,
+    _block: u8,
+    coord: u8,
+    data: u8,
+    acc: u8,
 }
 impl State {
     pub fn new() -> Self {
         Self {
             memory: Block::new(0),
-            block: 0,
+            _block: 0,
             coord: 0,
             data: 0,
             acc: 0,

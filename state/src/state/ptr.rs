@@ -1,4 +1,4 @@
-use crate::State;
+use super::State;
 
 impl State {
     pub fn right(&mut self) {
