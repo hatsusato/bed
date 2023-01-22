@@ -6,22 +6,22 @@ use inst::Inst;
 use util::Block;
 
 pub struct State {
-    memory: Block<u8>,
+    acc: u8,
     block: u8,
     coord: u8,
     data: u8,
-    acc: u8,
     error: bool,
+    memory: Block<Block<u8>>,
 }
 impl State {
     pub fn new() -> Self {
         Self {
-            memory: Block::new(0),
+            acc: 0,
             block: 0,
             coord: 0,
             data: 0,
-            acc: 0,
             error: false,
+            memory: Block::new(Block::new(0)),
         }
     }
     pub fn exec(&mut self, inst: Inst) {
@@ -62,7 +62,7 @@ impl State {
         }
     }
     pub fn page(&self) -> &Block<u8> {
-        &self.memory
+        &self.memory[self.block]
     }
     pub fn data(&self) -> u8 {
         self.data
@@ -83,7 +83,7 @@ impl State {
         (self.data, self.acc) = (hi, lo);
     }
     fn current(&mut self) -> &mut u8 {
-        &mut self.memory[self.coord]
+        &mut self.memory[self.block][self.coord]
     }
     fn raise(&mut self) {
         self.error = true;
