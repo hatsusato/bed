@@ -33,13 +33,20 @@ impl State {
             self.set_reg(self.acc % self.data, self.acc / self.data);
         }
     }
-    pub fn equal(&mut self) {
+    pub fn err(&mut self) {
+        self.acc = extend(self.error);
+        self.error = false;
+    }
+    pub fn bool(&mut self) {
+        self.acc = extend(self.data != 0);
+    }
+    pub fn eq(&mut self) {
         self.acc = extend(self.data == self.acc);
     }
-    pub fn less(&mut self) {
+    pub fn le(&mut self) {
         self.acc = extend(self.data < self.acc);
     }
-    pub fn greater(&mut self) {
+    pub fn gr(&mut self) {
         self.acc = extend(self.data > self.acc);
     }
     pub fn not(&mut self) {
