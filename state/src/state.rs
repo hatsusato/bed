@@ -78,4 +78,18 @@ impl State {
     pub fn queue(&self) -> &VecDeque<u8> {
         &self.queue
     }
+    pub fn set_reg(&mut self, val: u16) {
+        (self.data, self.acc) = (trunc(val >> u8::BITS), trunc(val));
+    }
+    pub fn get_reg(&self) -> u16 {
+        (self.data as u16) << u8::BITS | (self.acc as u16)
+    }
+    pub fn raise(&mut self) {
+        self.error = true;
+    }
+}
+
+fn trunc(val: u16) -> u8 {
+    const MASK: u16 = u8::MAX as u16;
+    (val & MASK) as u8
 }

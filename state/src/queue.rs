@@ -5,26 +5,27 @@ impl State {
         self.queue.push_back(self.data);
     }
     pub fn pop(&mut self) {
-        if let Some(val) = self.queue.pop_front() {
-            self.data = val;
-        } else {
-            self.raise();
+        match self.queue.pop_front() {
+            Some(val) => self.data = val,
+            None => self.raise(),
         }
     }
     pub fn len(&mut self) {
-        let l = self.queue.len();
-        self.acc = l.min(u8::MAX as usize) as u8;
-        if (u8::MAX as usize) < l {
-            self.raise();
-        }
+        self.set_len(self.queue.len());
     }
     pub fn argc(&mut self) {
-        self.acc = std::env::args().len().min(u8::MAX as usize) as u8;
+        self.set_len(std::env::args().len());
     }
     pub fn argv(&mut self) {
-        if let Some(arg) = std::env::args().nth(self.data as usize) {
-            self.queue.extend(arg.as_bytes());
-        } else {
+        match std::env::args().nth(self.get_reg().into()) {
+            Some(arg) => self.queue.extend(arg.as_bytes()),
+            None => self.raise(),
+        }
+    }
+    fn set_len(&mut self, len: usize) {
+        const MAX_LEN: usize = u16::MAX as usize;
+        self.set_reg(len.min(MAX_LEN) as u16);
+        if MAX_LEN < len {
             self.raise();
         }
     }
