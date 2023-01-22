@@ -1,3 +1,4 @@
+mod mem;
 mod ptr;
 mod reg;
 
@@ -35,6 +36,8 @@ impl State {
             Down => self.down(),
             Up => self.up(),
             Right => self.right(),
+            Load => self.load(),
+            Store => self.store(),
             Nop => (),
         }
     }
@@ -43,6 +46,9 @@ impl State {
     }
     pub fn block(&self) -> &Block<u8> {
         return &self.memory;
+    }
+    fn current(&mut self) -> &mut u8 {
+        &mut self.memory[self.coord]
     }
     fn raise(&mut self) {
         self.error = true;
