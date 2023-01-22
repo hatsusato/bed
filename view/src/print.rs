@@ -1,5 +1,6 @@
 use crate::screen::Screen;
 use state::State;
+use std::collections::VecDeque;
 use util::Block;
 
 const CELL_WIDTH: u16 = 3;
@@ -25,7 +26,7 @@ impl Screen {
             data, acc, block, coord, error
         ));
     }
-    fn print_queue(queue: &Vec<u8>) {
+    fn print_queue(queue: &VecDeque<u8>) {
         Self::move_cursor(0, LINE_OFFSET + LINE_COUNT);
         let empty = [format!("  ")].into_iter().cycle();
         let q: Vec<_> = queue

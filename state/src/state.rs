@@ -1,5 +1,6 @@
 use crate::State;
 use inst::Inst;
+use std::collections::VecDeque;
 use util::Block;
 
 impl State {
@@ -11,7 +12,7 @@ impl State {
             data: 0,
             error: false,
             memory: Block::new(Block::new(0)),
-            queue: Vec::new(),
+            queue: VecDeque::new(),
         }
     }
     pub fn exec(&mut self, inst: Inst) {
@@ -73,7 +74,7 @@ impl State {
     pub fn page(&self) -> &Block<u8> {
         &self.memory[self.block]
     }
-    pub fn queue(&self) -> &Vec<u8> {
+    pub fn queue(&self) -> &VecDeque<u8> {
         &self.queue
     }
 }

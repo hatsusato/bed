@@ -4,6 +4,7 @@ mod queue;
 mod reg;
 mod state;
 
+use std::collections::VecDeque;
 use util::Block;
 pub struct State {
     acc: u8,
@@ -12,7 +13,7 @@ pub struct State {
     data: u8,
     error: bool,
     memory: Block<Block<u8>>,
-    queue: Vec<u8>,
+    queue: VecDeque<u8>,
 }
 impl State {
     fn set_reg(&mut self, hi: u8, lo: u8) {
