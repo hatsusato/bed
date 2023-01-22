@@ -7,7 +7,7 @@ use util::Block;
 
 pub struct State {
     memory: Block<u8>,
-    _block: u8,
+    block: u8,
     coord: u8,
     data: u8,
     acc: u8,
@@ -17,7 +17,7 @@ impl State {
     pub fn new() -> Self {
         Self {
             memory: Block::new(0),
-            _block: 0,
+            block: 0,
             coord: 0,
             data: 0,
             acc: 0,
@@ -41,14 +41,23 @@ impl State {
             Nop => (),
         }
     }
-    pub fn block(&self) -> &Block<u8> {
+    pub fn page(&self) -> &Block<u8> {
         &self.memory
     }
-    pub fn hi(&self) -> u8 {
+    pub fn data(&self) -> u8 {
         self.data
     }
-    pub fn lo(&self) -> u8 {
+    pub fn acc(&self) -> u8 {
         self.acc
+    }
+    pub fn block(&self) -> u8 {
+        self.block
+    }
+    pub fn coord(&self) -> u8 {
+        self.coord
+    }
+    pub fn error(&self) -> bool {
+        self.error
     }
     fn current(&mut self) -> &mut u8 {
         &mut self.memory[self.coord]
