@@ -15,11 +15,11 @@ impl State {
     }
     pub fn add(&mut self) {
         let (result, carry) = self.acc.overflowing_add(self.data);
-        self.set_reg(if carry { 1 } else { 0 }, result);
+        self.set_reg(extend(carry), result);
     }
     pub fn sub(&mut self) {
         let (result, carry) = self.acc.overflowing_sub(self.data);
-        self.set_reg(if carry { u8::MAX } else { 0 }, result);
+        self.set_reg(u8::MAX * extend(carry), result);
     }
     pub fn mul(&mut self) {
         const SHIFT: u32 = u8::BITS;
@@ -33,6 +33,15 @@ impl State {
             self.set_reg(self.acc % self.data, self.acc / self.data);
         }
     }
+    pub fn equal(&mut self) {
+        self.acc = extend(self.data == self.acc);
+    }
+    pub fn less(&mut self) {
+        self.acc = extend(self.data < self.acc);
+    }
+    pub fn greater(&mut self) {
+        self.acc = extend(self.data > self.acc);
+    }
 }
 
 fn combine_nibbles(hi: u8, lo: u8) -> u8 {
@@ -43,4 +52,11 @@ fn combine_nibbles(hi: u8, lo: u8) -> u8 {
 fn trunc(val: u16) -> u8 {
     const MASK: u16 = u8::MAX as u16;
     (val & MASK) as u8
+}
+fn extend(cond: bool) -> u8 {
+    if cond {
+        1
+    } else {
+        0
+    }
 }
