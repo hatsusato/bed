@@ -30,6 +30,8 @@ pub enum Inst {
     Goto,
     Load,
     Store,
+    Push,
+    Pop,
     Nop,
 }
 impl Inst {
@@ -77,12 +79,12 @@ impl Inst {
             'm' => Dec,
             'n' => Inc,
             'o' => Store,
-            'p' => Nop,
+            'p' => Pop,
             'q' => Nop,
             'r' => Nop,
             's' => Swap,
             't' => Nop,
-            'u' => Nop,
+            'u' => Push,
             'v' => Pos,
             'w' => Nop,
             'x' => Nop,

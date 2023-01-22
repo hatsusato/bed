@@ -1,5 +1,6 @@
 mod mem;
 mod ptr;
+mod queue;
 mod reg;
 
 use inst::Inst;
@@ -12,6 +13,7 @@ pub struct State {
     data: u8,
     error: bool,
     memory: Block<Block<u8>>,
+    queue: Vec<u8>,
 }
 impl State {
     pub fn new() -> Self {
@@ -22,6 +24,7 @@ impl State {
             data: 0,
             error: false,
             memory: Block::new(Block::new(0)),
+            queue: Vec::new(),
         }
     }
     pub fn exec(&mut self, inst: Inst) {
@@ -58,6 +61,8 @@ impl State {
             Goto => self.goto(),
             Load => self.load(),
             Store => self.store(),
+            Push => self.push(),
+            Pop => self.pop(),
             Nop => (),
         }
     }
