@@ -36,6 +36,8 @@ impl State {
             Down => self.down(),
             Up => self.up(),
             Right => self.right(),
+            Pos => self.pos(),
+            Goto => self.goto(),
             Load => self.load(),
             Store => self.store(),
             Nop => (),
