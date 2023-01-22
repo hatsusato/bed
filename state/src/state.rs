@@ -21,15 +21,16 @@ impl State {
     pub fn exec(&mut self, inst: Inst) {
         use Inst::*;
         match inst {
-            Nop => (),
-            Left => self.left(),
-            Down => self.down(),
-            Up => self.up(),
-            Right => self.right(),
+            Imm(digit) => self.imm(digit),
             Add => self.add(),
             Sub => self.sub(),
             Mul => self.mul(),
             Div => self.div(),
+            Left => self.left(),
+            Down => self.down(),
+            Up => self.up(),
+            Right => self.right(),
+            Nop => (),
         }
     }
     pub fn push(&mut self, key: char) {

@@ -1,16 +1,17 @@
 pub enum Inst {
-    Nop,
-    Left,
-    Down,
-    Up,
-    Right,
+    Imm(u8),
     Add,
     Sub,
     Mul,
     Div,
+    Left,
+    Down,
+    Up,
+    Right,
+    Nop,
 }
 impl Inst {
-    pub fn new(key: char) -> Inst {
+    pub fn new(key: char) -> Self {
         use Inst::*;
         match key {
             '\n' => Nop,
@@ -29,16 +30,7 @@ impl Inst {
             '-' => Sub,
             '.' => Nop,
             '/' => Div,
-            '0' => Nop,
-            '1' => Nop,
-            '2' => Nop,
-            '3' => Nop,
-            '4' => Nop,
-            '5' => Nop,
-            '6' => Nop,
-            '7' => Nop,
-            '8' => Nop,
-            '9' => Nop,
+            '0'..='9' => Imm(translate_hex_digit(key)),
             ':' => Nop,
             ';' => Nop,
             '<' => Nop,
@@ -46,19 +38,14 @@ impl Inst {
             '>' => Nop,
             '?' => Nop,
             '@' => Nop,
-            'A'..='Z' => Nop,
+            'A'..='Z' => Self::new(key.to_ascii_lowercase()),
             '[' => Nop,
             '\\' => Nop,
             ']' => Nop,
             '^' => Nop,
             '_' => Nop,
             '`' => Nop,
-            'a' => Nop,
-            'b' => Nop,
-            'c' => Nop,
-            'd' => Nop,
-            'e' => Nop,
-            'f' => Nop,
+            'a'..='f' => Imm(translate_hex_digit(key)),
             'g' => Nop,
             'h' => Left,
             'i' => Nop,
@@ -85,5 +72,15 @@ impl Inst {
             '~' => Nop,
             _ => Nop,
         }
+    }
+}
+
+fn translate_hex_digit(key: char) -> u8 {
+    const ZERO: u8 = '0' as u8;
+    const A: u8 = 'a' as u8;
+    match key {
+        '0'..='9' => key as u8 - ZERO + 0,
+        'a'..='f' => key as u8 - A + 0xA,
+        _ => unreachable!(),
     }
 }

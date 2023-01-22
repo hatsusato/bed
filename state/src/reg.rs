@@ -1,6 +1,13 @@
 use crate::State;
 
 impl State {
+    pub fn imm(&mut self, digit: u8) {
+        const DIGIT_BITS: u8 = 4;
+        const DIGIT_MAX: u8 = 0xF;
+        let hi = self.acc & DIGIT_MAX;
+        let lo = digit & DIGIT_MAX;
+        self.acc = (hi << DIGIT_BITS) | lo;
+    }
     pub fn add(&mut self) {
         let (val, carry) = self.acc.overflowing_add(self.data);
         self.acc = val;
