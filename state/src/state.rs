@@ -53,9 +53,6 @@ impl State {
             Nop => (),
         }
     }
-    pub fn page(&self) -> &Block<u8> {
-        &self.memory[self.block]
-    }
     pub fn data(&self) -> u8 {
         self.data
     }
@@ -70,5 +67,11 @@ impl State {
     }
     pub fn error(&self) -> bool {
         self.error
+    }
+    pub fn page(&self) -> &Block<u8> {
+        &self.memory[self.block]
+    }
+    pub fn queue(&self) -> &Vec<u8> {
+        &self.queue
     }
 }

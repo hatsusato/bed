@@ -16,6 +16,7 @@ impl Screen {
             state.error() as u8,
         );
         Self::print_page(state.page());
+        Self::print_queue(state.queue());
     }
     fn print_header(data: u8, acc: u8, block: u8, coord: u8, error: u8) {
         Self::move_cursor(0, 0);
@@ -24,15 +25,26 @@ impl Screen {
             data, acc, block, coord, error
         ));
     }
-    fn print_page(block: &Block<u8>) {
-        (0..16).for_each(|y| Self::print_line(block, y));
+    fn print_queue(queue: &Vec<u8>) {
+        Self::move_cursor(0, LINE_OFFSET + LINE_COUNT);
+        let empty = [format!("  ")].into_iter().cycle();
+        let q: Vec<_> = queue
+            .iter()
+            .map(|&c| format!("{:02x}", c))
+            .chain(empty)
+            .take(LINE_COUNT as usize)
+            .collect();
+        Self::print_string(q.join(" "));
     }
-    fn print_line(block: &Block<u8>, y: u16) {
-        (0..16).for_each(|x| Self::print_cell(block, x, y));
+    fn print_page(page: &Block<u8>) {
+        (0..16).for_each(|y| Self::print_line(page, y));
     }
-    fn print_cell(block: &Block<u8>, x: u16, y: u16) {
+    fn print_line(page: &Block<u8>, y: u16) {
+        (0..16).for_each(|x| Self::print_cell(page, x, y));
+    }
+    fn print_cell(page: &Block<u8>, x: u16, y: u16) {
         Self::move_cursor(x * CELL_WIDTH, y + LINE_OFFSET);
         let index = (x + y * LINE_COUNT) as u8;
-        Self::print_string(format!("{:02x}", block[index]));
+        Self::print_string(format!("{:02x}", page[index]));
     }
 }
