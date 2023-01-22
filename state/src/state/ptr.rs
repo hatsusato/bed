@@ -16,7 +16,7 @@ impl State {
         self.backward(BLOCK_SIDE);
     }
     pub fn pos(&mut self) {
-        (self.data, self.acc) = (self.block, self.coord);
+        self.set_reg(self.block, self.coord);
     }
     pub fn goto(&mut self) {
         (self.block, self.coord) = (self.data, self.acc);

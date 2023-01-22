@@ -62,6 +62,9 @@ impl State {
     pub fn error(&self) -> bool {
         self.error
     }
+    fn set_reg(&mut self, hi: u8, lo: u8) {
+        (self.data, self.acc) = (hi, lo);
+    }
     fn current(&mut self) -> &mut u8 {
         &mut self.memory[self.coord]
     }
