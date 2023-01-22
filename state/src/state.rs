@@ -28,6 +28,7 @@ impl State {
         use Inst::*;
         match inst {
             Imm(digit) => self.imm(digit),
+            Swap => self.swap(),
             Add => self.add(),
             Sub => self.sub(),
             Mul => self.mul(),

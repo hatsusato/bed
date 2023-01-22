@@ -8,6 +8,9 @@ impl State {
         let lo = digit & DIGIT_MAX;
         self.acc = (hi << DIGIT_BITS) | lo;
     }
+    pub fn swap(&mut self) {
+        (self.data, self.acc) = (self.acc, self.data);
+    }
     pub fn add(&mut self) {
         let (val, carry) = self.acc.overflowing_add(self.data);
         self.acc = val;

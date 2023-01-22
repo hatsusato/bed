@@ -1,5 +1,6 @@
 pub enum Inst {
     Imm(u8),
+    Swap,
     Add,
     Sub,
     Mul,
@@ -62,7 +63,7 @@ impl Inst {
             'p' => Nop,
             'q' => Nop,
             'r' => Nop,
-            's' => Nop,
+            's' => Swap,
             't' => Nop,
             'u' => Nop,
             'v' => Nop,
