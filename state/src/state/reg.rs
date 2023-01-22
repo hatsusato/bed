@@ -54,6 +54,18 @@ impl State {
     pub fn xor(&mut self) {
         self.acc ^= self.data;
     }
+    pub fn shl(&mut self) {
+        self.acc <<= 1;
+    }
+    pub fn shr(&mut self) {
+        self.acc >>= 1;
+    }
+    pub fn rotl(&mut self) {
+        self.acc = rot(self.acc, true);
+    }
+    pub fn rotr(&mut self) {
+        self.acc = rot(self.acc, false);
+    }
 }
 
 fn combine_nibbles(hi: u8, lo: u8) -> u8 {
@@ -71,4 +83,9 @@ fn extend(cond: bool) -> u8 {
     } else {
         0
     }
+}
+fn rot(val: u8, forward: bool) -> u8 {
+    let shl = if forward { 1 } else { u8::BITS - 1 };
+    let shr = u8::BITS - shl;
+    (val << shl) | (val >> shr)
 }
