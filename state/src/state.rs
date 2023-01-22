@@ -50,6 +50,8 @@ impl State {
             Store => self.store(),
             Push => self.push(),
             Pop => self.pop(),
+            Argc => self.argc(),
+            Argv => self.argv(),
             Nop => (),
         }
     }

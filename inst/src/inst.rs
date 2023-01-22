@@ -32,6 +32,8 @@ pub enum Inst {
     Store,
     Push,
     Pop,
+    Argc,
+    Argv,
     Nop,
 }
 impl Inst {
@@ -42,7 +44,7 @@ impl Inst {
             '!' => Err,
             '"' => Nop,
             '#' => Nop,
-            '$' => Nop,
+            '$' => Argv,
             '%' => Nop,
             '&' => And,
             '\'' => Nop,
@@ -61,7 +63,7 @@ impl Inst {
             '=' => Eq,
             '>' => Gr,
             '?' => Bool,
-            '@' => Nop,
+            '@' => Argc,
             'A'..='Z' => Self::new(key.to_ascii_lowercase()),
             '[' => Shl,
             '\\' => Nop,
