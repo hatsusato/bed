@@ -11,6 +11,13 @@ impl State {
             self.raise();
         }
     }
+    pub fn len(&mut self) {
+        let l = self.queue.len();
+        self.acc = l.min(u8::MAX as usize) as u8;
+        if (u8::MAX as usize) < l {
+            self.raise();
+        }
+    }
     pub fn argc(&mut self) {
         self.acc = std::env::args().len().min(u8::MAX as usize) as u8;
     }

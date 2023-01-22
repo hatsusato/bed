@@ -51,6 +51,7 @@ impl State {
             Store => self.store(),
             Push => self.push(),
             Pop => self.pop(),
+            Len => self.len(),
             Argc => self.argc(),
             Argv => self.argv(),
             Nop => (),
