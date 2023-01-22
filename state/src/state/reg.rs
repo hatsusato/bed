@@ -42,6 +42,18 @@ impl State {
     pub fn greater(&mut self) {
         self.acc = extend(self.data > self.acc);
     }
+    pub fn not(&mut self) {
+        self.acc = !self.data;
+    }
+    pub fn and(&mut self) {
+        self.acc &= self.data;
+    }
+    pub fn or(&mut self) {
+        self.acc |= self.data;
+    }
+    pub fn xor(&mut self) {
+        self.acc ^= self.data;
+    }
 }
 
 fn combine_nibbles(hi: u8, lo: u8) -> u8 {
