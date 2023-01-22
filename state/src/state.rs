@@ -29,6 +29,8 @@ impl State {
         match inst {
             Imm(digit) => self.imm(digit),
             Swap => self.swap(),
+            Hi => self.hi(),
+            Lo => self.lo(),
             Inc => self.inc(),
             Dec => self.dec(),
             Add => self.add(),

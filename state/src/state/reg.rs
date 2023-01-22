@@ -7,6 +7,12 @@ impl State {
     pub fn swap(&mut self) {
         self.set_reg(self.acc, self.data);
     }
+    pub fn hi(&mut self) {
+        self.data = self.acc;
+    }
+    pub fn lo(&mut self) {
+        self.acc = self.data;
+    }
     pub fn inc(&mut self) {
         (self.acc, _) = self.acc.overflowing_add(1);
     }
