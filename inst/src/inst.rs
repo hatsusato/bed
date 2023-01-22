@@ -111,3 +111,5 @@ fn translate_hex_digit(key: char) -> u8 {
         _ => unreachable!(),
     }
 }
+
+pub enum Command {}
