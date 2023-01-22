@@ -19,14 +19,16 @@ impl State {
         self.data = if carry { u8::MAX } else { 0 };
     }
     pub fn mul(&mut self) {
-        const OFFSET: u16 = 1 << u8::BITS;
-        let val = (self.data as u16) * (self.acc as u16);
-        self.acc = (val / OFFSET) as u8;
-        self.data = (val % OFFSET) as u8;
+        const SHIFT: u16 = 1 << u8::BITS;
+        self.set_reg((self.data as u16) * (self.acc as u16), SHIFT);
     }
     pub fn div(&mut self) {
         if 0 < self.data {
-            (self.acc, self.data) = (self.acc / self.data, self.acc % self.data);
+            self.set_reg(self.acc as u16, self.data as u16);
         }
+    }
+    fn set_reg(&mut self, dividend: u16, divisor: u16) {
+        let (quo, rem) = (dividend / divisor, dividend % divisor);
+        (self.data, self.acc) = (quo as u8, rem as u8);
     }
 }
