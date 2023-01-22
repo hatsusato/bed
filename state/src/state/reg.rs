@@ -7,6 +7,12 @@ impl State {
     pub fn swap(&mut self) {
         self.set_reg(self.acc, self.data);
     }
+    pub fn inc(&mut self) {
+        (self.acc, _) = self.acc.overflowing_add(1);
+    }
+    pub fn dec(&mut self) {
+        (self.acc, _) = self.acc.overflowing_sub(1);
+    }
     pub fn add(&mut self) {
         let (result, carry) = self.acc.overflowing_add(self.data);
         self.set_reg(if carry { 1 } else { 0 }, result);
