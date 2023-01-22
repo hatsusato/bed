@@ -45,7 +45,13 @@ impl State {
         self.memory[self.coord] = key as u8;
     }
     pub fn block(&self) -> &Block<u8> {
-        return &self.memory;
+        &self.memory
+    }
+    pub fn hi(&self) -> u8 {
+        self.data
+    }
+    pub fn lo(&self) -> u8 {
+        self.acc
     }
     fn current(&mut self) -> &mut u8 {
         &mut self.memory[self.coord]

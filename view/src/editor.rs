@@ -17,7 +17,7 @@ impl Editor {
     pub fn run(&mut self) {
         loop {
             let state = self.state.get_mut();
-            Screen::print_block(state.block());
+            Screen::print_state(state);
             match Screen::getch() {
                 Some(key) => Exec::exec(key, state),
                 None => return,
