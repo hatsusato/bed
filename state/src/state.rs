@@ -1,20 +1,7 @@
-mod mem;
-mod ptr;
-mod queue;
-mod reg;
-
+use crate::State;
 use inst::Inst;
 use util::Block;
 
-pub struct State {
-    acc: u8,
-    block: u8,
-    coord: u8,
-    data: u8,
-    error: bool,
-    memory: Block<Block<u8>>,
-    queue: Vec<u8>,
-}
 impl State {
     pub fn new() -> Self {
         Self {
@@ -83,14 +70,5 @@ impl State {
     }
     pub fn error(&self) -> bool {
         self.error
-    }
-    fn set_reg(&mut self, hi: u8, lo: u8) {
-        (self.data, self.acc) = (hi, lo);
-    }
-    fn current(&mut self) -> &mut u8 {
-        &mut self.memory[self.block][self.coord]
-    }
-    fn raise(&mut self) {
-        self.error = true;
     }
 }
