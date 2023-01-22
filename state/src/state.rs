@@ -41,9 +41,6 @@ impl State {
             Nop => (),
         }
     }
-    pub fn push(&mut self, key: char) {
-        self.memory[self.coord] = key as u8;
-    }
     pub fn block(&self) -> &Block<u8> {
         &self.memory
     }
