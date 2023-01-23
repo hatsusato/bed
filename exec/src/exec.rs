@@ -39,6 +39,13 @@ impl Exec {
             Up => ExecReg::up(state),
             Pos => ExecReg::pos(state),
             Goto => ExecReg::goto(state),
+            Load => ExecReg::load(state),
+            Store => ExecReg::store(state),
+            Push => ExecReg::push(state),
+            Pop => ExecReg::pop(state),
+            Len => ExecReg::len(state),
+            Argc => ExecReg::argc(state),
+            Argv => ExecReg::argv(state),
             _ => return state.exec(inst),
         };
         state.exec_cmd(cmd);

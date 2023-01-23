@@ -67,7 +67,7 @@ impl State {
             Inc(_, next) | Dec(_, next) => self.acc = next,
             Add(_, next) | Sub(_, next) => (self.data, self.acc) = next,
             Mul(_, next) | Div(_, next) => (self.data, self.acc) = next,
-            DivErr(_, next) => self.error = next,
+            DivErr(_) => self.raise(),
             IsErr(_, next)
             | Bool(_, next)
             | Eq(_, next)
@@ -85,6 +85,15 @@ impl State {
             Down(_, next) | Up(_, next) => self.coord = next,
             Pos(_, next) => (self.data, self.acc) = next,
             Goto(_, next) => (self.block, self.coord) = next,
+            Load(_, next) => self.data = next,
+            Store(_, next) => self.memory[self.block][self.coord] = next,
+            Push(next) => self.queue.push_back(next),
+            Pop(next) => self.data = next,
+            Empty(_) => self.raise(),
+            Len(_, next) => (self.acc, self.error) = next,
+            Argc(_, next) => (self.acc, self.error) = next,
+            Argv(arg) => self.queue.extend(arg),
+            NoArg(_) => self.raise(),
         }
     }
     pub fn data(&self) -> u8 {

@@ -39,7 +39,7 @@ impl ExecReg {
     }
     pub fn div(state: &State) -> Command {
         if state.data == 0 {
-            Command::DivErr(state.error, true)
+            Command::DivErr(state.error)
         } else {
             let next = (state.acc % state.data, state.acc / state.data);
             Command::Div((state.data, state.acc), next)
@@ -102,6 +102,35 @@ impl ExecReg {
     pub fn goto(state: &State) -> Command {
         Command::Goto((state.block, state.coord), (state.data, state.acc))
     }
+    pub fn load(state: &State) -> Command {
+        Command::Load(state.data, state.memory[state.block][state.coord])
+    }
+    pub fn store(state: &State) -> Command {
+        Command::Load(state.memory[state.block][state.coord], state.data)
+    }
+    pub fn push(state: &State) -> Command {
+        Command::Push(state.data)
+    }
+    pub fn pop(state: &State) -> Command {
+        if let Some(&val) = state.queue.front() {
+            Command::Pop(val)
+        } else {
+            Command::Empty(state.error)
+        }
+    }
+    pub fn len(state: &State) -> Command {
+        Command::Len((state.acc, state.error), trunc_len(state.queue.len()))
+    }
+    pub fn argc(state: &State) -> Command {
+        Command::Argc((state.acc, state.error), trunc_len(std::env::args().len()))
+    }
+    pub fn argv(state: &State) -> Command {
+        if let Some(arg) = std::env::args().nth(state.acc as usize) {
+            Command::Argv(arg.as_bytes().to_vec())
+        } else {
+            Command::NoArg(state.error)
+        }
+    }
 }
 
 fn split(val: u16) -> (u8, u8) {
@@ -133,4 +162,8 @@ fn forward(state: &State, shift: u8) -> u8 {
 fn backward(state: &State, shift: u8) -> u8 {
     let (next, _) = state.coord.overflowing_sub(shift);
     next
+}
+fn trunc_len(len: usize) -> (u8, bool) {
+    const MAX_LEN: usize = u8::MAX as usize;
+    (len.min(MAX_LEN) as u8, MAX_LEN < len)
 }
