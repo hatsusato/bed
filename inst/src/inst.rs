@@ -112,4 +112,16 @@ fn translate_hex_digit(key: char) -> u8 {
     }
 }
 
-pub enum Command {}
+pub enum Command {
+    Imm(u16, u16),
+    Swap(u16, u16),
+    Hi(u16, u16),
+    Lo(u16, u16),
+    Inc(u16, u16),
+    Dec(u16, u16),
+    Add(u16, u16),
+    Sub(u16, u16),
+    Mul(u16, u16),
+    Div(u16, u16),
+    DivErr(bool, bool),
+}

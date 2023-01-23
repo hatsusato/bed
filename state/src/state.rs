@@ -1,5 +1,5 @@
 use crate::State;
-use inst::Inst;
+use inst::{Command, Inst};
 use std::collections::VecDeque;
 use util::Block;
 
@@ -55,6 +55,22 @@ impl State {
             Argc => self.argc(),
             Argv => self.argv(),
             Nop => (),
+        }
+    }
+    pub fn exec_cmd(&mut self, cmd: Command) {
+        use Command::*;
+        match cmd {
+            Imm(_, next)
+            | Swap(_, next)
+            | Hi(_, next)
+            | Lo(_, next)
+            | Inc(_, next)
+            | Dec(_, next)
+            | Add(_, next)
+            | Sub(_, next)
+            | Mul(_, next)
+            | Div(_, next) => self.set_reg(next),
+            DivErr(_, next) => self.error = next,
         }
     }
     pub fn data(&self) -> u8 {

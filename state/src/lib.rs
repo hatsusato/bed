@@ -7,13 +7,13 @@ mod state;
 use std::collections::VecDeque;
 use util::Block;
 pub struct State {
-    acc: u8,
-    block: u8,
-    coord: u8,
-    data: u8,
-    error: bool,
-    memory: Block<Block<u8>>,
-    queue: VecDeque<u8>,
+    pub acc: u8,
+    pub block: u8,
+    pub coord: u8,
+    pub data: u8,
+    pub error: bool,
+    pub memory: Block<Block<u8>>,
+    pub queue: VecDeque<u8>,
 }
 
 pub fn add(left: usize, right: usize) -> usize {

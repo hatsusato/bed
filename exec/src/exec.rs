@@ -1,3 +1,4 @@
+use crate::reg::ExecReg;
 use inst::Inst;
 use state::State;
 
@@ -8,6 +9,20 @@ impl Exec {
     }
     pub fn exec(key: char, state: &mut State) {
         let inst = Inst::new(key);
-        state.exec(inst);
+        use Inst::*;
+        let cmd = match inst {
+            Imm(digit) => ExecReg::imm(state, digit),
+            Swap => ExecReg::swap(state),
+            Hi => ExecReg::hi(state),
+            Lo => ExecReg::lo(state),
+            Inc => ExecReg::inc(state),
+            Dec => ExecReg::dec(state),
+            Add => ExecReg::add(state),
+            Sub => ExecReg::sub(state),
+            Mul => ExecReg::mul(state),
+            Div => ExecReg::div(state),
+            _ => return state.exec(inst),
+        };
+        state.exec_cmd(cmd);
     }
 }

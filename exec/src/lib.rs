@@ -1,4 +1,5 @@
 mod exec;
+mod reg;
 
 pub use exec::Exec;
 
