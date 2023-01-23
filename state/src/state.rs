@@ -81,6 +81,10 @@ impl State {
             | Shr(_, next)
             | Rotl(_, next)
             | Rotr(_, next) => self.acc = next,
+            Left(_, next) | Right(_, next) => self.coord = next,
+            Down(_, next) | Up(_, next) => self.coord = next,
+            Pos(_, next) => (self.data, self.acc) = next,
+            Goto(_, next) => (self.block, self.coord) = next,
         }
     }
     pub fn data(&self) -> u8 {

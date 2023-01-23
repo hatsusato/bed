@@ -137,4 +137,10 @@ pub enum Command {
     Shr(u8, u8),
     Rotl(u8, u8),
     Rotr(u8, u8),
+    Left(u8, u8),
+    Down(u8, u8),
+    Up(u8, u8),
+    Right(u8, u8),
+    Pos((u8, u8), (u8, u8)),
+    Goto((u8, u8), (u8, u8)),
 }

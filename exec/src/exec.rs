@@ -1,4 +1,3 @@
-use crate::reg::ExecReg;
 use inst::Inst;
 use state::State;
 
@@ -34,8 +33,16 @@ impl Exec {
             Shr => ExecReg::shr(state),
             Rotl => ExecReg::rotl(state),
             Rotr => ExecReg::rotr(state),
+            Left => ExecReg::left(state),
+            Right => ExecReg::right(state),
+            Down => ExecReg::down(state),
+            Up => ExecReg::up(state),
+            Pos => ExecReg::pos(state),
+            Goto => ExecReg::goto(state),
             _ => return state.exec(inst),
         };
         state.exec_cmd(cmd);
     }
 }
+
+pub struct ExecReg {}

@@ -1,7 +1,9 @@
+use crate::exec::ExecReg;
 use inst::Command;
 use state::State;
 
-pub struct ExecReg {}
+const BLOCK_SIDE: u8 = 16;
+
 impl ExecReg {
     pub fn imm(state: &State, digit: u8) -> Command {
         Command::Imm(state.data, combine(state.data, digit))
@@ -82,6 +84,24 @@ impl ExecReg {
     pub fn rotr(state: &State) -> Command {
         Command::Rotr(state.acc, rot(state.acc, true))
     }
+    pub fn left(state: &State) -> Command {
+        Command::Left(state.coord, backward(state, 1))
+    }
+    pub fn right(state: &State) -> Command {
+        Command::Right(state.coord, forward(state, 1))
+    }
+    pub fn down(state: &State) -> Command {
+        Command::Down(state.coord, forward(state, BLOCK_SIDE))
+    }
+    pub fn up(state: &State) -> Command {
+        Command::Left(state.coord, backward(state, BLOCK_SIDE))
+    }
+    pub fn pos(state: &State) -> Command {
+        Command::Pos((state.data, state.acc), (state.block, state.coord))
+    }
+    pub fn goto(state: &State) -> Command {
+        Command::Goto((state.block, state.coord), (state.data, state.acc))
+    }
 }
 
 fn split(val: u16) -> (u8, u8) {
@@ -105,4 +125,12 @@ fn rot(val: u8, forward: bool) -> u8 {
     let shl = if forward { 1 } else { u8::BITS - 1 };
     let shr = u8::BITS - shl;
     (val << shl) | (val >> shr)
+}
+fn forward(state: &State, shift: u8) -> u8 {
+    let (next, _) = state.coord.overflowing_add(shift);
+    next
+}
+fn backward(state: &State, shift: u8) -> u8 {
+    let (next, _) = state.coord.overflowing_sub(shift);
+    next
 }
