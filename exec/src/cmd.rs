@@ -1,10 +1,10 @@
-use crate::exec::ExecReg;
+use crate::exec::ExecCmd;
 use inst::Command;
 use state::State;
 
 const BLOCK_SIDE: u8 = 16;
 
-impl ExecReg {
+impl ExecCmd {
     pub fn imm(state: &State, digit: u8) -> Command {
         Command::Imm(state.data, combine(state.data, digit))
     }
