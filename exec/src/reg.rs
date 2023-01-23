@@ -4,130 +4,92 @@ use state::State;
 pub struct ExecReg {}
 impl ExecReg {
     pub fn imm(state: &State, digit: u8) -> Command {
-        let prev = state.data;
-        let next = combine_nibbles(state.data, digit);
-        Command::Imm(prev, next)
+        Command::Imm(state.data, combine(state.data, digit))
     }
     pub fn swap(state: &State) -> Command {
-        let prev = combine(state.data, state.acc);
-        let next = combine(state.acc, state.data);
-        Command::Swap(prev, next)
+        Command::Swap((state.data, state.acc), (state.acc, state.data))
     }
     pub fn hi(state: &State) -> Command {
-        let prev = state.data;
-        let next = state.acc;
-        Command::Hi(prev, next)
+        Command::Hi(state.data, state.acc)
     }
     pub fn lo(state: &State) -> Command {
-        let prev = state.acc;
-        let next = state.data;
-        Command::Lo(prev, next)
+        Command::Lo(state.acc, state.data)
     }
     pub fn inc(state: &State) -> Command {
-        let prev = combine(state.data, state.acc);
         let (next, _) = state.acc.overflowing_add(1);
-        Command::Inc(prev, combine(state.data, next))
+        Command::Inc(state.acc, next)
     }
     pub fn dec(state: &State) -> Command {
-        let prev = combine(state.data, state.acc);
         let (next, _) = state.acc.overflowing_sub(1);
-        Command::Dec(prev, combine(state.data, next))
+        Command::Dec(state.acc, next)
     }
     pub fn add(state: &State) -> Command {
-        let prev = combine(state.data, state.acc);
         let next = (state.acc as u16) + (state.data as u16);
-        Command::Add(prev, next)
+        Command::Add((state.data, state.acc), split(next))
     }
     pub fn sub(state: &State) -> Command {
-        let prev = combine(state.data, state.acc);
         let (next, _) = (state.acc as u16).overflowing_sub(state.data as u16);
-        Command::Sub(prev, next)
+        Command::Sub((state.data, state.acc), split(next))
     }
     pub fn mul(state: &State) -> Command {
-        let prev = combine(state.data, state.acc);
         let next = (state.data as u16) * (state.acc as u16);
-        Command::Mul(prev, next)
+        Command::Mul((state.data, state.acc), split(next))
     }
     pub fn div(state: &State) -> Command {
         if state.data == 0 {
             Command::DivErr(state.error, true)
         } else {
-            let prev = combine(state.data, state.acc);
-            let next = combine(state.acc % state.data, state.acc / state.data);
-            Command::Div(prev, next)
+            let next = (state.acc % state.data, state.acc / state.data);
+            Command::Div((state.data, state.acc), next)
         }
     }
     pub fn is_err(state: &State) -> Command {
-        let prev = state.acc;
-        let next = extend(state.error);
-        Command::IsErr(prev, next)
+        Command::IsErr(state.acc, extend(state.error))
     }
     pub fn bool(state: &State) -> Command {
-        let prev = state.acc;
-        let next = extend(state.data != 0);
-        Command::Bool(prev, next)
+        Command::Bool(state.acc, extend(state.data != 0))
     }
     pub fn eq(state: &State) -> Command {
-        let prev = state.acc;
-        let next = extend(state.data == state.acc);
-        Command::Eq(prev, next)
+        Command::Eq(state.acc, extend(state.data == state.acc))
     }
     pub fn lt(state: &State) -> Command {
-        let prev = state.acc;
-        let next = extend(state.data < state.acc);
-        Command::Lt(prev, next)
+        Command::Lt(state.acc, extend(state.data < state.acc))
     }
     pub fn gt(state: &State) -> Command {
-        let prev = state.acc;
-        let next = extend(state.data > state.acc);
-        Command::Lt(prev, next)
+        Command::Lt(state.acc, extend(state.data > state.acc))
     }
     pub fn not(state: &State) -> Command {
-        let prev = state.acc;
-        let next = !state.data;
-        Command::Not(prev, next)
+        Command::Not(state.acc, !state.data)
     }
     pub fn and(state: &State) -> Command {
-        let prev = state.acc;
-        let next = state.data & state.acc;
-        Command::And(prev, next)
+        Command::And(state.acc, state.data & state.acc)
     }
     pub fn or(state: &State) -> Command {
-        let prev = state.acc;
-        let next = state.data | state.acc;
-        Command::Or(prev, next)
+        Command::Or(state.acc, state.data | state.acc)
     }
     pub fn xor(state: &State) -> Command {
-        let prev = state.acc;
-        let next = state.data ^ state.acc;
-        Command::Xor(prev, next)
+        Command::Xor(state.acc, state.data ^ state.acc)
     }
     pub fn shl(state: &State) -> Command {
-        let prev = state.acc;
-        let next = state.acc << 1;
-        Command::Shl(prev, next)
+        Command::Shl(state.acc, state.acc << 1)
     }
     pub fn shr(state: &State) -> Command {
-        let prev = state.acc;
-        let next = state.acc >> 1;
-        Command::Shr(prev, next)
+        Command::Shr(state.acc, state.acc >> 1)
     }
     pub fn rotl(state: &State) -> Command {
-        let prev = state.acc;
-        let next = rot(state.acc, true);
-        Command::Rotl(prev, next)
+        Command::Rotl(state.acc, rot(state.acc, true))
     }
     pub fn rotr(state: &State) -> Command {
-        let prev = state.acc;
-        let next = rot(state.acc, true);
-        Command::Rotr(prev, next)
+        Command::Rotr(state.acc, rot(state.acc, true))
     }
 }
 
-fn combine(hi: u8, lo: u8) -> u16 {
-    ((hi as u16) << u8::BITS) | (lo as u16)
+fn split(val: u16) -> (u8, u8) {
+    let hi = val >> u8::BITS;
+    let lo = val & (u8::MAX as u16);
+    (hi as u8, lo as u8)
 }
-fn combine_nibbles(hi: u8, lo: u8) -> u8 {
+fn combine(hi: u8, lo: u8) -> u8 {
     const SHIFT: u32 = u8::BITS / 2;
     const MASK: u8 = 0xF;
     ((hi & MASK) << SHIFT) | (lo & MASK)

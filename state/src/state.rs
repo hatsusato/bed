@@ -61,15 +61,12 @@ impl State {
         use Command::*;
         match cmd {
             Imm(_, next) => self.data = next,
-            Swap(_, next) => self.set_reg(next),
+            Swap(_, next) => (self.data, self.acc) = next,
             Hi(_, next) => self.data = next,
             Lo(_, next) => self.acc = next,
-            Inc(_, next)
-            | Dec(_, next)
-            | Add(_, next)
-            | Sub(_, next)
-            | Mul(_, next)
-            | Div(_, next) => self.set_reg(next),
+            Inc(_, next) | Dec(_, next) => self.acc = next,
+            Add(_, next) | Sub(_, next) => (self.data, self.acc) = next,
+            Mul(_, next) | Div(_, next) => (self.data, self.acc) = next,
             DivErr(_, next) => self.error = next,
             IsErr(_, next)
             | Bool(_, next)
