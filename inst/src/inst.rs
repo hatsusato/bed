@@ -1,3 +1,5 @@
+use util::Page;
+
 pub enum Inst {
     Imm(u8),
     Swap,
@@ -147,6 +149,6 @@ pub enum Command {
     Load(u8, u8),
     Store(u8, u8),
     Argc((u8, bool), (u8, bool)),
-    Argv(Vec<u8>),
+    Argv(Page, Page),
     NoArg(bool),
 }

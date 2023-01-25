@@ -89,7 +89,7 @@ impl State {
             Load(_, next) => self.data = next,
             Store(_, next) => self.memory[self.block][self.coord] = next,
             Argc(_, next) => (self.acc, self.error) = next,
-            Argv(arg) => self.queue.extend(arg),
+            Argv(_, next) => self.memory[self.block] = next,
             NoArg(_) => self.raise(),
         }
     }

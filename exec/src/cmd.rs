@@ -106,10 +106,10 @@ impl ExecCmd {
         Command::Jump(state.block, state.data)
     }
     pub fn load(state: &State) -> Command {
-        Command::Load(state.data, state.memory[state.block][state.coord])
+        Command::Load(state.data, state.page()[state.coord])
     }
     pub fn store(state: &State) -> Command {
-        Command::Load(state.memory[state.block][state.coord], state.data)
+        Command::Load(state.page()[state.coord], state.data)
     }
     pub fn argc(state: &State) -> Command {
         const MAX_LEN: usize = u8::MAX as usize;
@@ -119,7 +119,9 @@ impl ExecCmd {
     }
     pub fn argv(state: &State) -> Command {
         if let Some(arg) = std::env::args().nth(state.acc as usize) {
-            Command::Argv(arg.as_bytes().to_vec())
+            let mut next = state.page().clone();
+            next.write(arg.as_bytes().iter());
+            Command::Argv(*state.page(), next)
         } else {
             Command::NoArg(state.error)
         }
