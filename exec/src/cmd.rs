@@ -100,7 +100,10 @@ impl ExecCmd {
         Command::Pos((state.data, state.acc), (state.block, state.coord))
     }
     pub fn goto(state: &State) -> Command {
-        Command::Goto((state.block, state.coord), (state.data, state.acc))
+        Command::Goto(state.coord, state.acc)
+    }
+    pub fn jump(state: &State) -> Command {
+        Command::Jump(state.block, state.data)
     }
     pub fn load(state: &State) -> Command {
         Command::Load(state.data, state.memory[state.block][state.coord])
@@ -108,21 +111,11 @@ impl ExecCmd {
     pub fn store(state: &State) -> Command {
         Command::Load(state.memory[state.block][state.coord], state.data)
     }
-    pub fn push(state: &State) -> Command {
-        Command::Push(state.data)
-    }
-    pub fn pop(state: &State) -> Command {
-        if let Some(&val) = state.queue.front() {
-            Command::Pop(val)
-        } else {
-            Command::Empty(state.error)
-        }
-    }
-    pub fn len(state: &State) -> Command {
-        Command::Len((state.acc, state.error), trunc_len(state.queue.len()))
-    }
     pub fn argc(state: &State) -> Command {
-        Command::Argc((state.acc, state.error), trunc_len(std::env::args().len()))
+        const MAX_LEN: usize = u8::MAX as usize;
+        let len = std::env::args().len().min(MAX_LEN) as u8;
+        let overflow = MAX_LEN < std::env::args().len();
+        Command::Argc((state.acc, state.error), (len, overflow))
     }
     pub fn argv(state: &State) -> Command {
         if let Some(arg) = std::env::args().nth(state.acc as usize) {
@@ -162,8 +155,4 @@ fn forward(state: &State, shift: u8) -> u8 {
 fn backward(state: &State, shift: u8) -> u8 {
     let (next, _) = state.coord.overflowing_sub(shift);
     next
-}
-fn trunc_len(len: usize) -> (u8, bool) {
-    const MAX_LEN: usize = u8::MAX as usize;
-    (len.min(MAX_LEN) as u8, MAX_LEN < len)
 }
