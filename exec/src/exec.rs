@@ -39,7 +39,7 @@ impl Exec {
             Up => ExecCmd::up(state),
             Pos => ExecCmd::pos(state),
             Goto => ExecCmd::goto(state),
-            // Jump => ExecCmd::jump(state),
+            Jump => ExecCmd::jump(state),
             Load => ExecCmd::load(state),
             Store => ExecCmd::store(state),
             Argc => ExecCmd::argc(state),

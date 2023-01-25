@@ -47,6 +47,7 @@ impl State {
             Right => self.right(),
             Pos => self.pos(),
             Goto => self.goto(),
+            Jump => self.jump(),
             Load => self.load(),
             Store => self.store(),
             Push => self.push(),

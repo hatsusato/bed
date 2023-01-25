@@ -19,7 +19,10 @@ impl State {
         (self.data, self.acc) = (self.block, self.coord);
     }
     pub fn goto(&mut self) {
-        (self.block, self.coord) = (self.data, self.acc);
+        self.coord = self.acc;
+    }
+    pub fn jump(&mut self) {
+        self.block = self.data;
     }
     fn forward(&mut self, shift: u8) {
         (self.coord, _) = self.coord.overflowing_add(shift);
