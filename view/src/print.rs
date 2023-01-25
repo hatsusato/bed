@@ -1,7 +1,7 @@
 use crate::screen::Screen;
 use state::State;
 use std::collections::VecDeque;
-use util::Block;
+use util::Page;
 
 const CELL_WIDTH: u16 = 3;
 const LINE_COUNT: u16 = 16;
@@ -37,13 +37,13 @@ impl Screen {
             .collect();
         Self::print_string(q.join(" "));
     }
-    fn print_page(page: &Block<u8>) {
+    fn print_page(page: &Page) {
         (0..16).for_each(|y| Self::print_line(page, y));
     }
-    fn print_line(page: &Block<u8>, y: u16) {
+    fn print_line(page: &Page, y: u16) {
         (0..16).for_each(|x| Self::print_cell(page, x, y));
     }
-    fn print_cell(page: &Block<u8>, x: u16, y: u16) {
+    fn print_cell(page: &Page, x: u16, y: u16) {
         Self::move_cursor(x * CELL_WIDTH, y + LINE_OFFSET);
         let index = (x + y * LINE_COUNT) as u8;
         Self::print_string(format!("{:02x}", page[index]));

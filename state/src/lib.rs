@@ -5,14 +5,14 @@ mod reg;
 mod state;
 
 use std::collections::VecDeque;
-use util::Block;
+use util::{Block, Page};
 pub struct State {
     pub acc: u8,
     pub block: u8,
     pub coord: u8,
     pub data: u8,
     pub error: bool,
-    pub memory: Block<Block<u8>>,
+    pub memory: Block<Page>,
     pub queue: VecDeque<u8>,
 }
 

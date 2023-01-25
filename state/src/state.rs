@@ -1,7 +1,7 @@
 use crate::State;
 use inst::{Command, Inst};
 use std::collections::VecDeque;
-use util::Block;
+use util::{Block, Page};
 
 impl State {
     pub fn new() -> Self {
@@ -108,7 +108,7 @@ impl State {
     pub fn error(&self) -> bool {
         self.error
     }
-    pub fn page(&self) -> &Block<u8> {
+    pub fn page(&self) -> &Page {
         &self.memory[self.block]
     }
     pub fn queue(&self) -> &VecDeque<u8> {
