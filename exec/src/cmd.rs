@@ -14,8 +14,8 @@ enum Data {
 }
 pub struct Command {
     pub inst: Inst,
-    prev: Option<Bank>,
-    next: Option<Bank>,
+    prev: Bank,
+    next: Bank,
     data: Data,
 }
 impl Command {
@@ -25,8 +25,8 @@ impl Command {
         let data = Data::Single(state.data, next);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_data(next)),
             data,
         }
     }
@@ -35,8 +35,8 @@ impl Command {
         let data = Data::Double((state.data, state.acc), (state.acc, state.data));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(state.data).update_data(state.acc)),
             data,
         }
     }
@@ -45,8 +45,8 @@ impl Command {
         let data = Data::Single(state.data, state.acc);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_data(state.acc)),
             data,
         }
     }
@@ -55,8 +55,8 @@ impl Command {
         let data = Data::Single(state.data, state.acc);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(state.data)),
             data,
         }
     }
@@ -66,8 +66,8 @@ impl Command {
         let data = Data::Single(state.acc, next);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(next)),
             data,
         }
     }
@@ -77,8 +77,8 @@ impl Command {
         let data = Data::Single(state.acc, next);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(next)),
             data,
         }
     }
@@ -88,8 +88,11 @@ impl Command {
         let data = Data::Double((state.data, state.acc), split(next));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state
+                .bank()
+                .update_acc(split(next).0)
+                .update_data(split(next).1)),
             data,
         }
     }
@@ -99,8 +102,11 @@ impl Command {
         let data = Data::Double((state.data, state.acc), split(next));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state
+                .bank()
+                .update_acc(split(next).0)
+                .update_data(split(next).1)),
             data,
         }
     }
@@ -110,8 +116,11 @@ impl Command {
         let data = Data::Double((state.data, state.acc), split(next));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state
+                .bank()
+                .update_acc(split(next).0)
+                .update_data(split(next).1)),
             data,
         }
     }
@@ -121,8 +130,8 @@ impl Command {
             let data = Data::Bool(state.error, true);
             Self {
                 inst,
-                prev: Some(state.bank()),
-                next: None,
+                prev: (state.bank()),
+                next: (state.bank().update_error(true)),
                 data,
             }
         } else {
@@ -131,8 +140,11 @@ impl Command {
             let data = Data::Double((state.data, state.acc), next);
             Self {
                 inst,
-                prev: Some(state.bank()),
-                next: None,
+                prev: (state.bank()),
+                next: (state
+                    .bank()
+                    .update_acc(state.acc / state.data)
+                    .update_data(state.acc % state.data)),
                 data,
             }
         }
@@ -142,8 +154,8 @@ impl Command {
         let data = Data::Single(state.acc, extend(state.data == 0));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(extend(state.data == 0))),
             data,
         }
     }
@@ -152,8 +164,8 @@ impl Command {
         let data = Data::Single(state.acc, extend(state.data != 0));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(extend(state.data != 0))),
             data,
         }
     }
@@ -162,8 +174,8 @@ impl Command {
         let data = Data::Single(state.acc, extend(state.data == state.acc));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(extend(state.data == state.acc))),
             data,
         }
     }
@@ -172,8 +184,8 @@ impl Command {
         let data = Data::Single(state.acc, extend(state.data < state.acc));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(extend(state.data < state.acc))),
             data,
         }
     }
@@ -182,8 +194,8 @@ impl Command {
         let data = Data::Single(state.acc, extend(state.data > state.acc));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(extend(state.data > state.acc))),
             data,
         }
     }
@@ -192,8 +204,8 @@ impl Command {
         let data = Data::Single(state.acc, !state.data);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(!state.data)),
             data,
         }
     }
@@ -202,8 +214,8 @@ impl Command {
         let data = Data::Single(state.acc, state.data & state.acc);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(state.data & state.acc)),
             data,
         }
     }
@@ -212,8 +224,8 @@ impl Command {
         let data = Data::Single(state.acc, state.data | state.acc);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(state.data | state.acc)),
             data,
         }
     }
@@ -222,8 +234,8 @@ impl Command {
         let data = Data::Single(state.acc, state.data ^ state.acc);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(state.data ^ state.acc)),
             data,
         }
     }
@@ -232,8 +244,8 @@ impl Command {
         let data = Data::Single(state.acc, state.acc << 1);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(state.acc << 1)),
             data,
         }
     }
@@ -242,8 +254,8 @@ impl Command {
         let data = Data::Single(state.acc, state.acc >> 1);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(state.acc >> 1)),
             data,
         }
     }
@@ -252,18 +264,18 @@ impl Command {
         let data = Data::Single(state.acc, rot(state.acc, true));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(rot(state.acc, true))),
             data,
         }
     }
     pub fn rotr(state: &State) -> Self {
-        let inst = Rotr(state.acc, rot(state.acc, true));
-        let data = Data::Single(state.acc, rot(state.acc, true));
+        let inst = Rotr(state.acc, rot(state.acc, false));
+        let data = Data::Single(state.acc, rot(state.acc, false));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(rot(state.acc, false))),
             data,
         }
     }
@@ -272,8 +284,8 @@ impl Command {
         let data = Data::Single(state.coord, backward(state, 1));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_coord(backward(state, 1))),
             data,
         }
     }
@@ -282,8 +294,8 @@ impl Command {
         let data = Data::Single(state.coord, forward(state, 1));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_coord(forward(state, 1))),
             data,
         }
     }
@@ -292,8 +304,8 @@ impl Command {
         let data = Data::Single(state.coord, forward(state, BLOCK_SIDE));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_coord(forward(state, BLOCK_SIDE))),
             data,
         }
     }
@@ -302,8 +314,8 @@ impl Command {
         let data = Data::Single(state.coord, backward(state, BLOCK_SIDE));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_coord(backward(state, BLOCK_SIDE))),
             data,
         }
     }
@@ -312,8 +324,11 @@ impl Command {
         let data = Data::Double((state.data, state.acc), (state.block, state.coord));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state
+                .bank()
+                .update_data(state.block)
+                .update_acc(state.coord)),
             data,
         }
     }
@@ -322,8 +337,8 @@ impl Command {
         let data = Data::Single(state.coord, state.acc);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_coord(state.acc)),
             data,
         }
     }
@@ -332,8 +347,8 @@ impl Command {
         let data = Data::Single(state.block, state.data);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_block(state.data)),
             data,
         }
     }
@@ -342,8 +357,8 @@ impl Command {
         let data = Data::Single(state.data, state.page()[state.coord]);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_data(state.page()[state.coord])),
             data,
         }
     }
@@ -352,8 +367,8 @@ impl Command {
         let data = Data::Single(state.page()[state.coord], state.data);
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank()),
             data,
         }
     }
@@ -365,8 +380,8 @@ impl Command {
         let data = Data::Arg((state.acc, state.error), (len, overflow));
         Self {
             inst,
-            prev: Some(state.bank()),
-            next: None,
+            prev: (state.bank()),
+            next: (state.bank().update_acc(len).update_error(overflow)),
             data,
         }
     }
@@ -385,8 +400,8 @@ impl Command {
             let data = Data::Buffer((*state.page(), state.acc), (next, len));
             Self {
                 inst,
-                prev: Some(state.bank()),
-                next: None,
+                prev: (state.bank()),
+                next: (state.bank().update_acc(len)),
                 data,
             }
         } else {
@@ -394,8 +409,8 @@ impl Command {
             let data = Data::Bool(state.error, true);
             Self {
                 inst,
-                prev: Some(state.bank()),
-                next: None,
+                prev: (state.bank()),
+                next: (state.bank().update_error(true)),
                 data,
             }
         }
