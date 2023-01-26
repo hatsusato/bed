@@ -142,30 +142,44 @@ impl Command {
         let data = Data::Single(state.acc, rot(state.acc, true));
         Self { inst, data }
     }
+    pub fn left(state: &State) -> Self {
+        let inst = Left(state.coord, backward(state, 1));
+        let data = Data::Single(state.coord, backward(state, 1));
+        Self { inst, data }
+    }
+    pub fn right(state: &State) -> Self {
+        let inst = Right(state.coord, forward(state, 1));
+        let data = Data::Single(state.coord, forward(state, 1));
+        Self { inst, data }
+    }
+    pub fn down(state: &State) -> Self {
+        let inst = Down(state.coord, forward(state, BLOCK_SIDE));
+        let data = Data::Single(state.coord, forward(state, BLOCK_SIDE));
+        Self { inst, data }
+    }
+    pub fn up(state: &State) -> Self {
+        let inst = Left(state.coord, backward(state, BLOCK_SIDE));
+        let data = Data::Single(state.coord, backward(state, BLOCK_SIDE));
+        Self { inst, data }
+    }
+    pub fn pos(state: &State) -> Self {
+        let inst = Pos((state.data, state.acc), (state.block, state.coord));
+        let data = Data::Double((state.data, state.acc), (state.block, state.coord));
+        Self { inst, data }
+    }
+    pub fn goto(state: &State) -> Self {
+        let inst = Goto(state.coord, state.acc);
+        let data = Data::Single(state.coord, state.acc);
+        Self { inst, data }
+    }
+    pub fn jump(state: &State) -> Self {
+        let inst = Jump(state.block, state.data);
+        let data = Data::Single(state.block, state.data);
+        Self { inst, data }
+    }
 }
 
 impl ExecCmd {
-    pub fn left(state: &State) -> Inst {
-        Left(state.coord, backward(state, 1))
-    }
-    pub fn right(state: &State) -> Inst {
-        Right(state.coord, forward(state, 1))
-    }
-    pub fn down(state: &State) -> Inst {
-        Down(state.coord, forward(state, BLOCK_SIDE))
-    }
-    pub fn up(state: &State) -> Inst {
-        Left(state.coord, backward(state, BLOCK_SIDE))
-    }
-    pub fn pos(state: &State) -> Inst {
-        Pos((state.data, state.acc), (state.block, state.coord))
-    }
-    pub fn goto(state: &State) -> Inst {
-        Goto(state.coord, state.acc)
-    }
-    pub fn jump(state: &State) -> Inst {
-        Jump(state.block, state.data)
-    }
     pub fn load(state: &State) -> Inst {
         Load(state.data, state.page()[state.coord])
     }
