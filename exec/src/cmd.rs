@@ -1,6 +1,6 @@
 use inst::Inst::{self, *};
-use state::Bank;
-use state::State;
+use state::{Bank, State};
+use util::Page;
 
 const BLOCK_SIDE: u8 = 16;
 
@@ -9,236 +9,158 @@ pub struct Command {
     pub next: Bank,
 }
 impl Command {
+    pub fn new(inst: Inst, state: &State) -> Self {
+        let next = state.bank();
+        Self { inst, next }
+    }
+    fn update_reg(mut self, reg: u16) -> Self {
+        (self.next.data, self.next.acc) = split(reg);
+        self
+    }
+    fn update_acc(mut self, acc: u8) -> Self {
+        self.next.acc = acc;
+        self
+    }
+    fn update_block(mut self, block: u8) -> Self {
+        self.next.block = block;
+        self
+    }
+    fn update_coord(mut self, coord: u8) -> Self {
+        self.next.coord = coord;
+        self
+    }
+    fn update_data(mut self, data: u8) -> Self {
+        self.next.data = data;
+        self
+    }
+    fn update_error(mut self, error: bool) -> Self {
+        self.next.error = error;
+        self
+    }
+    fn update_page(mut self, page: Page) -> Self {
+        self.next.page = Some(page);
+        self
+    }
     pub fn imm(state: &State, digit: u8) -> Self {
         let next = combine(state.data, digit);
-        Self {
-            inst: Imm,
-            next: (state.bank().update_data(next)),
-        }
+        Self::new(Imm, state).update_data(next)
     }
     pub fn swap(state: &State) -> Self {
-        Self {
-            inst: Swap,
-            next: (state.bank().update_acc(state.data).update_data(state.acc)),
-        }
+        Self::new(Swap, state)
+            .update_data(state.acc)
+            .update_acc(state.data)
     }
     pub fn hi(state: &State) -> Self {
-        Self {
-            inst: Hi,
-            next: (state.bank().update_data(state.acc)),
-        }
+        Self::new(Hi, state).update_data(state.acc)
     }
     pub fn lo(state: &State) -> Self {
-        Self {
-            inst: Lo,
-            next: (state.bank().update_acc(state.data)),
-        }
+        Self::new(Lo, state).update_acc(state.data)
     }
     pub fn inc(state: &State) -> Self {
         let (next, _) = state.acc.overflowing_add(1);
-        Self {
-            inst: Inc,
-            next: (state.bank().update_acc(next)),
-        }
+        Self::new(Inc, state).update_acc(next)
     }
     pub fn dec(state: &State) -> Self {
         let (next, _) = state.acc.overflowing_sub(1);
-        Self {
-            inst: Dec,
-            next: (state.bank().update_acc(next)),
-        }
+        Self::new(Dec, state).update_acc(next)
     }
     pub fn add(state: &State) -> Self {
         let next = (state.acc as u16) + (state.data as u16);
-        Self {
-            inst: Add,
-            next: (state
-                .bank()
-                .update_acc(split(next).0)
-                .update_data(split(next).1)),
-        }
+        Self::new(Add, state).update_reg(next)
     }
     pub fn sub(state: &State) -> Self {
         let (next, _) = (state.acc as u16).overflowing_sub(state.data as u16);
-        Self {
-            inst: Sub,
-            next: (state
-                .bank()
-                .update_acc(split(next).0)
-                .update_data(split(next).1)),
-        }
+        Self::new(Sub, state).update_reg(next)
     }
     pub fn mul(state: &State) -> Self {
         let next = (state.data as u16) * (state.acc as u16);
-        Self {
-            inst: Mul,
-            next: (state
-                .bank()
-                .update_acc(split(next).0)
-                .update_data(split(next).1)),
-        }
+        Self::new(Mul, state).update_reg(next)
     }
     pub fn div(state: &State) -> Self {
         if state.data == 0 {
-            Self {
-                inst: DivErr,
-                next: (state.bank().update_error(true)),
-            }
+            Self::new(DivErr, state).update_error(true)
         } else {
-            Self {
-                inst: Div,
-                next: (state
-                    .bank()
-                    .update_acc(state.acc / state.data)
-                    .update_data(state.acc % state.data)),
-            }
+            Self::new(Div, state)
+                .update_acc(state.acc / state.data)
+                .update_data(state.acc % state.data)
         }
     }
     pub fn neg(state: &State) -> Self {
-        Self {
-            inst: Neg,
-            next: (state.bank().update_acc(extend(state.data == 0))),
-        }
+        Self::new(Neg, state).update_acc(extend(state.data == 0))
     }
     pub fn bool(state: &State) -> Self {
-        Self {
-            inst: Bool,
-            next: (state.bank().update_acc(extend(state.data != 0))),
-        }
+        Self::new(Bool, state).update_acc(extend(state.data != 0))
     }
     pub fn eq(state: &State) -> Self {
-        Self {
-            inst: Eq,
-            next: (state.bank().update_acc(extend(state.data == state.acc))),
-        }
+        Self::new(Eq, state).update_acc(extend(state.data == state.acc))
     }
     pub fn lt(state: &State) -> Self {
-        Self {
-            inst: Lt,
-            next: (state.bank().update_acc(extend(state.data < state.acc))),
-        }
+        Self::new(Lt, state).update_acc(extend(state.data < state.acc))
     }
     pub fn gt(state: &State) -> Self {
-        Self {
-            inst: Gt,
-            next: (state.bank().update_acc(extend(state.data > state.acc))),
-        }
+        Self::new(Gt, state).update_acc(extend(state.data > state.acc))
     }
     pub fn not(state: &State) -> Self {
-        Self {
-            inst: Not,
-            next: (state.bank().update_acc(!state.data)),
-        }
+        Self::new(Not, state).update_acc(!state.data)
     }
     pub fn and(state: &State) -> Self {
-        Self {
-            inst: And,
-            next: (state.bank().update_acc(state.data & state.acc)),
-        }
+        Self::new(And, state).update_acc(state.data & state.acc)
     }
     pub fn or(state: &State) -> Self {
-        Self {
-            inst: Or,
-            next: (state.bank().update_acc(state.data | state.acc)),
-        }
+        Self::new(Or, state).update_acc(state.data | state.acc)
     }
     pub fn xor(state: &State) -> Self {
-        Self {
-            inst: Xor,
-            next: (state.bank().update_acc(state.data ^ state.acc)),
-        }
+        Self::new(Xor, state).update_acc(state.data ^ state.acc)
     }
     pub fn shl(state: &State) -> Self {
-        Self {
-            inst: Shl,
-            next: (state.bank().update_acc(state.acc << 1)),
-        }
+        Self::new(Shl, state).update_acc(state.acc << 1)
     }
     pub fn shr(state: &State) -> Self {
-        Self {
-            inst: Shr,
-            next: (state.bank().update_acc(state.acc >> 1)),
-        }
+        Self::new(Shr, state).update_acc(state.acc >> 1)
     }
     pub fn rotl(state: &State) -> Self {
-        Self {
-            inst: Rotl,
-            next: (state.bank().update_acc(rot(state.acc, true))),
-        }
+        Self::new(Rotl, state).update_acc(rot(state.acc, true))
     }
     pub fn rotr(state: &State) -> Self {
-        Self {
-            inst: Rotr,
-            next: (state.bank().update_acc(rot(state.acc, false))),
-        }
+        Self::new(Rotr, state).update_acc(rot(state.acc, false))
     }
     pub fn left(state: &State) -> Self {
-        Self {
-            inst: Left,
-            next: (state.bank().update_coord(backward(state, 1))),
-        }
+        Self::new(Left, state).update_coord(backward(state, 1))
     }
     pub fn right(state: &State) -> Self {
-        Self {
-            inst: Right,
-            next: (state.bank().update_coord(forward(state, 1))),
-        }
+        Self::new(Right, state).update_coord(forward(state, 1))
     }
     pub fn down(state: &State) -> Self {
-        Self {
-            inst: Down,
-            next: (state.bank().update_coord(forward(state, BLOCK_SIDE))),
-        }
+        Self::new(Down, state).update_coord(forward(state, BLOCK_SIDE))
     }
     pub fn up(state: &State) -> Self {
-        Self {
-            inst: Up,
-            next: (state.bank().update_coord(backward(state, BLOCK_SIDE))),
-        }
+        Self::new(Up, state).update_coord(backward(state, BLOCK_SIDE))
     }
     pub fn pos(state: &State) -> Self {
-        Self {
-            inst: Pos,
-            next: (state
-                .bank()
-                .update_data(state.block)
-                .update_acc(state.coord)),
-        }
+        Self::new(Pos, state)
+            .update_data(state.block)
+            .update_acc(state.coord)
     }
     pub fn goto(state: &State) -> Self {
-        Self {
-            inst: Goto,
-            next: (state.bank().update_coord(state.acc)),
-        }
+        Self::new(Goto, state).update_coord(state.acc)
     }
     pub fn jump(state: &State) -> Self {
-        Self {
-            inst: Jump,
-            next: (state.bank().update_block(state.data)),
-        }
+        Self::new(Jump, state).update_block(state.data)
     }
     pub fn load(state: &State) -> Self {
-        Self {
-            inst: Load,
-            next: (state.bank().update_data(state.page()[state.coord])),
-        }
+        Self::new(Load, state).update_data(state.page()[state.coord])
     }
     pub fn store(state: &State) -> Self {
         let mut next = state.page().clone();
         next[state.coord] = state.data;
-        Self {
-            inst: Store,
-            next: (state.bank().update_page(next)),
-        }
+        Self::new(Store, state).update_page(next)
     }
     pub fn argc(state: &State) -> Self {
         const MAX_LEN: usize = u8::MAX as usize;
-        let len = std::env::args().len().min(MAX_LEN) as u8;
-        let overflow = MAX_LEN < std::env::args().len();
-        Self {
-            inst: Argc,
-            next: (state.bank().update_acc(len).update_error(overflow)),
-        }
+        let len = std::env::args().len();
+        Self::new(Argc, state)
+            .update_acc(len.min(MAX_LEN) as u8)
+            .update_error(MAX_LEN < len)
     }
     pub fn argv(state: &State) -> Self {
         if let Some(arg) = std::env::args().nth(state.acc as usize) {
@@ -251,15 +173,9 @@ impl Command {
             let len = input.len() as u8;
             let mut next = state.page().clone();
             next.write(input.iter());
-            Self {
-                inst: Argv,
-                next: (state.bank().update_acc(len).update_page(next)),
-            }
+            Self::new(Argv, state).update_acc(len).update_page(next)
         } else {
-            Self {
-                inst: NoArg,
-                next: (state.bank().update_error(true)),
-            }
+            Self::new(NoArg, state).update_error(true)
         }
     }
 }
