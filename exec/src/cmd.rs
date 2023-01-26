@@ -15,7 +15,7 @@ enum Data {
 pub struct Command {
     pub inst: Inst,
     prev: Bank,
-    next: Bank,
+    pub next: Bank,
     data: Data,
 }
 impl Command {

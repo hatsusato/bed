@@ -15,6 +15,13 @@ impl State {
             queue: VecDeque::new(),
         }
     }
+    pub fn restore_bank(&mut self, bank: Bank) {
+        self.acc = bank.acc;
+        self.block = bank.block;
+        self.coord = bank.coord;
+        self.data = bank.data;
+        self.error = bank.error;
+    }
     pub fn exec_cmd(&mut self, cmd: Inst) {
         use Inst::*;
         match cmd {
