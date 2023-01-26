@@ -152,4 +152,5 @@ pub enum Command {
     Argc((u8, bool), (u8, bool)),
     Argv(Page, Page),
     NoArg(bool),
+    Nop,
 }

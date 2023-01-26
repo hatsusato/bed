@@ -92,6 +92,7 @@ impl State {
             Argc(_, next) => (self.acc, self.error) = next,
             Argv(_, next) => self.memory[self.block] = next,
             NoArg(_) => self.raise(),
+            Nop => (),
         }
     }
     pub fn data(&self) -> u8 {
