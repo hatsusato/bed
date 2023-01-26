@@ -1,7 +1,3 @@
-mod mem;
-mod ptr;
-mod queue;
-mod reg;
 mod state;
 
 use std::collections::VecDeque;
