@@ -1,6 +1,6 @@
 use util::Page;
 
-pub enum Command {
+pub enum Inst {
     Imm(u8, u8),
     Swap((u8, u8), (u8, u8)),
     Hi(u8, u8),

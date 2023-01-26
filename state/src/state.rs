@@ -1,5 +1,5 @@
 use crate::State;
-use inst::Command;
+use inst::Inst;
 use std::collections::VecDeque;
 use util::{Block, Page};
 
@@ -15,8 +15,8 @@ impl State {
             queue: VecDeque::new(),
         }
     }
-    pub fn exec_cmd(&mut self, cmd: Command) {
-        use Command::*;
+    pub fn exec_cmd(&mut self, cmd: Inst) {
+        use Inst::*;
         match cmd {
             Imm(_, next) => self.data = next,
             Swap(_, next) => (self.data, self.acc) = next,

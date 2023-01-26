@@ -1,4 +1,4 @@
-use inst::Command;
+use inst::Inst;
 use state::State;
 
 pub struct Exec {}
@@ -7,8 +7,8 @@ impl Exec {
         Self {}
     }
     pub fn exec(key: char, state: &mut State) {
-        use Command::Nop;
-        let cmd: Command = match key {
+        use Inst::Nop;
+        let cmd: Inst = match key {
             '\n' => Nop,
             '!' => ExecCmd::neg(state),
             '"' => Nop,
