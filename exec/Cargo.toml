@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 inst = { version = "0.1.0", path = "../inst" }
 state = { version = "0.1.0", path = "../state" }
+util = { version = "0.1.0", path = "../util" }

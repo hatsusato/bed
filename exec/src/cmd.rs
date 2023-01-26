@@ -1,6 +1,6 @@
-use crate::exec::ExecCmd;
 use inst::Inst::{self, *};
 use state::State;
+use util::Page;
 
 const BLOCK_SIDE: u8 = 16;
 
@@ -8,6 +8,8 @@ enum Data {
     Single(u8, u8),
     Double((u8, u8), (u8, u8)),
     Bool(bool, bool),
+    Buffer((Page, u8), (Page, u8)),
+    Arg((u8, bool), (u8, bool)),
 }
 pub struct Command {
     pub inst: Inst,
@@ -177,28 +179,42 @@ impl Command {
         let data = Data::Single(state.block, state.data);
         Self { inst, data }
     }
-}
-
-impl ExecCmd {
-    pub fn load(state: &State) -> Inst {
-        Load(state.data, state.page()[state.coord])
+    pub fn load(state: &State) -> Self {
+        let inst = Load(state.data, state.page()[state.coord]);
+        let data = Data::Single(state.data, state.page()[state.coord]);
+        Self { inst, data }
     }
-    pub fn store(state: &State) -> Inst {
-        Load(state.page()[state.coord], state.data)
+    pub fn store(state: &State) -> Self {
+        let inst = Load(state.page()[state.coord], state.data);
+        let data = Data::Single(state.page()[state.coord], state.data);
+        Self { inst, data }
     }
-    pub fn argc(state: &State) -> Inst {
+    pub fn argc(state: &State) -> Self {
         const MAX_LEN: usize = u8::MAX as usize;
         let len = std::env::args().len().min(MAX_LEN) as u8;
         let overflow = MAX_LEN < std::env::args().len();
-        Argc((state.acc, state.error), (len, overflow))
+        let inst = Argc((state.acc, state.error), (len, overflow));
+        let data = Data::Arg((state.acc, state.error), (len, overflow));
+        Self { inst, data }
     }
-    pub fn argv(state: &State) -> Inst {
+    pub fn argv(state: &State) -> Self {
         if let Some(arg) = std::env::args().nth(state.acc as usize) {
+            let input: Vec<u8> = arg
+                .as_bytes()
+                .iter()
+                .take(u8::MAX as usize)
+                .map(|&x| x)
+                .collect();
+            let len = input.len() as u8;
             let mut next = state.page().clone();
-            next.write(arg.as_bytes().iter());
-            Argv(*state.page(), next)
+            next.write(input.iter());
+            let inst = Argv(*state.page(), next);
+            let data = Data::Buffer((*state.page(), state.acc), (next, len));
+            Self { inst, data }
         } else {
-            NoArg(state.error)
+            let inst = NoArg(state.error);
+            let data = Data::Bool(state.error, true);
+            Self { inst, data }
         }
     }
 }
