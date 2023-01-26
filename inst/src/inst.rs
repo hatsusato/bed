@@ -12,7 +12,7 @@ pub enum Command {
     Mul((u8, u8), (u8, u8)),
     Div((u8, u8), (u8, u8)),
     DivErr(bool),
-    IsErr(u8, u8),
+    Neg(u8, u8),
     Bool(u8, u8),
     Eq(u8, u8),
     Lt(u8, u8),

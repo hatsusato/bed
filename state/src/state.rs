@@ -26,7 +26,7 @@ impl State {
             Add(_, next) | Sub(_, next) => (self.data, self.acc) = next,
             Mul(_, next) | Div(_, next) => (self.data, self.acc) = next,
             DivErr(_) => self.raise(),
-            IsErr(_, next)
+            Neg(_, next)
             | Bool(_, next)
             | Eq(_, next)
             | Lt(_, next)

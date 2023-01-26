@@ -45,8 +45,8 @@ impl ExecCmd {
             Command::Div((state.data, state.acc), next)
         }
     }
-    pub fn is_err(state: &State) -> Command {
-        Command::IsErr(state.acc, extend(state.error))
+    pub fn neg(state: &State) -> Command {
+        Command::Neg(state.acc, extend(state.data == 0))
     }
     pub fn bool(state: &State) -> Command {
         Command::Bool(state.acc, extend(state.data != 0))

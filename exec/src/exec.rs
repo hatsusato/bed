@@ -10,7 +10,7 @@ impl Exec {
         use Command::Nop;
         let cmd: Command = match key {
             '\n' => Nop,
-            '!' => ExecCmd::is_err(state),
+            '!' => ExecCmd::neg(state),
             '"' => Nop,
             '#' => Nop,
             '$' => ExecCmd::argv(state),
