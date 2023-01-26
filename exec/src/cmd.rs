@@ -47,29 +47,39 @@ impl Command {
         let data = Data::Single(state.acc, next);
         Self { inst, data }
     }
+    pub fn add(state: &State) -> Self {
+        let next = (state.acc as u16) + (state.data as u16);
+        let inst = Add((state.data, state.acc), split(next));
+        let data = Data::Double((state.data, state.acc), split(next));
+        Self { inst, data }
+    }
+    pub fn sub(state: &State) -> Self {
+        let (next, _) = (state.acc as u16).overflowing_sub(state.data as u16);
+        let inst = Sub((state.data, state.acc), split(next));
+        let data = Data::Double((state.data, state.acc), split(next));
+        Self { inst, data }
+    }
+    pub fn mul(state: &State) -> Self {
+        let next = (state.data as u16) * (state.acc as u16);
+        let inst = Mul((state.data, state.acc), split(next));
+        let data = Data::Double((state.data, state.acc), split(next));
+        Self { inst, data }
+    }
+    pub fn div(state: &State) -> Self {
+        if state.data == 0 {
+            let inst = DivErr(state.error);
+            let data = Data::Bool(state.error, true);
+            Self { inst, data }
+        } else {
+            let next = (state.acc % state.data, state.acc / state.data);
+            let inst = Div((state.data, state.acc), next);
+            let data = Data::Double((state.data, state.acc), next);
+            Self { inst, data }
+        }
+    }
 }
 
 impl ExecCmd {
-    pub fn add(state: &State) -> Inst {
-        let next = (state.acc as u16) + (state.data as u16);
-        Add((state.data, state.acc), split(next))
-    }
-    pub fn sub(state: &State) -> Inst {
-        let (next, _) = (state.acc as u16).overflowing_sub(state.data as u16);
-        Sub((state.data, state.acc), split(next))
-    }
-    pub fn mul(state: &State) -> Inst {
-        let next = (state.data as u16) * (state.acc as u16);
-        Mul((state.data, state.acc), split(next))
-    }
-    pub fn div(state: &State) -> Inst {
-        if state.data == 0 {
-            DivErr(state.error)
-        } else {
-            let next = (state.acc % state.data, state.acc / state.data);
-            Div((state.data, state.acc), next)
-        }
-    }
     pub fn neg(state: &State) -> Inst {
         Neg(state.acc, extend(state.data == 0))
     }
