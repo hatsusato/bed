@@ -102,33 +102,49 @@ impl Command {
         let data = Data::Single(state.acc, extend(state.data > state.acc));
         Self { inst, data }
     }
+    pub fn not(state: &State) -> Self {
+        let inst = Not(state.acc, !state.data);
+        let data = Data::Single(state.acc, !state.data);
+        Self { inst, data }
+    }
+    pub fn and(state: &State) -> Self {
+        let inst = And(state.acc, state.data & state.acc);
+        let data = Data::Single(state.acc, state.data & state.acc);
+        Self { inst, data }
+    }
+    pub fn or(state: &State) -> Self {
+        let inst = Or(state.acc, state.data | state.acc);
+        let data = Data::Single(state.acc, state.data | state.acc);
+        Self { inst, data }
+    }
+    pub fn xor(state: &State) -> Self {
+        let inst = Xor(state.acc, state.data ^ state.acc);
+        let data = Data::Single(state.acc, state.data ^ state.acc);
+        Self { inst, data }
+    }
+    pub fn shl(state: &State) -> Self {
+        let inst = Shl(state.acc, state.acc << 1);
+        let data = Data::Single(state.acc, state.acc << 1);
+        Self { inst, data }
+    }
+    pub fn shr(state: &State) -> Self {
+        let inst = Shr(state.acc, state.acc >> 1);
+        let data = Data::Single(state.acc, state.acc >> 1);
+        Self { inst, data }
+    }
+    pub fn rotl(state: &State) -> Self {
+        let inst = Rotl(state.acc, rot(state.acc, true));
+        let data = Data::Single(state.acc, rot(state.acc, true));
+        Self { inst, data }
+    }
+    pub fn rotr(state: &State) -> Self {
+        let inst = Rotr(state.acc, rot(state.acc, true));
+        let data = Data::Single(state.acc, rot(state.acc, true));
+        Self { inst, data }
+    }
 }
 
 impl ExecCmd {
-    pub fn not(state: &State) -> Inst {
-        Not(state.acc, !state.data)
-    }
-    pub fn and(state: &State) -> Inst {
-        And(state.acc, state.data & state.acc)
-    }
-    pub fn or(state: &State) -> Inst {
-        Or(state.acc, state.data | state.acc)
-    }
-    pub fn xor(state: &State) -> Inst {
-        Xor(state.acc, state.data ^ state.acc)
-    }
-    pub fn shl(state: &State) -> Inst {
-        Shl(state.acc, state.acc << 1)
-    }
-    pub fn shr(state: &State) -> Inst {
-        Shr(state.acc, state.acc >> 1)
-    }
-    pub fn rotl(state: &State) -> Inst {
-        Rotl(state.acc, rot(state.acc, true))
-    }
-    pub fn rotr(state: &State) -> Inst {
-        Rotr(state.acc, rot(state.acc, true))
-    }
     pub fn left(state: &State) -> Inst {
         Left(state.coord, backward(state, 1))
     }
