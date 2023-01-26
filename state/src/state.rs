@@ -21,6 +21,9 @@ impl State {
         self.coord = bank.coord;
         self.data = bank.data;
         self.error = bank.error;
+        if let Some(page) = bank.page {
+            self.memory[self.block] = page;
+        }
     }
     pub fn exec_cmd(&mut self, cmd: Inst) {
         use Inst::*;
@@ -87,6 +90,7 @@ impl State {
             coord: self.coord,
             data: self.data,
             error: self.error,
+            page: None,
         }
     }
     pub fn set_reg(&mut self, val: u16) {

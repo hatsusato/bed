@@ -18,6 +18,7 @@ pub struct Bank {
     pub coord: u8,
     pub data: u8,
     pub error: bool,
+    pub page: Option<Page>,
 }
 impl Bank {
     pub fn update_acc(&self, acc: u8) -> Self {
@@ -43,6 +44,11 @@ impl Bank {
     pub fn update_error(&self, error: bool) -> Self {
         let mut bank = self.clone();
         bank.error = error;
+        bank
+    }
+    pub fn update_page(&self, page: Page) -> Self {
+        let mut bank = self.clone();
+        bank.page = Some(page);
         bank
     }
 }

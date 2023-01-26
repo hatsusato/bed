@@ -257,10 +257,12 @@ impl Command {
         }
     }
     pub fn store(state: &State) -> Self {
-        let inst = Load(state.page()[state.coord], state.data);
+        let inst = Store(state.page()[state.coord], state.data);
+        let mut next = state.page().clone();
+        next[state.coord] = state.data;
         Self {
             inst,
-            next: (state.bank()),
+            next: (state.bank().update_page(next)),
         }
     }
     pub fn argc(state: &State) -> Self {
@@ -287,7 +289,7 @@ impl Command {
             let inst = Argv(*state.page(), next);
             Self {
                 inst,
-                next: (state.bank().update_acc(len)),
+                next: (state.bank().update_acc(len).update_page(next)),
             }
         } else {
             let inst = NoArg(state.error);
