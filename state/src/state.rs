@@ -1,6 +1,5 @@
 use crate::{Bank, State};
 use inst::Inst;
-use std::collections::VecDeque;
 use util::{Block, Page};
 
 impl State {
@@ -12,7 +11,6 @@ impl State {
             data: 0,
             error: false,
             memory: Block::new(Block::new(0)),
-            queue: VecDeque::new(),
         }
     }
     pub fn restore_bank(&mut self, bank: Bank) {
@@ -79,9 +77,6 @@ impl State {
     }
     pub fn page(&self) -> &Page {
         &self.memory[self.block]
-    }
-    pub fn queue(&self) -> &VecDeque<u8> {
-        &self.queue
     }
     pub fn bank(&self) -> Bank {
         Bank {
