@@ -27,8 +27,13 @@ impl<T> IndexMut<u8> for Block<T> {
 
 pub type Page = Block<u8>;
 impl Page {
-    pub fn write(&mut self, input: Iter<u8>) {
-        let update = |(i, &src)| self[i as u8] = src;
-        input.take(u8::MAX as usize).enumerate().for_each(update);
+    pub fn write(&mut self, input: Iter<u8>) -> u8 {
+        let input: Vec<&u8> = input.take(u8::MAX as usize).collect();
+        let len = input.len() as u8;
+        input
+            .into_iter()
+            .enumerate()
+            .for_each(|(i, &src)| self[i as u8] = src);
+        len
     }
 }

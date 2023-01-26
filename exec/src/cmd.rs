@@ -164,15 +164,8 @@ impl Command {
     }
     pub fn argv(state: &State) -> Self {
         if let Some(arg) = std::env::args().nth(state.acc as usize) {
-            let input: Vec<u8> = arg
-                .as_bytes()
-                .iter()
-                .take(u8::MAX as usize)
-                .map(|&x| x)
-                .collect();
-            let len = input.len() as u8;
             let mut next = state.page().clone();
-            next.write(input.iter());
+            let len = next.write(arg.as_bytes().iter());
             Self::new(Argv, state).update_acc(len).update_page(next)
         } else {
             Self::new(NoArg, state).update_error(true)
