@@ -4,27 +4,52 @@ use state::State;
 
 const BLOCK_SIDE: u8 = 16;
 
-impl ExecCmd {
-    pub fn imm(state: &State, digit: u8) -> Inst {
-        Imm(state.data, combine(state.data, digit))
+enum Data {
+    Single(u8, u8),
+    Double((u8, u8), (u8, u8)),
+    Bool(bool, bool),
+}
+pub struct Command {
+    pub inst: Inst,
+    data: Data,
+}
+impl Command {
+    pub fn imm(state: &State, digit: u8) -> Self {
+        let next = combine(state.data, digit);
+        let inst = Imm(state.data, next);
+        let data = Data::Single(state.data, next);
+        Self { inst, data }
     }
-    pub fn swap(state: &State) -> Inst {
-        Swap((state.data, state.acc), (state.acc, state.data))
+    pub fn swap(state: &State) -> Self {
+        let inst = Swap((state.data, state.acc), (state.acc, state.data));
+        let data = Data::Double((state.data, state.acc), (state.acc, state.data));
+        Self { inst, data }
     }
-    pub fn hi(state: &State) -> Inst {
-        Hi(state.data, state.acc)
+    pub fn hi(state: &State) -> Self {
+        let inst = Hi(state.data, state.acc);
+        let data = Data::Single(state.data, state.acc);
+        Self { inst, data }
     }
-    pub fn lo(state: &State) -> Inst {
-        Lo(state.acc, state.data)
+    pub fn lo(state: &State) -> Self {
+        let inst = Lo(state.acc, state.data);
+        let data = Data::Single(state.data, state.acc);
+        Self { inst, data }
     }
-    pub fn inc(state: &State) -> Inst {
+    pub fn inc(state: &State) -> Self {
         let (next, _) = state.acc.overflowing_add(1);
-        Inc(state.acc, next)
+        let inst = Inc(state.acc, next);
+        let data = Data::Single(state.acc, next);
+        Self { inst, data }
     }
-    pub fn dec(state: &State) -> Inst {
+    pub fn dec(state: &State) -> Self {
         let (next, _) = state.acc.overflowing_sub(1);
-        Dec(state.acc, next)
+        let inst = Dec(state.acc, next);
+        let data = Data::Single(state.acc, next);
+        Self { inst, data }
     }
+}
+
+impl ExecCmd {
     pub fn add(state: &State) -> Inst {
         let next = (state.acc as u16) + (state.data as u16);
         Add((state.data, state.acc), split(next))
