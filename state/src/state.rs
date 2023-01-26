@@ -1,4 +1,4 @@
-use crate::State;
+use crate::{Bank, State};
 use inst::Inst;
 use std::collections::VecDeque;
 use util::{Block, Page};
@@ -72,6 +72,15 @@ impl State {
     }
     pub fn queue(&self) -> &VecDeque<u8> {
         &self.queue
+    }
+    pub fn bank(&self) -> Bank {
+        Bank {
+            acc: self.acc,
+            block: self.block,
+            coord: self.coord,
+            data: self.data,
+            error: self.error,
+        }
     }
     pub fn set_reg(&mut self, val: u16) {
         (self.data, self.acc) = (trunc(val >> u8::BITS), trunc(val));
