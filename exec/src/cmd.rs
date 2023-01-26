@@ -77,24 +77,34 @@ impl Command {
             Self { inst, data }
         }
     }
+    pub fn neg(state: &State) -> Self {
+        let inst = Neg(state.acc, extend(state.data == 0));
+        let data = Data::Single(state.acc, extend(state.data == 0));
+        Self { inst, data }
+    }
+    pub fn bool(state: &State) -> Self {
+        let inst = Bool(state.acc, extend(state.data != 0));
+        let data = Data::Single(state.acc, extend(state.data != 0));
+        Self { inst, data }
+    }
+    pub fn eq(state: &State) -> Self {
+        let inst = Eq(state.acc, extend(state.data == state.acc));
+        let data = Data::Single(state.acc, extend(state.data == state.acc));
+        Self { inst, data }
+    }
+    pub fn lt(state: &State) -> Self {
+        let inst = Lt(state.acc, extend(state.data < state.acc));
+        let data = Data::Single(state.acc, extend(state.data < state.acc));
+        Self { inst, data }
+    }
+    pub fn gt(state: &State) -> Self {
+        let inst = Lt(state.acc, extend(state.data > state.acc));
+        let data = Data::Single(state.acc, extend(state.data > state.acc));
+        Self { inst, data }
+    }
 }
 
 impl ExecCmd {
-    pub fn neg(state: &State) -> Inst {
-        Neg(state.acc, extend(state.data == 0))
-    }
-    pub fn bool(state: &State) -> Inst {
-        Bool(state.acc, extend(state.data != 0))
-    }
-    pub fn eq(state: &State) -> Inst {
-        Eq(state.acc, extend(state.data == state.acc))
-    }
-    pub fn lt(state: &State) -> Inst {
-        Lt(state.acc, extend(state.data < state.acc))
-    }
-    pub fn gt(state: &State) -> Inst {
-        Lt(state.acc, extend(state.data > state.acc))
-    }
     pub fn not(state: &State) -> Inst {
         Not(state.acc, !state.data)
     }

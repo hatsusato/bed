@@ -11,7 +11,7 @@ impl Exec {
         use Inst::Nop;
         let cmd: Inst = match key {
             '\n' => Nop,
-            '!' => ExecCmd::neg(state),
+            '!' => Command::neg(state).inst,
             '"' => Nop,
             '#' => Nop,
             '$' => ExecCmd::argv(state),
@@ -29,10 +29,10 @@ impl Exec {
             '0'..='9' => Command::imm(state, translate_hex_digit(key)).inst,
             ':' => Nop,
             ';' => Nop,
-            '<' => ExecCmd::lt(state),
-            '=' => ExecCmd::eq(state),
-            '>' => ExecCmd::gt(state),
-            '?' => ExecCmd::bool(state),
+            '<' => Command::lt(state).inst,
+            '=' => Command::eq(state).inst,
+            '>' => Command::gt(state).inst,
+            '?' => Command::bool(state).inst,
             '@' => ExecCmd::argc(state),
             'A'..='Z' => return Self::exec(key.to_ascii_lowercase(), state),
             '[' => ExecCmd::shl(state),
