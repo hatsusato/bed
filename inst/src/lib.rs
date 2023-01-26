@@ -1,6 +1,6 @@
 mod inst;
 
-pub use inst::{Command, Inst};
+pub use inst::Command;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
