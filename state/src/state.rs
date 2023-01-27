@@ -1,5 +1,4 @@
-use util::Block;
-use util::Page;
+use util::{Block, Page};
 
 #[derive(Default, Clone, Copy)]
 pub struct Bank {
@@ -46,18 +45,4 @@ impl State {
             self.memory[self.bank.block] = page;
         }
     }
-    pub fn set_reg(&mut self, val: u16) {
-        (self.bank.data, self.bank.acc) = (trunc(val >> u8::BITS), trunc(val));
-    }
-    pub fn get_reg(&self) -> u16 {
-        u16::from(self.bank.data) << u8::BITS | u16::from(self.bank.acc)
-    }
-    pub fn raise(&mut self) {
-        self.bank.error = true;
-    }
-}
-
-fn trunc(val: u16) -> u8 {
-    const MASK: u16 = u8::MAX as u16;
-    (val & MASK) as u8
 }
