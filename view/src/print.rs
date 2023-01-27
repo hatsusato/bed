@@ -1,6 +1,5 @@
 use crate::screen::Screen;
 use state::State;
-use util::Page;
 
 const CELL_WIDTH: u16 = 3;
 const LINE_COUNT: u16 = 16;
@@ -16,7 +15,7 @@ impl Screen {
             state.error() as u8,
             key,
         );
-        Self::print_page(state.page());
+        Self::print_page(state);
     }
     fn print_header(data: u8, acc: u8, block: u8, coord: u8, error: u8, key: char) {
         Self::move_cursor(0, 0);
@@ -25,15 +24,21 @@ impl Screen {
             data, acc, block, coord, error, key
         ));
     }
-    fn print_page(page: &Page) {
-        (0..16).for_each(|y| Self::print_line(page, y));
+    fn print_page(state: &State) {
+        (0..16).for_each(|y| Self::print_line(state, y));
     }
-    fn print_line(page: &Page, y: u16) {
-        (0..16).for_each(|x| Self::print_cell(page, x, y));
+    fn print_line(state: &State, y: u16) {
+        (0..16).for_each(|x| Self::print_cell(state, x, y));
     }
-    fn print_cell(page: &Page, x: u16, y: u16) {
+    fn print_cell(state: &State, x: u16, y: u16) {
+        let page = state.page();
         Self::move_cursor(x * CELL_WIDTH, y + LINE_OFFSET);
         let index = (x + y * LINE_COUNT) as u8;
-        Self::print_string(format!("{:02x}", page[index]));
+        let msg = format!("{:02x}", page[index]);
+        if state.coord == index {
+            Self::print_highlight(msg);
+        } else {
+            Self::print_string(msg);
+        }
     }
 }

@@ -57,6 +57,12 @@ impl Screen {
         Self::queue(Print(msg));
         Self::flush();
     }
+    pub fn print_highlight(msg: String) {
+        use style::{Attribute, Print};
+        Self::queue(Print(Attribute::Reverse));
+        Self::queue(Print(msg));
+        Self::queue(Print(Attribute::NoReverse));
+    }
     pub fn move_cursor(x: u16, y: u16) {
         use cursor::MoveTo;
         Self::queue(MoveTo(x, y));
