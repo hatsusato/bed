@@ -1,8 +1,8 @@
 use crossterm::{cursor, event, style, terminal, Command};
 
 struct AlternateScreen {}
-impl AlternateScreen {
-    fn new() -> Self {
+impl Default for AlternateScreen {
+    fn default() -> Self {
         Screen::execute(terminal::EnterAlternateScreen);
         Self {}
     }
@@ -14,8 +14,8 @@ impl Drop for AlternateScreen {
 }
 
 struct HideCursor {}
-impl HideCursor {
-    fn new() -> Self {
+impl Default for HideCursor {
+    fn default() -> Self {
         Screen::execute(cursor::Hide);
         Self {}
     }
@@ -27,8 +27,8 @@ impl Drop for HideCursor {
 }
 
 struct RawMode {}
-impl RawMode {
-    fn new() -> Self {
+impl Default for RawMode {
+    fn default() -> Self {
         terminal::enable_raw_mode().unwrap();
         Self {}
     }
@@ -39,19 +39,13 @@ impl Drop for RawMode {
     }
 }
 
+#[derive(Default)]
 pub struct Screen {
     _alternate_screen: AlternateScreen,
     _hide_cursor: HideCursor,
     _raw_mode: RawMode,
 }
 impl Screen {
-    pub fn new() -> Self {
-        Self {
-            _alternate_screen: AlternateScreen::new(),
-            _hide_cursor: HideCursor::new(),
-            _raw_mode: RawMode::new(),
-        }
-    }
     pub fn print_string(msg: String) {
         use style::Print;
         Self::queue(Print(msg));
@@ -68,7 +62,8 @@ impl Screen {
         Self::queue(MoveTo(x, y));
     }
     pub fn getch() -> Option<char> {
-        use event::{Event::Key, KeyCode::*};
+        use event::Event::Key;
+        use event::KeyCode::{Char, Enter, Tab};
         if let Ok(Key(key)) = event::read() {
             Some(match key.code {
                 Char(c) => c,
