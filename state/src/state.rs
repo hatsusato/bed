@@ -1,7 +1,7 @@
 use util::Block;
 use util::Page;
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct Bank {
     pub acc: u8,
     pub block: u8,
@@ -12,62 +12,48 @@ pub struct Bank {
 
 #[derive(Default)]
 pub struct State {
-    acc: u8,
-    block: u8,
-    coord: u8,
-    data: u8,
-    error: bool,
+    bank: Bank,
     memory: Block<Page>,
 }
 
 impl State {
     pub fn data(&self) -> u8 {
-        self.data
+        self.bank.data
     }
     pub fn acc(&self) -> u8 {
-        self.acc
+        self.bank.acc
     }
     pub fn block(&self) -> u8 {
-        self.block
+        self.bank.block
     }
     pub fn coord(&self) -> u8 {
-        self.coord
+        self.bank.coord
     }
     pub fn error(&self) -> bool {
-        self.error
+        self.bank.error
     }
     pub fn page(&self) -> &Page {
-        &self.memory[self.block]
+        &self.memory[self.bank.block]
     }
     pub fn bank(&self) -> Bank {
-        Bank {
-            acc: self.acc,
-            block: self.block,
-            coord: self.coord,
-            data: self.data,
-            error: self.error,
-        }
+        self.bank
     }
-    pub fn restore_bank(&mut self, bank: &Bank) {
-        self.acc = bank.acc;
-        self.block = bank.block;
-        self.coord = bank.coord;
-        self.data = bank.data;
-        self.error = bank.error;
+    pub fn restore_bank(&mut self, bank: Bank) {
+        self.bank = bank;
     }
     pub fn restore_page(&mut self, page: Option<Page>) {
         if let Some(page) = page {
-            self.memory[self.block] = page;
+            self.memory[self.bank.block] = page;
         }
     }
     pub fn set_reg(&mut self, val: u16) {
-        (self.data, self.acc) = (trunc(val >> u8::BITS), trunc(val));
+        (self.bank.data, self.bank.acc) = (trunc(val >> u8::BITS), trunc(val));
     }
     pub fn get_reg(&self) -> u16 {
-        u16::from(self.data) << u8::BITS | u16::from(self.acc)
+        u16::from(self.bank.data) << u8::BITS | u16::from(self.bank.acc)
     }
     pub fn raise(&mut self) {
-        self.error = true;
+        self.bank.error = true;
     }
 }
 
