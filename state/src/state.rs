@@ -21,16 +21,6 @@ pub struct State {
 }
 
 impl State {
-    pub fn restore_bank(&mut self, bank: &Bank, page: Option<Page>) {
-        self.acc = bank.acc;
-        self.block = bank.block;
-        self.coord = bank.coord;
-        self.data = bank.data;
-        self.error = bank.error;
-        if let Some(page) = page {
-            self.memory[self.block] = page;
-        }
-    }
     pub fn data(&self) -> u8 {
         self.data
     }
@@ -56,6 +46,18 @@ impl State {
             coord: self.coord,
             data: self.data,
             error: self.error,
+        }
+    }
+    pub fn restore_bank(&mut self, bank: &Bank) {
+        self.acc = bank.acc;
+        self.block = bank.block;
+        self.coord = bank.coord;
+        self.data = bank.data;
+        self.error = bank.error;
+    }
+    pub fn restore_page(&mut self, page: Option<Page>) {
+        if let Some(page) = page {
+            self.memory[self.block] = page;
         }
     }
     pub fn set_reg(&mut self, val: u16) {

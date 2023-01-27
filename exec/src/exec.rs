@@ -64,7 +64,8 @@ impl Exec {
             '~' => Command::not(state),
             _ => return,
         };
-        state.restore_bank(&cmd.next, cmd.page);
+        state.restore_bank(&cmd.next);
+        state.restore_page(cmd.page);
     }
 }
 
