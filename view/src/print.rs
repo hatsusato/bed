@@ -12,7 +12,7 @@ impl Screen {
             state.acc(),
             state.block(),
             state.coord(),
-            state.error() as u8,
+            u8::from(state.error()),
             key,
         );
         Self::print_page(state);
@@ -33,7 +33,7 @@ impl Screen {
     fn print_cell(state: &State, x: u16, y: u16) {
         let page = state.page();
         Self::move_cursor(x * CELL_WIDTH, y + LINE_OFFSET);
-        let index = (x + y * LINE_COUNT) as u8;
+        let index = u8::try_from(x + y * LINE_COUNT).unwrap();
         let msg = format!("{:02x}", page[index]);
         if state.coord == index {
             Self::print_highlight(msg);
