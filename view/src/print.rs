@@ -7,21 +7,22 @@ const LINE_COUNT: u16 = 16;
 const LINE_OFFSET: u16 = 1;
 
 impl Screen {
-    pub fn print_state(state: &State) {
+    pub fn print_state(state: &State, key: char) {
         Self::print_header(
             state.data(),
             state.acc(),
             state.block(),
             state.coord(),
             state.error() as u8,
+            key,
         );
         Self::print_page(state.page());
     }
-    fn print_header(data: u8, acc: u8, block: u8, coord: u8, error: u8) {
+    fn print_header(data: u8, acc: u8, block: u8, coord: u8, error: u8, key: char) {
         Self::move_cursor(0, 0);
         Self::print_string(format!(
-            "D: {:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}",
-            data, acc, block, coord, error
+            "D: {:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}, KEY: {}",
+            data, acc, block, coord, error, key
         ));
     }
     fn print_page(page: &Page) {

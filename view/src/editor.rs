@@ -15,11 +15,15 @@ impl Editor {
         }
     }
     pub fn run(&mut self) {
+        let mut last = ' ';
         loop {
             let state = self.state.get_mut();
-            Screen::print_state(state);
+            Screen::print_state(state, last);
             match Screen::getch() {
-                Some(key) => Exec::exec(key, state),
+                Some(key) => {
+                    last = key;
+                    Exec::exec(key, state);
+                }
                 None => return,
             }
         }
