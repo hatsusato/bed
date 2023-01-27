@@ -9,10 +9,9 @@ pub struct Command {
 }
 impl Command {
     pub fn new(inst: Inst, state: &State) -> Self {
-        let next = state.bank();
         Self {
             inst,
-            next,
+            next: state.bank(),
             page: None,
         }
     }
@@ -37,7 +36,9 @@ impl Command {
         self
     }
     fn update_error(mut self, error: bool) -> Self {
-        self.next.error = error;
+        if error {
+            self.next.error = true;
+        }
         self
     }
     fn update_page(mut self, page: Page) -> Self {
@@ -81,7 +82,7 @@ impl Command {
     }
     pub fn div(state: &State) -> Self {
         if state.data() == 0 {
-            Self::new(DivErr, state).update_error(true)
+            Self::new(Div, state).update_error(true)
         } else {
             Self::new(Div, state)
                 .update_acc(state.acc() / state.data())
@@ -151,7 +152,8 @@ impl Command {
         Self::new(Jump, state).update_block(state.data())
     }
     pub fn load(state: &State) -> Self {
-        Self::new(Load, state).update_data(state.page()[state.coord()])
+        let next = state.page()[state.coord()];
+        Self::new(Load, state).update_data(next)
     }
     pub fn store(state: &State) -> Self {
         let mut next = *state.page();
@@ -159,19 +161,18 @@ impl Command {
         Self::new(Store, state).update_page(next)
     }
     pub fn argc(state: &State) -> Self {
-        const MAX_LEN: usize = u8::MAX as usize;
-        let len = std::env::args().len();
+        let len = u8::try_from(std::env::args().len());
         Self::new(Argc, state)
-            .update_acc(u8::try_from(len.min(MAX_LEN)).unwrap())
-            .update_error(MAX_LEN < len)
+            .update_acc(len.unwrap_or(u8::MAX))
+            .update_error(len.is_err())
     }
     pub fn argv(state: &State) -> Self {
-        if let Some(arg) = std::env::args().nth(state.acc() as usize) {
+        if let Some(arg) = std::env::args().nth(state.acc().into()) {
             let mut next = *state.page();
             let len = next.write(arg.as_bytes().iter());
             Self::new(Argv, state).update_acc(len).update_page(next)
         } else {
-            Self::new(NoArg, state).update_error(true)
+            Self::new(Argv, state).update_error(true)
         }
     }
 }
