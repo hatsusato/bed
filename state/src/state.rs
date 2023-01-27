@@ -1,5 +1,5 @@
 use crate::{Bank, State};
-use util::{Block, Page};
+use util::Page;
 
 impl State {
     pub fn new() -> Self {
@@ -9,7 +9,7 @@ impl State {
             coord: 0,
             data: 0,
             error: false,
-            memory: Block::new(Block::new(0)),
+            memory: Default::default(),
         }
     }
     pub fn restore_bank(&mut self, bank: Bank) {

@@ -7,9 +7,9 @@ const BLOCK_SIZE: usize = 1 << u8::BITS;
 pub struct Block<T> {
     block: [T; BLOCK_SIZE],
 }
-impl<T: Copy> Block<T> {
-    pub fn new(init: T) -> Self {
-        let block = [init; BLOCK_SIZE];
+impl<T: Copy + Default> Default for Block<T> {
+    fn default() -> Self {
+        let block = [Default::default(); BLOCK_SIZE];
         Self { block }
     }
 }
@@ -28,12 +28,11 @@ impl<T> IndexMut<u8> for Block<T> {
 pub type Page = Block<u8>;
 impl Page {
     pub fn write(&mut self, input: Iter<u8>) -> u8 {
-        let input: Vec<&u8> = input.take(u8::MAX as usize).collect();
-        let len = input.len() as u8;
-        input
-            .into_iter()
-            .enumerate()
-            .for_each(|(i, &src)| self[i as u8] = src);
+        let mut len = 0;
+        self.block.iter_mut().zip(input).for_each(|(dst, src)| {
+            *dst = *src;
+            len += 1;
+        });
         len
     }
 }
