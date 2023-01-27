@@ -35,7 +35,7 @@ impl Screen {
         Self::move_cursor(u16::from(x) * CELL_WIDTH, u16::from(y) + LINE_OFFSET);
         let index = x + y * BLOCK_SIDE;
         let msg = format!("{:02x}", page[index]);
-        if state.coord == index {
+        if state.coord() == index {
             Self::print_highlight(msg);
         } else {
             Self::print_string(msg);

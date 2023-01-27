@@ -12,12 +12,12 @@ pub struct Bank {
 
 #[derive(Default)]
 pub struct State {
-    pub acc: u8,
-    pub block: u8,
-    pub coord: u8,
-    pub data: u8,
-    pub error: bool,
-    pub memory: Block<Page>,
+    acc: u8,
+    block: u8,
+    coord: u8,
+    data: u8,
+    error: bool,
+    memory: Block<Page>,
 }
 
 impl State {
