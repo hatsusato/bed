@@ -5,11 +5,16 @@ use util::{Page, BLOCK_SIDE};
 pub struct Command {
     pub inst: Inst,
     pub next: Bank,
+    pub page: Option<Page>,
 }
 impl Command {
     pub fn new(inst: Inst, state: &State) -> Self {
         let next = state.bank();
-        Self { inst, next }
+        Self {
+            inst,
+            next,
+            page: None,
+        }
     }
     fn update_reg(mut self, reg: u16) -> Self {
         [self.next.data, self.next.acc] = reg.to_be_bytes();
@@ -36,7 +41,7 @@ impl Command {
         self
     }
     fn update_page(mut self, page: Page) -> Self {
-        self.next.page = Some(page);
+        self.page = Some(page);
         self
     }
     pub fn imm(state: &State, digit: u8) -> Self {
