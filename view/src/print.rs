@@ -1,8 +1,8 @@
 use crate::screen::Screen;
 use state::State;
+use util::BLOCK_SIDE;
 
 const CELL_WIDTH: u16 = 3;
-const LINE_COUNT: u16 = 16;
 const LINE_OFFSET: u16 = 1;
 
 impl Screen {
@@ -25,15 +25,15 @@ impl Screen {
         ));
     }
     fn print_page(state: &State) {
-        (0..16).for_each(|y| Self::print_line(state, y));
+        (0..BLOCK_SIDE).for_each(|y| Self::print_line(state, y));
     }
-    fn print_line(state: &State, y: u16) {
-        (0..16).for_each(|x| Self::print_cell(state, x, y));
+    fn print_line(state: &State, y: u8) {
+        (0..BLOCK_SIDE).for_each(|x| Self::print_cell(state, x, y));
     }
-    fn print_cell(state: &State, x: u16, y: u16) {
+    fn print_cell(state: &State, x: u8, y: u8) {
         let page = state.page();
-        Self::move_cursor(x * CELL_WIDTH, y + LINE_OFFSET);
-        let index = u8::try_from(x + y * LINE_COUNT).unwrap();
+        Self::move_cursor(u16::from(x) * CELL_WIDTH, u16::from(y) + LINE_OFFSET);
+        let index = x + y * BLOCK_SIDE;
         let msg = format!("{:02x}", page[index]);
         if state.coord == index {
             Self::print_highlight(msg);

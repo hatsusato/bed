@@ -2,6 +2,7 @@ use std::ops::{Index, IndexMut};
 use std::slice::Iter;
 
 const BLOCK_SIZE: usize = 1 << u8::BITS;
+pub const BLOCK_SIDE: u8 = 1 << (u8::BITS / 2);
 
 #[derive(Clone, Copy)]
 pub struct Block<T> {

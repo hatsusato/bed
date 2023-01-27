@@ -1,8 +1,6 @@
 use inst::Inst::{self, *};
 use state::{Bank, State};
-use util::Page;
-
-const BLOCK_SIDE: u8 = 16;
+use util::{Page, BLOCK_SIDE};
 
 pub struct Command {
     pub inst: Inst,
