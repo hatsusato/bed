@@ -1,18 +1,19 @@
-use crate::{Bank, State};
+use crate::Bank;
+use util::Block;
 use util::Page;
 
+#[derive(Default)]
+pub struct State {
+    pub acc: u8,
+    pub block: u8,
+    pub coord: u8,
+    pub data: u8,
+    pub error: bool,
+    pub memory: Block<Page>,
+}
+
 impl State {
-    pub fn new() -> Self {
-        Self {
-            acc: 0,
-            block: 0,
-            coord: 0,
-            data: 0,
-            error: false,
-            memory: Default::default(),
-        }
-    }
-    pub fn restore_bank(&mut self, bank: Bank) {
+    pub fn restore_bank(&mut self, bank: &Bank) {
         self.acc = bank.acc;
         self.block = bank.block;
         self.coord = bank.coord;
@@ -54,7 +55,7 @@ impl State {
         (self.data, self.acc) = (trunc(val >> u8::BITS), trunc(val));
     }
     pub fn get_reg(&self) -> u16 {
-        (self.data as u16) << u8::BITS | (self.acc as u16)
+        u16::from(self.data) << u8::BITS | u16::from(self.acc)
     }
     pub fn raise(&mut self) {
         self.error = true;

@@ -11,7 +11,7 @@ impl Editor {
     pub fn new() -> Self {
         Self {
             _screen: Screen::new(),
-            state: Cell::new(State::new()),
+            state: Cell::new(Default::default()),
         }
     }
     pub fn run(&mut self) {
