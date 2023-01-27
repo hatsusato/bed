@@ -1,11 +1,9 @@
 use crate::cmd::Command;
 use state::State;
 
+#[derive(Default)]
 pub struct Exec {}
 impl Exec {
-    pub fn new() -> Self {
-        Self {}
-    }
     pub fn exec(key: char, state: &mut State) {
         let cmd = match key {
             '\n' => return,
@@ -71,10 +69,10 @@ impl Exec {
 }
 
 fn translate_hex_digit(key: char) -> u8 {
-    const ZERO: u8 = '0' as u8;
-    const A: u8 = 'a' as u8;
+    const ZERO: u8 = b'0';
+    const A: u8 = b'a';
     match key {
-        '0'..='9' => key as u8 - ZERO + 0,
+        '0'..='9' => key as u8 - ZERO,
         'a'..='f' => key as u8 - A + 0xA,
         _ => unreachable!(),
     }

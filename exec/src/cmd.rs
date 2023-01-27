@@ -14,7 +14,7 @@ impl Command {
         Self { inst, next }
     }
     fn update_reg(mut self, reg: u16) -> Self {
-        (self.next.data, self.next.acc) = split(reg);
+        [self.next.data, self.next.acc] = reg.to_be_bytes();
         self
     }
     fn update_acc(mut self, acc: u8) -> Self {
@@ -65,15 +65,15 @@ impl Command {
         Self::new(Dec, state).update_acc(next)
     }
     pub fn add(state: &State) -> Self {
-        let next = (state.acc as u16) + (state.data as u16);
+        let next = u16::from(state.acc) + u16::from(state.data);
         Self::new(Add, state).update_reg(next)
     }
     pub fn sub(state: &State) -> Self {
-        let (next, _) = (state.acc as u16).overflowing_sub(state.data as u16);
+        let (next, _) = u16::from(state.acc).overflowing_sub(state.data.into());
         Self::new(Sub, state).update_reg(next)
     }
     pub fn mul(state: &State) -> Self {
-        let next = (state.data as u16) * (state.acc as u16);
+        let next = u16::from(state.data) * u16::from(state.acc);
         Self::new(Mul, state).update_reg(next)
     }
     pub fn div(state: &State) -> Self {
@@ -86,19 +86,19 @@ impl Command {
         }
     }
     pub fn neg(state: &State) -> Self {
-        Self::new(Neg, state).update_acc(extend(state.data == 0))
+        Self::new(Neg, state).update_acc(u8::from(state.data == 0))
     }
     pub fn bool(state: &State) -> Self {
-        Self::new(Bool, state).update_acc(extend(state.data != 0))
+        Self::new(Bool, state).update_acc(u8::from(state.data != 0))
     }
     pub fn eq(state: &State) -> Self {
-        Self::new(Eq, state).update_acc(extend(state.data == state.acc))
+        Self::new(Eq, state).update_acc(u8::from(state.data == state.acc))
     }
     pub fn lt(state: &State) -> Self {
-        Self::new(Lt, state).update_acc(extend(state.data < state.acc))
+        Self::new(Lt, state).update_acc(u8::from(state.data < state.acc))
     }
     pub fn gt(state: &State) -> Self {
-        Self::new(Gt, state).update_acc(extend(state.data > state.acc))
+        Self::new(Gt, state).update_acc(u8::from(state.data > state.acc))
     }
     pub fn not(state: &State) -> Self {
         Self::new(Not, state).update_acc(!state.data)
@@ -151,7 +151,7 @@ impl Command {
         Self::new(Load, state).update_data(state.page()[state.coord])
     }
     pub fn store(state: &State) -> Self {
-        let mut next = state.page().clone();
+        let mut next = *state.page();
         next[state.coord] = state.data;
         Self::new(Store, state).update_page(next)
     }
@@ -159,12 +159,12 @@ impl Command {
         const MAX_LEN: usize = u8::MAX as usize;
         let len = std::env::args().len();
         Self::new(Argc, state)
-            .update_acc(len.min(MAX_LEN) as u8)
+            .update_acc(u8::try_from(len.min(MAX_LEN)).unwrap())
             .update_error(MAX_LEN < len)
     }
     pub fn argv(state: &State) -> Self {
         if let Some(arg) = std::env::args().nth(state.acc as usize) {
-            let mut next = state.page().clone();
+            let mut next = *state.page();
             let len = next.write(arg.as_bytes().iter());
             Self::new(Argv, state).update_acc(len).update_page(next)
         } else {
@@ -173,27 +173,15 @@ impl Command {
     }
 }
 
-fn split(val: u16) -> (u8, u8) {
-    let hi = val >> u8::BITS;
-    let lo = val & (u8::MAX as u16);
-    (hi as u8, lo as u8)
-}
 fn combine(hi: u8, lo: u8) -> u8 {
     const SHIFT: u32 = u8::BITS / 2;
     const MASK: u8 = 0xF;
     ((hi & MASK) << SHIFT) | (lo & MASK)
 }
-fn extend(cond: bool) -> u8 {
-    if cond {
-        1
-    } else {
-        0
-    }
-}
 fn rot(val: u8, forward: bool) -> u8 {
-    let shl = if forward { 1 } else { u8::BITS - 1 };
-    let shr = u8::BITS - shl;
-    (val << shl) | (val >> shr)
+    let left = if forward { 1 } else { u8::BITS - 1 };
+    let right = u8::BITS - left;
+    (val << left) | (val >> right)
 }
 fn forward(state: &State, shift: u8) -> u8 {
     let (next, _) = state.coord.overflowing_add(shift);
