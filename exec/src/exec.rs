@@ -1,5 +1,5 @@
 use crate::cmd::Command;
-use state::State;
+use crate::State;
 
 #[derive(Clone)]
 enum Mode {

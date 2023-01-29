@@ -1,4 +1,4 @@
-use state::{Bank, State};
+use crate::{Bank, State};
 use util::{Page, BLOCK_SIDE};
 
 pub struct Command {

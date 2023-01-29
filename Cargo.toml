@@ -4,7 +4,6 @@ members = [
     "exec",
     "inst",
     "main",
-    "state",
     "screen",
     "util",
     "view",

@@ -9,5 +9,4 @@ edition = "2021"
 crossterm = "0.25.0"
 exec = { version = "0.1.0", path = "../exec" }
 screen = { version = "0.1.0", path = "../screen" }
-state = { version = "0.1.0", path = "../state" }
 util = { version = "0.1.0", path = "../util" }
