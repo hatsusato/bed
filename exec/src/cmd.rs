@@ -1,5 +1,5 @@
 use crate::{Bank, State};
-use util::{Page, BLOCK_SIDE};
+use util::Page;
 
 pub struct Command {
     pub next: Bank,
@@ -8,58 +8,19 @@ pub struct Command {
 impl Command {
     pub fn from_key(key: char, state: &State) -> Self {
         match key {
-            '\n' => (),
             '!' => return Command::neg(state),
-            '"' => (),
-            '#' => (),
             '$' => return Command::argv(state),
-            '%' => (),
             '&' => return Command::and(state),
-            '\'' => (),
-            '(' => (),
-            ')' => (),
-            '*' => (),
-            '+' => (),
-            ',' => (),
-            '-' => (),
-            '.' => (),
-            '/' => (),
-            '0'..='9' => (),
-            ':' => (),
-            ';' => (),
             '<' => return Command::lt(state),
             '=' => return Command::eq(state),
             '>' => return Command::gt(state),
             '?' => return Command::bool(state),
             '@' => return Command::argc(state),
-            'A'..='Z' => (),
             '[' => return Command::shl(state),
-            '\\' => (),
             ']' => return Command::shr(state),
             '^' => return Command::xor(state),
-            '_' => (),
-            '`' => (),
-            'a'..='f' => (),
-            'g' => return Command::goto(state),
-            'h' => return Command::left(state),
             'i' => return Command::load(state),
-            'j' => return Command::down(state),
-            'k' => return Command::up(state),
-            'l' => return Command::right(state),
-            'm' => (),
-            'n' => (),
             'o' => return Command::store(state),
-            'p' => (),
-            'q' => (),
-            'r' => (),
-            's' => (),
-            't' => return Command::jump(state),
-            'u' => (),
-            'v' => return Command::pos(state),
-            'w' => (),
-            'x' => (),
-            'y' => (),
-            'z' => (),
             '{' => return Command::rotl(state),
             '|' => return Command::or(state),
             '}' => return Command::rotr(state),
@@ -76,20 +37,8 @@ impl Command {
             page: None,
         }
     }
-    fn update_reg(mut self, reg: u16) -> Self {
-        [self.next.data, self.next.acc] = reg.to_be_bytes();
-        self
-    }
     fn update_acc(mut self, acc: u8) -> Self {
         self.next.acc = acc;
-        self
-    }
-    fn update_block(mut self, block: u8) -> Self {
-        self.next.block = block;
-        self
-    }
-    fn update_coord(mut self, coord: u8) -> Self {
-        self.next.coord = coord;
         self
     }
     fn update_data(mut self, data: u8) -> Self {
@@ -140,12 +89,12 @@ impl Command {
             '_' => (),
             '`' => (),
             'a'..='f' => self.next.imm(translate_hex_digit(key)),
-            'g' => (),
-            'h' => (),
+            'g' => self.next.goto(),
+            'h' => self.next.left(),
             'i' => (),
-            'j' => (),
-            'k' => (),
-            'l' => (),
+            'j' => self.next.down(),
+            'k' => self.next.up(),
+            'l' => self.next.right(),
             'm' => self.next.dec(),
             'n' => self.next.inc(),
             'o' => (),
@@ -153,9 +102,9 @@ impl Command {
             'q' => (),
             'r' => (),
             's' => self.next.swap(),
-            't' => (),
+            't' => self.next.jump(),
             'u' => (),
-            'v' => (),
+            'v' => self.next.pos(),
             'w' => (),
             'x' => (),
             'y' => (),
@@ -206,29 +155,6 @@ impl Command {
     pub fn rotr(state: &State) -> Self {
         Self::new(state).update_acc(rot(state.acc(), false))
     }
-    pub fn left(state: &State) -> Self {
-        Self::new(state).update_coord(backward(state, 1))
-    }
-    pub fn right(state: &State) -> Self {
-        Self::new(state).update_coord(forward(state, 1))
-    }
-    pub fn down(state: &State) -> Self {
-        Self::new(state).update_coord(forward(state, BLOCK_SIDE))
-    }
-    pub fn up(state: &State) -> Self {
-        Self::new(state).update_coord(backward(state, BLOCK_SIDE))
-    }
-    pub fn pos(state: &State) -> Self {
-        Self::new(state)
-            .update_data(state.block())
-            .update_acc(state.coord())
-    }
-    pub fn goto(state: &State) -> Self {
-        Self::new(state).update_coord(state.acc())
-    }
-    pub fn jump(state: &State) -> Self {
-        Self::new(state).update_block(state.data())
-    }
     pub fn load(state: &State) -> Self {
         let next = state.page()[state.coord()];
         Self::new(state).update_data(next)
@@ -265,14 +191,6 @@ fn rot(val: u8, forward: bool) -> u8 {
     let left = if forward { 1 } else { u8::BITS - 1 };
     let right = u8::BITS - left;
     (val << left) | (val >> right)
-}
-fn forward(state: &State, shift: u8) -> u8 {
-    let (next, _) = state.coord().overflowing_add(shift);
-    next
-}
-fn backward(state: &State, shift: u8) -> u8 {
-    let (next, _) = state.coord().overflowing_sub(shift);
-    next
 }
 
 fn translate_hex_digit(key: char) -> u8 {

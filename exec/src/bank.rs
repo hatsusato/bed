@@ -1,3 +1,5 @@
+use util::BLOCK_SIDE;
+
 #[derive(Default, Clone, Copy)]
 pub struct Bank {
     pub acc: u8,
@@ -49,6 +51,34 @@ impl Bank {
     pub fn lo(&mut self) {
         let data = self.data;
         self.update_acc(data);
+    }
+    pub fn goto(&mut self) {
+        let coord = self.acc;
+        self.update_coord(coord);
+    }
+    pub fn jump(&mut self) {
+        let block = self.data;
+        self.update_block(block);
+    }
+    pub fn pos(&mut self) {
+        let (data, acc) = (self.block, self.coord);
+        self.update_data(data).update_acc(acc);
+    }
+    pub fn left(&mut self) {
+        let (coord, _) = self.coord.overflowing_sub(1);
+        self.update_coord(coord);
+    }
+    pub fn right(&mut self) {
+        let (coord, _) = self.coord.overflowing_add(1);
+        self.update_coord(coord);
+    }
+    pub fn up(&mut self) {
+        let (coord, _) = self.coord.overflowing_sub(BLOCK_SIDE);
+        self.update_coord(coord);
+    }
+    pub fn down(&mut self) {
+        let (coord, _) = self.coord.overflowing_add(BLOCK_SIDE);
+        self.update_coord(coord);
     }
     pub fn inc(&mut self) {
         let (acc, _) = self.acc.overflowing_add(1);
