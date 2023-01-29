@@ -14,7 +14,7 @@ impl Editor {
         let mut exec = Exec::default();
         loop {
             let state = self.state.get_mut();
-            Self::print_state(state, last);
+            Exec::print_state(state, last);
             if let Some(key) = screen::Screen::getch() {
                 exec.exec(key, state);
                 last = key;

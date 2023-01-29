@@ -1,11 +1,12 @@
-use crate::Editor;
+use crate::Exec;
+use screen::Screen;
 use state::State;
 use util::BLOCK_SIDE;
 
 const CELL_WIDTH: u16 = 3;
 const LINE_OFFSET: u16 = 1;
 
-impl Editor {
+impl Exec {
     pub fn print_state(state: &State, key: char) {
         Self::print_header(
             state.data(),
@@ -32,13 +33,13 @@ impl Editor {
     }
     fn print_cell(state: &State, x: u8, y: u8) {
         let page = state.page();
-        screen::Screen::move_cursor(u16::from(x) * CELL_WIDTH, u16::from(y) + LINE_OFFSET);
+        Screen::move_cursor(u16::from(x) * CELL_WIDTH, u16::from(y) + LINE_OFFSET);
         let index = x + y * BLOCK_SIDE;
         let msg = format!("{:02x}", page[index]);
         if state.coord() == index {
-            screen::Screen::print_highlight(msg);
+            Screen::print_highlight(msg);
         } else {
-            screen::Screen::print_display(msg);
+            Screen::print_display(msg);
         }
     }
 }
