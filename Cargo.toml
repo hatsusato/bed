@@ -5,6 +5,7 @@ members = [
     "inst",
     "main",
     "state",
+    "screen",
     "util",
     "view",
 ]
