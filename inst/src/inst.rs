@@ -9,7 +9,6 @@ pub enum Inst {
     Sub,
     Mul,
     Div,
-    DivErr,
     Neg,
     Bool,
     Eq,
@@ -34,7 +33,6 @@ pub enum Inst {
     Store,
     Argc,
     Argv,
-    NoArg,
     Esc,
     Nop,
 }

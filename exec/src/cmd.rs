@@ -1,9 +1,7 @@
-use inst::Inst::{self, *};
 use state::{Bank, State};
 use util::{Page, BLOCK_SIDE};
 
 pub struct Command {
-    pub inst: Inst,
     pub next: Bank,
     pub page: Option<Page>,
 }
@@ -68,11 +66,10 @@ impl Command {
             '~' => return Command::not(state),
             _ => (),
         }
-        Command::new(Inst::Nop, state)
+        Command::new(state)
     }
-    pub fn new(inst: Inst, state: &State) -> Self {
+    pub fn new(state: &State) -> Self {
         Self {
-            inst,
             next: state.bank(),
             page: None,
         }
@@ -109,122 +106,122 @@ impl Command {
     }
     pub fn imm(state: &State, digit: u8) -> Self {
         let next = combine(state.data(), digit);
-        Self::new(Imm, state).update_data(next)
+        Self::new(state).update_data(next)
     }
     pub fn swap(state: &State) -> Self {
-        Self::new(Swap, state)
+        Self::new(state)
             .update_data(state.acc())
             .update_acc(state.data())
     }
     pub fn hi(state: &State) -> Self {
-        Self::new(Hi, state).update_data(state.acc())
+        Self::new(state).update_data(state.acc())
     }
     pub fn lo(state: &State) -> Self {
-        Self::new(Lo, state).update_acc(state.data())
+        Self::new(state).update_acc(state.data())
     }
     pub fn inc(state: &State) -> Self {
         let (next, _) = state.acc().overflowing_add(1);
-        Self::new(Inc, state).update_acc(next)
+        Self::new(state).update_acc(next)
     }
     pub fn dec(state: &State) -> Self {
         let (next, _) = state.acc().overflowing_sub(1);
-        Self::new(Dec, state).update_acc(next)
+        Self::new(state).update_acc(next)
     }
     pub fn add(state: &State) -> Self {
         let next = u16::from(state.acc()) + u16::from(state.data());
-        Self::new(Add, state).update_reg(next)
+        Self::new(state).update_reg(next)
     }
     pub fn sub(state: &State) -> Self {
         let (next, _) = u16::from(state.acc()).overflowing_sub(state.data().into());
-        Self::new(Sub, state).update_reg(next)
+        Self::new(state).update_reg(next)
     }
     pub fn mul(state: &State) -> Self {
         let next = u16::from(state.data()) * u16::from(state.acc());
-        Self::new(Mul, state).update_reg(next)
+        Self::new(state).update_reg(next)
     }
     pub fn div(state: &State) -> Self {
         if state.data() == 0 {
-            Self::new(Div, state).update_error(true)
+            Self::new(state).update_error(true)
         } else {
-            Self::new(Div, state)
+            Self::new(state)
                 .update_acc(state.acc() / state.data())
                 .update_data(state.acc() % state.data())
         }
     }
     pub fn neg(state: &State) -> Self {
-        Self::new(Neg, state).update_acc(u8::from(state.data() == 0))
+        Self::new(state).update_acc(u8::from(state.data() == 0))
     }
     pub fn bool(state: &State) -> Self {
-        Self::new(Bool, state).update_acc(u8::from(state.data() != 0))
+        Self::new(state).update_acc(u8::from(state.data() != 0))
     }
     pub fn eq(state: &State) -> Self {
-        Self::new(Eq, state).update_acc(u8::from(state.data() == state.acc()))
+        Self::new(state).update_acc(u8::from(state.data() == state.acc()))
     }
     pub fn lt(state: &State) -> Self {
-        Self::new(Lt, state).update_acc(u8::from(state.data() < state.acc()))
+        Self::new(state).update_acc(u8::from(state.data() < state.acc()))
     }
     pub fn gt(state: &State) -> Self {
-        Self::new(Gt, state).update_acc(u8::from(state.data() > state.acc()))
+        Self::new(state).update_acc(u8::from(state.data() > state.acc()))
     }
     pub fn not(state: &State) -> Self {
-        Self::new(Not, state).update_acc(!state.data())
+        Self::new(state).update_acc(!state.data())
     }
     pub fn and(state: &State) -> Self {
-        Self::new(And, state).update_acc(state.data() & state.acc())
+        Self::new(state).update_acc(state.data() & state.acc())
     }
     pub fn or(state: &State) -> Self {
-        Self::new(Or, state).update_acc(state.data() | state.acc())
+        Self::new(state).update_acc(state.data() | state.acc())
     }
     pub fn xor(state: &State) -> Self {
-        Self::new(Xor, state).update_acc(state.data() ^ state.acc())
+        Self::new(state).update_acc(state.data() ^ state.acc())
     }
     pub fn shl(state: &State) -> Self {
-        Self::new(Shl, state).update_acc(state.acc() << 1)
+        Self::new(state).update_acc(state.acc() << 1)
     }
     pub fn shr(state: &State) -> Self {
-        Self::new(Shr, state).update_acc(state.acc() >> 1)
+        Self::new(state).update_acc(state.acc() >> 1)
     }
     pub fn rotl(state: &State) -> Self {
-        Self::new(Rotl, state).update_acc(rot(state.acc(), true))
+        Self::new(state).update_acc(rot(state.acc(), true))
     }
     pub fn rotr(state: &State) -> Self {
-        Self::new(Rotr, state).update_acc(rot(state.acc(), false))
+        Self::new(state).update_acc(rot(state.acc(), false))
     }
     pub fn left(state: &State) -> Self {
-        Self::new(Left, state).update_coord(backward(state, 1))
+        Self::new(state).update_coord(backward(state, 1))
     }
     pub fn right(state: &State) -> Self {
-        Self::new(Right, state).update_coord(forward(state, 1))
+        Self::new(state).update_coord(forward(state, 1))
     }
     pub fn down(state: &State) -> Self {
-        Self::new(Down, state).update_coord(forward(state, BLOCK_SIDE))
+        Self::new(state).update_coord(forward(state, BLOCK_SIDE))
     }
     pub fn up(state: &State) -> Self {
-        Self::new(Up, state).update_coord(backward(state, BLOCK_SIDE))
+        Self::new(state).update_coord(backward(state, BLOCK_SIDE))
     }
     pub fn pos(state: &State) -> Self {
-        Self::new(Pos, state)
+        Self::new(state)
             .update_data(state.block())
             .update_acc(state.coord())
     }
     pub fn goto(state: &State) -> Self {
-        Self::new(Goto, state).update_coord(state.acc())
+        Self::new(state).update_coord(state.acc())
     }
     pub fn jump(state: &State) -> Self {
-        Self::new(Jump, state).update_block(state.data())
+        Self::new(state).update_block(state.data())
     }
     pub fn load(state: &State) -> Self {
         let next = state.page()[state.coord()];
-        Self::new(Load, state).update_data(next)
+        Self::new(state).update_data(next)
     }
     pub fn store(state: &State) -> Self {
         let mut next = *state.page();
         next[state.coord()] = state.data();
-        Self::new(Store, state).update_page(next)
+        Self::new(state).update_page(next)
     }
     pub fn argc(state: &State) -> Self {
         let len = u8::try_from(std::env::args().len());
-        Self::new(Argc, state)
+        Self::new(state)
             .update_acc(len.unwrap_or(u8::MAX))
             .update_error(len.is_err())
     }
@@ -232,15 +229,15 @@ impl Command {
         if let Some(arg) = std::env::args().nth(state.acc().into()) {
             let mut next = *state.page();
             let len = next.write(arg.as_bytes().iter());
-            Self::new(Argv, state).update_acc(len).update_page(next)
+            Self::new(state).update_acc(len).update_page(next)
         } else {
-            Self::new(Argv, state).update_error(true)
+            Self::new(state).update_error(true)
         }
     }
     pub fn esc(state: &State, key: char) -> Self {
         match u8::try_from(key) {
-            Ok(data) => Self::new(Esc, state).update_data(data),
-            Err(_) => Self::new(Esc, state),
+            Ok(data) => Self::new(state).update_data(data),
+            Err(_) => Self::new(state),
         }
     }
 }
