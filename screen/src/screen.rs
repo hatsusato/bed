@@ -77,6 +77,10 @@ impl Screen {
             Attribute::NoReverse
         ));
     }
+    pub fn move_cursor(x: u16, y: u16) {
+        use cursor::MoveTo;
+        queue(MoveTo(x, y));
+    }
 }
 
 fn execute(cmd: impl Command) {

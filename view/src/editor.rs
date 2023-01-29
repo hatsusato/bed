@@ -1,5 +1,5 @@
-use crate::screen::Screen;
 use exec::Exec;
+use screen::Screen;
 use state::State;
 use std::cell::Cell;
 
@@ -14,7 +14,7 @@ impl Editor {
         let mut exec = Exec::default();
         loop {
             let state = self.state.get_mut();
-            Screen::print_state(state, last);
+            Self::print_state(state, last);
             if let Some(key) = screen::Screen::getch() {
                 exec.exec(key, state);
                 last = key;
