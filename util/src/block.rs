@@ -25,10 +25,8 @@ impl<T> IndexMut<u8> for Block<T> {
         &mut self.block[usize::from(index)]
     }
 }
-
-pub type Page = Block<u8>;
-impl Page {
-    pub fn write(&mut self, input: Iter<u8>) -> u8 {
+impl<T: Copy> Block<T> {
+    pub fn write(&mut self, input: Iter<T>) -> u8 {
         let mut len = 0;
         self.block.iter_mut().zip(input).for_each(|(dst, src)| {
             *dst = *src;
@@ -37,3 +35,5 @@ impl Page {
         len
     }
 }
+
+pub type Page = Block<u8>;
