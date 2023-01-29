@@ -15,7 +15,7 @@ impl Editor {
         loop {
             let state = self.state.get_mut();
             Screen::print_state(state, last);
-            if let Some(key) = Screen::getch() {
+            if let Some(key) = screen::Screen::getch() {
                 exec.exec(key, state);
                 last = key;
             } else {

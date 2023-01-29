@@ -4,26 +4,26 @@ use event::{Event, KeyCode};
 struct AlternateScreen {}
 impl Default for AlternateScreen {
     fn default() -> Self {
-        execute(terminal::EnterAlternateScreen);
+        Screen::execute(terminal::EnterAlternateScreen);
         Self {}
     }
 }
 impl Drop for AlternateScreen {
     fn drop(&mut self) {
-        execute(terminal::LeaveAlternateScreen);
+        Screen::execute(terminal::LeaveAlternateScreen);
     }
 }
 
 struct HideCursor {}
 impl Default for HideCursor {
     fn default() -> Self {
-        execute(cursor::Hide);
+        Screen::execute(cursor::Hide);
         Self {}
     }
 }
 impl Drop for HideCursor {
     fn drop(&mut self) {
-        execute(cursor::Show);
+        Screen::execute(cursor::Show);
     }
 }
 
@@ -46,22 +46,23 @@ pub struct Screen {
     _hide_cursor: HideCursor,
     _raw_mode: RawMode,
 }
-fn execute(cmd: impl Command) {
-    use crossterm::ExecutableCommand;
-    std::io::stdout().execute(cmd).unwrap();
-}
-
-pub fn getch() -> Option<char> {
-    use Event::Key;
-    use KeyCode::{Char, Enter, Tab};
-    if let Ok(Key(key)) = event::read() {
-        match key.code {
-            Char(c) => Some(c),
-            Enter => Some('\n'),
-            Tab => Some('\t'),
-            _ => None,
+impl Screen {
+    fn execute(cmd: impl Command) {
+        use crossterm::ExecutableCommand;
+        std::io::stdout().execute(cmd).unwrap();
+    }
+    pub fn getch() -> Option<char> {
+        use Event::Key;
+        use KeyCode::{Char, Enter, Tab};
+        if let Ok(Key(key)) = event::read() {
+            match key.code {
+                Char(c) => Some(c),
+                Enter => Some('\n'),
+                Tab => Some('\t'),
+                _ => None,
+            }
+        } else {
+            None
         }
-    } else {
-        None
     }
 }

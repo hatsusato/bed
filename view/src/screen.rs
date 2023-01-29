@@ -1,4 +1,4 @@
-use crossterm::{cursor, event, style, terminal, Command};
+use crossterm::{cursor, style, terminal, Command};
 
 struct AlternateScreen {}
 impl Default for AlternateScreen {
@@ -60,20 +60,6 @@ impl Screen {
     pub fn move_cursor(x: u16, y: u16) {
         use cursor::MoveTo;
         Self::queue(MoveTo(x, y));
-    }
-    pub fn getch() -> Option<char> {
-        use event::Event::Key;
-        use event::KeyCode::{Char, Enter, Tab};
-        if let Ok(Key(key)) = event::read() {
-            Some(match key.code {
-                Char(c) => c,
-                Enter => '\n',
-                Tab => '\t',
-                _ => return None,
-            })
-        } else {
-            None
-        }
     }
     fn queue(cmd: impl Command) {
         use crossterm::QueueableCommand;
