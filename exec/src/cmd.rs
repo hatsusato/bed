@@ -175,6 +175,12 @@ impl Command {
             Self::new(Argv, state).update_error(true)
         }
     }
+    pub fn esc(state: &State, key: char) -> Self {
+        match u8::try_from(key) {
+            Ok(data) => Self::new(Esc, state).update_data(data),
+            Err(_) => Self::new(Esc, state),
+        }
+    }
 }
 
 fn combine(hi: u8, lo: u8) -> u8 {

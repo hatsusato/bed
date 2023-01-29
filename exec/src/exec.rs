@@ -6,6 +6,7 @@ enum Mode {
     Normal,
     Ignore,
     Quote(String),
+    Escape,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -21,10 +22,12 @@ pub struct Exec {
 }
 impl Exec {
     pub fn exec(&mut self, key: char) {
+        use Mode::{Escape, Ignore, Normal, Quote};
         match self.mode.clone() {
-            Mode::Normal => self.exec_normal(key),
-            Mode::Ignore => self.exec_ignore(key),
-            Mode::Quote(quote) => self.exec_quote(key, quote),
+            Normal => self.exec_normal(key),
+            Ignore => self.exec_ignore(key),
+            Quote(quote) => self.exec_quote(key, quote),
+            Escape => self.exec_escape(key),
         }
         self.last = key;
     }
@@ -33,6 +36,7 @@ impl Exec {
             '\n' => self.mode = Mode::Normal,
             '#' => self.mode = Mode::Ignore,
             '"' => self.mode = Mode::Quote(String::new()),
+            '\'' => self.mode = Mode::Escape,
             _ => self.exec_cmd(key),
         }
     }
@@ -54,6 +58,11 @@ impl Exec {
     }
     fn exec_quoted(&mut self, quote: &str) {
         quote.chars().for_each(|key| self.exec_cmd(key));
+    }
+    fn exec_escape(&mut self, key: char) {
+        let cmd = cmd::Command::esc(&self.state, key);
+        self.state.restore_bank(cmd.next);
+        self.mode = Mode::Normal;
     }
     fn exec_cmd(&mut self, key: char) {
         use cmd::Command;

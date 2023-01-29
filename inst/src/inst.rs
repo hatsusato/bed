@@ -35,5 +35,6 @@ pub enum Inst {
     Argc,
     Argv,
     NoArg,
+    Esc,
     Nop,
 }
