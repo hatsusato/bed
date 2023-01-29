@@ -10,12 +10,10 @@ impl Command {
         match key {
             '$' => return Command::argv(state),
             '@' => return Command::argc(state),
-            'i' => return Command::load(state),
-            'o' => return Command::store(state),
             _ => (),
         }
         let mut result = Command::new(state);
-        result.update_key(key);
+        result.update_key(key, state);
         result
     }
     pub fn new(state: &State) -> Self {
@@ -42,7 +40,7 @@ impl Command {
         self.page = Some(page);
         self
     }
-    fn update_key(&mut self, key: char) {
+    fn update_key(&mut self, key: char, state: &State) {
         match key {
             '\n' => (),
             '!' => self.next.neg(),
@@ -68,7 +66,7 @@ impl Command {
             '>' => self.next.gt(),
             '?' => self.next.bool(),
             '@' => (),
-            'A'..='Z' => self.update_key(key.to_ascii_lowercase()),
+            'A'..='Z' => self.update_key(key.to_ascii_lowercase(), state),
             '[' => self.next.shl(),
             '\\' => (),
             ']' => self.next.shr(),
@@ -78,13 +76,13 @@ impl Command {
             'a'..='f' => self.next.imm(translate_hex_digit(key)),
             'g' => self.next.goto(),
             'h' => self.next.left(),
-            'i' => (),
+            'i' => self.load(state.page()),
             'j' => self.next.down(),
             'k' => self.next.up(),
             'l' => self.next.right(),
             'm' => self.next.dec(),
             'n' => self.next.inc(),
-            'o' => (),
+            'o' => self.store(*state.page()),
             'p' => (),
             'q' => (),
             'r' => (),
@@ -103,14 +101,12 @@ impl Command {
             _ => (),
         }
     }
-    pub fn load(state: &State) -> Self {
-        let next = state.page()[state.coord()];
-        Self::new(state).update_data(next)
+    pub fn load(&mut self, page: &Page) {
+        self.next.data = page[self.next.coord];
     }
-    pub fn store(state: &State) -> Self {
-        let mut next = *state.page();
-        next[state.coord()] = state.data();
-        Self::new(state).update_page(next)
+    pub fn store(&mut self, mut page: Page) {
+        page[self.next.coord] = self.next.data;
+        self.page = Some(page);
     }
     pub fn argc(state: &State) -> Self {
         let len = u8::try_from(std::env::args().len());
