@@ -8,23 +8,10 @@ pub struct Command {
 impl Command {
     pub fn from_key(key: char, state: &State) -> Self {
         match key {
-            '!' => return Command::neg(state),
             '$' => return Command::argv(state),
-            '&' => return Command::and(state),
-            '<' => return Command::lt(state),
-            '=' => return Command::eq(state),
-            '>' => return Command::gt(state),
-            '?' => return Command::bool(state),
             '@' => return Command::argc(state),
-            '[' => return Command::shl(state),
-            ']' => return Command::shr(state),
-            '^' => return Command::xor(state),
             'i' => return Command::load(state),
             'o' => return Command::store(state),
-            '{' => return Command::rotl(state),
-            '|' => return Command::or(state),
-            '}' => return Command::rotr(state),
-            '~' => return Command::not(state),
             _ => (),
         }
         let mut result = Command::new(state);
@@ -58,12 +45,12 @@ impl Command {
     fn update_key(&mut self, key: char) {
         match key {
             '\n' => (),
-            '!' => (),
+            '!' => self.next.neg(),
             '"' => (),
             '#' => (),
             '$' => (),
             '%' => (),
-            '&' => (),
+            '&' => self.next.and(),
             '\'' => (),
             '(' => self.next.hi(),
             ')' => self.next.lo(),
@@ -76,16 +63,16 @@ impl Command {
             '0'..='9' => self.next.imm(translate_hex_digit(key)),
             ':' => (),
             ';' => (),
-            '<' => (),
-            '=' => (),
-            '>' => (),
-            '?' => (),
+            '<' => self.next.lt(),
+            '=' => self.next.eq(),
+            '>' => self.next.gt(),
+            '?' => self.next.bool(),
             '@' => (),
             'A'..='Z' => self.update_key(key.to_ascii_lowercase()),
-            '[' => (),
+            '[' => self.next.shl(),
             '\\' => (),
-            ']' => (),
-            '^' => (),
+            ']' => self.next.shr(),
+            '^' => self.next.xor(),
             '_' => (),
             '`' => (),
             'a'..='f' => self.next.imm(translate_hex_digit(key)),
@@ -109,51 +96,12 @@ impl Command {
             'x' => (),
             'y' => (),
             'z' => (),
-            '{' => (),
-            '|' => (),
-            '}' => (),
-            '~' => (),
+            '{' => self.next.rotl(),
+            '|' => self.next.or(),
+            '}' => self.next.rotr(),
+            '~' => self.next.not(),
             _ => (),
         }
-    }
-    pub fn neg(state: &State) -> Self {
-        Self::new(state).update_acc(u8::from(state.data() == 0))
-    }
-    pub fn bool(state: &State) -> Self {
-        Self::new(state).update_acc(u8::from(state.data() != 0))
-    }
-    pub fn eq(state: &State) -> Self {
-        Self::new(state).update_acc(u8::from(state.data() == state.acc()))
-    }
-    pub fn lt(state: &State) -> Self {
-        Self::new(state).update_acc(u8::from(state.data() < state.acc()))
-    }
-    pub fn gt(state: &State) -> Self {
-        Self::new(state).update_acc(u8::from(state.data() > state.acc()))
-    }
-    pub fn not(state: &State) -> Self {
-        Self::new(state).update_acc(!state.data())
-    }
-    pub fn and(state: &State) -> Self {
-        Self::new(state).update_acc(state.data() & state.acc())
-    }
-    pub fn or(state: &State) -> Self {
-        Self::new(state).update_acc(state.data() | state.acc())
-    }
-    pub fn xor(state: &State) -> Self {
-        Self::new(state).update_acc(state.data() ^ state.acc())
-    }
-    pub fn shl(state: &State) -> Self {
-        Self::new(state).update_acc(state.acc() << 1)
-    }
-    pub fn shr(state: &State) -> Self {
-        Self::new(state).update_acc(state.acc() >> 1)
-    }
-    pub fn rotl(state: &State) -> Self {
-        Self::new(state).update_acc(rot(state.acc(), true))
-    }
-    pub fn rotr(state: &State) -> Self {
-        Self::new(state).update_acc(rot(state.acc(), false))
     }
     pub fn load(state: &State) -> Self {
         let next = state.page()[state.coord()];
@@ -185,12 +133,6 @@ impl Command {
             Err(_) => Self::new(state),
         }
     }
-}
-
-fn rot(val: u8, forward: bool) -> u8 {
-    let left = if forward { 1 } else { u8::BITS - 1 };
-    let right = u8::BITS - left;
-    (val << left) | (val >> right)
 }
 
 fn translate_hex_digit(key: char) -> u8 {

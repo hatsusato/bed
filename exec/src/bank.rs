@@ -107,6 +107,58 @@ impl Bank {
         }
         self.set_error(self.data == 0);
     }
+    pub fn neg(&mut self) {
+        let acc = u8::from(self.data == 0);
+        self.update_acc(acc);
+    }
+    pub fn bool(&mut self) {
+        let acc = u8::from(self.data != 0);
+        self.update_acc(acc);
+    }
+    pub fn eq(&mut self) {
+        let acc = u8::from(self.data == self.acc);
+        self.update_acc(acc);
+    }
+    pub fn lt(&mut self) {
+        let acc = u8::from(self.data < self.acc);
+        self.update_acc(acc);
+    }
+    pub fn gt(&mut self) {
+        let acc = u8::from(self.data > self.acc);
+        self.update_acc(acc);
+    }
+    pub fn not(&mut self) {
+        let acc = !self.acc;
+        self.update_acc(acc);
+    }
+    pub fn and(&mut self) {
+        let acc = self.data & self.acc;
+        self.update_acc(acc);
+    }
+    pub fn or(&mut self) {
+        let acc = self.data | self.acc;
+        self.update_acc(acc);
+    }
+    pub fn xor(&mut self) {
+        let acc = self.data ^ self.acc;
+        self.update_acc(acc);
+    }
+    pub fn shl(&mut self) {
+        let (acc, _) = self.acc.overflowing_shl(1);
+        self.update_acc(acc);
+    }
+    pub fn shr(&mut self) {
+        let (acc, _) = self.acc.overflowing_shr(1);
+        self.update_acc(acc);
+    }
+    pub fn rotl(&mut self) {
+        let acc = rot(self.acc, true);
+        self.update_acc(acc);
+    }
+    pub fn rotr(&mut self) {
+        let acc = rot(self.acc, false);
+        self.update_acc(acc);
+    }
 }
 
 const NIBBLE_SHIFT: u32 = u8::BITS / 2;
@@ -116,4 +168,9 @@ fn nibble_cast(bits: u8) -> u8 {
 }
 fn nibble_combine(hi: u8, lo: u8) -> u8 {
     (nibble_cast(hi) << NIBBLE_SHIFT) | (nibble_cast(lo))
+}
+fn rot(val: u8, forward: bool) -> u8 {
+    let left = if forward { 1 } else { u8::BITS - 1 };
+    let right = u8::BITS - left;
+    (val << left) | (val >> right)
 }
