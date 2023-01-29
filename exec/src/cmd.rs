@@ -104,20 +104,89 @@ impl Command {
         self.page = Some(page);
         self
     }
+    fn update_key(&mut self, key: char) {
+        match key {
+            '\n' => (),
+            '!' => (),
+            '"' => (),
+            '#' => (),
+            '$' => (),
+            '%' => (),
+            '&' => (),
+            '\'' => (),
+            '(' => self.next.hi(),
+            ')' => self.next.lo(),
+            '*' => (),
+            '+' => (),
+            ',' => (),
+            '-' => (),
+            '.' => (),
+            '/' => (),
+            '0'..='9' => self.next.imm(translate_hex_digit(key)),
+            ':' => (),
+            ';' => (),
+            '<' => (),
+            '=' => (),
+            '>' => (),
+            '?' => (),
+            '@' => (),
+            'A'..='Z' => self.update_key(key.to_ascii_lowercase()),
+            '[' => (),
+            '\\' => (),
+            ']' => (),
+            '^' => (),
+            '_' => (),
+            '`' => (),
+            'a'..='f' => self.next.imm(translate_hex_digit(key)),
+            'g' => (),
+            'h' => (),
+            'i' => (),
+            'j' => (),
+            'k' => (),
+            'l' => (),
+            'm' => (),
+            'n' => (),
+            'o' => (),
+            'p' => (),
+            'q' => (),
+            'r' => (),
+            's' => self.next.swap(),
+            't' => (),
+            'u' => (),
+            'v' => (),
+            'w' => (),
+            'x' => (),
+            'y' => (),
+            'z' => (),
+            '{' => (),
+            '|' => (),
+            '}' => (),
+            '~' => (),
+            _ => (),
+        }
+    }
     fn from_bank(next: Bank) -> Self {
         Self { next, page: None }
     }
     pub fn imm(state: &State, digit: u8) -> Self {
-        Self::from_bank(state.bank().imm(digit))
+        let mut bank = state.bank();
+        bank.imm(digit);
+        Self::from_bank(bank)
     }
     pub fn swap(state: &State) -> Self {
-        Self::from_bank(state.bank().swap())
+        let mut bank = state.bank();
+        bank.swap();
+        Self::from_bank(bank)
     }
     pub fn hi(state: &State) -> Self {
-        Self::from_bank(state.bank().hi())
+        let mut bank = state.bank();
+        bank.hi();
+        Self::from_bank(bank)
     }
     pub fn lo(state: &State) -> Self {
-        Self::from_bank(state.bank().lo())
+        let mut bank = state.bank();
+        bank.lo();
+        Self::from_bank(bank)
     }
     pub fn inc(state: &State) -> Self {
         let (next, _) = state.acc().overflowing_add(1);
