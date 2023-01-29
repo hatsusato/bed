@@ -1,10 +1,24 @@
 use crate::cmd::Command;
 use state::State;
 
+enum Mode {
+    Normal,
+}
+impl Default for Mode {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
 #[derive(Default)]
-pub struct Exec {}
+pub struct Exec {
+    _mode: Mode,
+}
 impl Exec {
     pub fn exec(key: char, state: &mut State) {
+        Self::exec_cmd(key, state);
+    }
+    fn exec_cmd(key: char, state: &mut State) {
         let cmd = match key {
             '\n' => return,
             '!' => Command::neg(state),
