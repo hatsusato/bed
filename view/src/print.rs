@@ -19,7 +19,7 @@ impl Screen {
     }
     fn print_header(data: u8, acc: u8, block: u8, coord: u8, error: u8, key: char) {
         Self::move_cursor(0, 0);
-        Self::print_string(format!(
+        screen::Screen::print_display(format!(
             "D: {:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}, KEY: {}",
             data, acc, block, coord, error, key
         ));
@@ -36,9 +36,9 @@ impl Screen {
         let index = x + y * BLOCK_SIDE;
         let msg = format!("{:02x}", page[index]);
         if state.coord() == index {
-            Self::print_highlight(msg);
+            screen::Screen::print_highlight(msg);
         } else {
-            Self::print_string(msg);
+            screen::Screen::print_display(msg);
         }
     }
 }

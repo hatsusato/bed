@@ -1,29 +1,29 @@
-use crossterm::{cursor, event, terminal, Command};
-use event::{Event, KeyCode};
+use crossterm::{cursor, event, style, terminal, Command};
+use std::fmt::Display;
 
 struct AlternateScreen {}
 impl Default for AlternateScreen {
     fn default() -> Self {
-        Screen::execute(terminal::EnterAlternateScreen);
+        execute(terminal::EnterAlternateScreen);
         Self {}
     }
 }
 impl Drop for AlternateScreen {
     fn drop(&mut self) {
-        Screen::execute(terminal::LeaveAlternateScreen);
+        execute(terminal::LeaveAlternateScreen);
     }
 }
 
 struct HideCursor {}
 impl Default for HideCursor {
     fn default() -> Self {
-        Screen::execute(cursor::Hide);
+        execute(cursor::Hide);
         Self {}
     }
 }
 impl Drop for HideCursor {
     fn drop(&mut self) {
-        Screen::execute(cursor::Show);
+        execute(cursor::Show);
     }
 }
 
@@ -47,11 +47,9 @@ pub struct Screen {
     _raw_mode: RawMode,
 }
 impl Screen {
-    fn execute(cmd: impl Command) {
-        use crossterm::ExecutableCommand;
-        std::io::stdout().execute(cmd).unwrap();
-    }
+    #[must_use]
     pub fn getch() -> Option<char> {
+        use event::{Event, KeyCode};
         use Event::Key;
         use KeyCode::{Char, Enter, Tab};
         if let Ok(Key(key)) = event::read() {
@@ -65,4 +63,31 @@ impl Screen {
             None
         }
     }
+    pub fn print_display(disp: impl Display) {
+        use style::Print;
+        queue(Print(disp));
+        flush();
+    }
+    pub fn print_highlight(disp: impl Display) {
+        use style::Attribute;
+        Self::print_display(format!(
+            "{}{}{}",
+            Attribute::Reverse,
+            disp,
+            Attribute::NoReverse
+        ));
+    }
+}
+
+fn execute(cmd: impl Command) {
+    use crossterm::ExecutableCommand;
+    std::io::stdout().execute(cmd).unwrap();
+}
+fn queue(cmd: impl Command) {
+    use crossterm::QueueableCommand;
+    std::io::stdout().queue(cmd).unwrap();
+}
+fn flush() {
+    use std::io::Write;
+    std::io::stdout().flush().unwrap();
 }
