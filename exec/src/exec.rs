@@ -1,4 +1,4 @@
-use crate::cmd::Command;
+use crate::{cmd, print};
 use state::State;
 
 #[derive(Clone)]
@@ -7,15 +7,18 @@ enum Mode {
     Ignore,
     Quote(String),
 }
-impl Default for Mode {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
 
-#[derive(Default)]
 pub struct Exec {
     mode: Mode,
+    last: char,
+}
+impl Default for Exec {
+    fn default() -> Self {
+        Self {
+            mode: Mode::Normal,
+            last: ' ',
+        }
+    }
 }
 impl Exec {
     pub fn exec(&mut self, key: char, state: &mut State) {
@@ -24,6 +27,7 @@ impl Exec {
             Mode::Ignore => self.exec_ignore(key),
             Mode::Quote(quote) => self.exec_quote(key, state, quote),
         }
+        self.last = key;
     }
     fn exec_normal(&mut self, key: char, state: &mut State) {
         match key {
@@ -53,6 +57,7 @@ impl Exec {
         quote.chars().for_each(|key| Self::exec_cmd(key, state));
     }
     fn exec_cmd(key: char, state: &mut State) {
+        use cmd::Command;
         let cmd = match key {
             '\n' => unreachable!(),
             '!' => Command::neg(state),
@@ -114,6 +119,9 @@ impl Exec {
         };
         state.restore_bank(cmd.next);
         state.restore_page(cmd.page);
+    }
+    pub fn print(&self, state: &State) {
+        print::print_state(state, self.last);
     }
 }
 

@@ -10,14 +10,12 @@ pub struct Editor {
 }
 impl Editor {
     pub fn run(&mut self) {
-        let mut last = ' ';
         let mut exec = Exec::default();
         loop {
             let state = self.state.get_mut();
-            Exec::print_state(state, last);
-            if let Some(key) = screen::Screen::getch() {
+            exec.print(state);
+            if let Some(key) = Screen::getch() {
                 exec.exec(key, state);
-                last = key;
             } else {
                 return;
             }
