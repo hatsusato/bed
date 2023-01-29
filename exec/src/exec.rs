@@ -1,9 +1,11 @@
 use crate::cmd::Command;
 use state::State;
 
+#[derive(Clone)]
 enum Mode {
     Normal,
     Ignore,
+    Quote(String),
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -17,15 +19,17 @@ pub struct Exec {
 }
 impl Exec {
     pub fn exec(&mut self, key: char, state: &mut State) {
-        match self.mode {
+        match self.mode.clone() {
             Mode::Normal => self.exec_normal(key, state),
             Mode::Ignore => self.exec_ignore(key),
+            Mode::Quote(quote) => self.exec_quote(key, state, quote),
         }
     }
     fn exec_normal(&mut self, key: char, state: &mut State) {
         match key {
             '\n' => self.mode = Mode::Normal,
             '#' => self.mode = Mode::Ignore,
+            '"' => self.mode = Mode::Quote(String::new()),
             _ => Self::exec_cmd(key, state),
         }
     }
@@ -34,11 +38,25 @@ impl Exec {
             self.mode = Mode::Normal;
         }
     }
+    fn exec_quote(&mut self, key: char, state: &mut State, quote: String) {
+        if key == '"' {
+            let count = state.acc();
+            (0..count).for_each(|_| Self::exec_quoted(&quote, state));
+            self.mode = Mode::Normal;
+        } else {
+            let mut quote = quote;
+            quote.push(key);
+            self.mode = Mode::Quote(quote);
+        }
+    }
+    fn exec_quoted(quote: &str, state: &mut State) {
+        quote.chars().for_each(|key| Self::exec_cmd(key, state));
+    }
     fn exec_cmd(key: char, state: &mut State) {
         let cmd = match key {
             '\n' => unreachable!(),
             '!' => Command::neg(state),
-            '"' => return,
+            '"' => unreachable!(),
             '#' => unreachable!(),
             '$' => Command::argv(state),
             '%' => return,
