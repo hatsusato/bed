@@ -1,4 +1,4 @@
-use crate::{cmd, print};
+use crate::cmd;
 use state::State;
 
 #[derive(Clone)]
@@ -121,7 +121,7 @@ impl Exec {
         self.state.restore_page(cmd.page);
     }
     pub fn print(&self) {
-        print::print_state(&self.state, self.last);
+        self.state.print(self.last);
     }
 }
 
