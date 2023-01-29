@@ -8,6 +8,68 @@ pub struct Command {
     pub page: Option<Page>,
 }
 impl Command {
+    pub fn from_key(key: char, state: &State) -> Self {
+        match key {
+            '\n' => (),
+            '!' => return Command::neg(state),
+            '"' => (),
+            '#' => (),
+            '$' => return Command::argv(state),
+            '%' => (),
+            '&' => return Command::and(state),
+            '\'' => (),
+            '(' => return Command::hi(state),
+            ')' => return Command::lo(state),
+            '*' => return Command::mul(state),
+            '+' => return Command::add(state),
+            ',' => (),
+            '-' => return Command::sub(state),
+            '.' => (),
+            '/' => return Command::div(state),
+            '0'..='9' => return Command::imm(state, translate_hex_digit(key)),
+            ':' => (),
+            ';' => (),
+            '<' => return Command::lt(state),
+            '=' => return Command::eq(state),
+            '>' => return Command::gt(state),
+            '?' => return Command::bool(state),
+            '@' => return Command::argc(state),
+            'A'..='Z' => return Self::from_key(key.to_ascii_lowercase(), state),
+            '[' => return Command::shl(state),
+            '\\' => (),
+            ']' => return Command::shr(state),
+            '^' => return Command::xor(state),
+            '_' => (),
+            '`' => (),
+            'a'..='f' => return Command::imm(state, translate_hex_digit(key)),
+            'g' => return Command::goto(state),
+            'h' => return Command::left(state),
+            'i' => return Command::load(state),
+            'j' => return Command::down(state),
+            'k' => return Command::up(state),
+            'l' => return Command::right(state),
+            'm' => return Command::dec(state),
+            'n' => return Command::inc(state),
+            'o' => return Command::store(state),
+            'p' => (),
+            'q' => (),
+            'r' => (),
+            's' => return Command::swap(state),
+            't' => return Command::jump(state),
+            'u' => (),
+            'v' => return Command::pos(state),
+            'w' => (),
+            'x' => (),
+            'y' => (),
+            'z' => (),
+            '{' => return Command::rotl(state),
+            '|' => return Command::or(state),
+            '}' => return Command::rotr(state),
+            '~' => return Command::not(state),
+            _ => (),
+        }
+        Command::new(Inst::Nop, state)
+    }
     pub fn new(inst: Inst, state: &State) -> Self {
         Self {
             inst,
@@ -200,4 +262,14 @@ fn forward(state: &State, shift: u8) -> u8 {
 fn backward(state: &State, shift: u8) -> u8 {
     let (next, _) = state.coord().overflowing_sub(shift);
     next
+}
+
+fn translate_hex_digit(key: char) -> u8 {
+    const ZERO: u8 = b'0';
+    const A: u8 = b'a';
+    match key {
+        '0'..='9' => key as u8 - ZERO,
+        'a'..='f' => key as u8 - A + 0xA,
+        _ => unreachable!(),
+    }
 }

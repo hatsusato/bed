@@ -1,4 +1,4 @@
-use crate::cmd;
+use crate::cmd::Command;
 use state::State;
 
 #[derive(Clone)]
@@ -60,86 +60,16 @@ impl Exec {
         quote.chars().for_each(|key| self.exec_cmd(key));
     }
     fn exec_escape(&mut self, key: char) {
-        let cmd = cmd::Command::esc(&self.state, key);
+        let cmd = Command::esc(&self.state, key);
         self.state.restore_bank(cmd.next);
         self.mode = Mode::Normal;
     }
     fn exec_cmd(&mut self, key: char) {
-        use cmd::Command;
-        let state = &self.state;
-        let cmd = match key {
-            '\n' => unreachable!(),
-            '!' => Command::neg(state),
-            '"' => unreachable!(),
-            '#' => unreachable!(),
-            '$' => Command::argv(state),
-            '%' => return,
-            '&' => Command::and(state),
-            '\'' => return,
-            '(' => Command::hi(state),
-            ')' => Command::lo(state),
-            '*' => Command::mul(state),
-            '+' => Command::add(state),
-            ',' => return,
-            '-' => Command::sub(state),
-            '.' => return,
-            '/' => Command::div(state),
-            '0'..='9' => Command::imm(state, translate_hex_digit(key)),
-            ':' => return,
-            ';' => return,
-            '<' => Command::lt(state),
-            '=' => Command::eq(state),
-            '>' => Command::gt(state),
-            '?' => Command::bool(state),
-            '@' => Command::argc(state),
-            'A'..='Z' => return self.exec_cmd(key.to_ascii_lowercase()),
-            '[' => Command::shl(state),
-            '\\' => return,
-            ']' => Command::shr(state),
-            '^' => Command::xor(state),
-            '_' => return,
-            '`' => return,
-            'a'..='f' => Command::imm(state, translate_hex_digit(key)),
-            'g' => Command::goto(state),
-            'h' => Command::left(state),
-            'i' => Command::load(state),
-            'j' => Command::down(state),
-            'k' => Command::up(state),
-            'l' => Command::right(state),
-            'm' => Command::dec(state),
-            'n' => Command::inc(state),
-            'o' => Command::store(state),
-            'p' => return,
-            'q' => return,
-            'r' => return,
-            's' => Command::swap(state),
-            't' => Command::jump(state),
-            'u' => return,
-            'v' => Command::pos(state),
-            'w' => return,
-            'x' => return,
-            'y' => return,
-            'z' => return,
-            '{' => Command::rotl(state),
-            '|' => Command::or(state),
-            '}' => Command::rotr(state),
-            '~' => Command::not(state),
-            _ => return,
-        };
+        let cmd = Command::from_key(key, &self.state);
         self.state.restore_bank(cmd.next);
         self.state.restore_page(cmd.page);
     }
     pub fn print(&self) {
         self.state.print(self.last);
-    }
-}
-
-fn translate_hex_digit(key: char) -> u8 {
-    const ZERO: u8 = b'0';
-    const A: u8 = b'a';
-    match key {
-        '0'..='9' => key as u8 - ZERO,
-        'a'..='f' => key as u8 - A + 0xA,
-        _ => unreachable!(),
     }
 }
