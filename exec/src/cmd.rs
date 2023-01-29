@@ -104,20 +104,20 @@ impl Command {
         self.page = Some(page);
         self
     }
+    fn from_bank(next: Bank) -> Self {
+        Self { next, page: None }
+    }
     pub fn imm(state: &State, digit: u8) -> Self {
-        let next = combine(state.data(), digit);
-        Self::new(state).update_data(next)
+        Self::from_bank(state.bank().imm(digit))
     }
     pub fn swap(state: &State) -> Self {
-        Self::new(state)
-            .update_data(state.acc())
-            .update_acc(state.data())
+        Self::from_bank(state.bank().swap())
     }
     pub fn hi(state: &State) -> Self {
-        Self::new(state).update_data(state.acc())
+        Self::from_bank(state.bank().hi())
     }
     pub fn lo(state: &State) -> Self {
-        Self::new(state).update_acc(state.data())
+        Self::from_bank(state.bank().lo())
     }
     pub fn inc(state: &State) -> Self {
         let (next, _) = state.acc().overflowing_add(1);
@@ -242,11 +242,6 @@ impl Command {
     }
 }
 
-fn combine(hi: u8, lo: u8) -> u8 {
-    const SHIFT: u32 = u8::BITS / 2;
-    const MASK: u8 = 0xF;
-    ((hi & MASK) << SHIFT) | (lo & MASK)
-}
 fn rot(val: u8, forward: bool) -> u8 {
     let left = if forward { 1 } else { u8::BITS - 1 };
     let right = u8::BITS - left;
