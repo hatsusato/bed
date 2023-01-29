@@ -7,11 +7,6 @@ pub struct Command {
 }
 impl Command {
     pub fn from_key(key: char, state: &State) -> Self {
-        match key {
-            '$' => return Command::argv(state),
-            '@' => return Command::argc(state),
-            _ => (),
-        }
         let mut result = Command::new(state);
         result.update_key(key, state);
         result
@@ -22,22 +17,8 @@ impl Command {
             page: None,
         }
     }
-    fn update_acc(mut self, acc: u8) -> Self {
-        self.next.acc = acc;
-        self
-    }
     fn update_data(mut self, data: u8) -> Self {
         self.next.data = data;
-        self
-    }
-    fn update_error(mut self, error: bool) -> Self {
-        if error {
-            self.next.error = true;
-        }
-        self
-    }
-    fn update_page(mut self, page: Page) -> Self {
-        self.page = Some(page);
         self
     }
     fn update_key(&mut self, key: char, state: &State) {
@@ -46,8 +27,8 @@ impl Command {
             '!' => self.next.neg(),
             '"' => (),
             '#' => (),
-            '$' => (),
-            '%' => (),
+            '$' => self.argv(state),
+            '%' => self.next.argc(),
             '&' => self.next.and(),
             '\'' => (),
             '(' => self.next.hi(),
@@ -76,13 +57,13 @@ impl Command {
             'a'..='f' => self.next.imm(translate_hex_digit(key)),
             'g' => self.next.goto(),
             'h' => self.next.left(),
-            'i' => self.load(state.page()),
+            'i' => self.load(state),
             'j' => self.next.down(),
             'k' => self.next.up(),
             'l' => self.next.right(),
             'm' => self.next.dec(),
             'n' => self.next.inc(),
-            'o' => self.store(*state.page()),
+            'o' => self.store(state),
             'p' => (),
             'q' => (),
             'r' => (),
@@ -101,27 +82,22 @@ impl Command {
             _ => (),
         }
     }
-    pub fn load(&mut self, page: &Page) {
-        self.next.data = page[self.next.coord];
+    pub fn load(&mut self, state: &State) {
+        self.next.data = state.page()[self.next.coord];
     }
-    pub fn store(&mut self, mut page: Page) {
+    pub fn store(&mut self, state: &State) {
+        let mut page = *state.page();
         page[self.next.coord] = self.next.data;
         self.page = Some(page);
     }
-    pub fn argc(state: &State) -> Self {
-        let len = u8::try_from(std::env::args().len());
-        Self::new(state)
-            .update_acc(len.unwrap_or(u8::MAX))
-            .update_error(len.is_err())
-    }
-    pub fn argv(state: &State) -> Self {
-        if let Some(arg) = std::env::args().nth(state.acc().into()) {
-            let mut next = *state.page();
-            let len = next.write(arg.as_bytes().iter());
-            Self::new(state).update_acc(len).update_page(next)
-        } else {
-            Self::new(state).update_error(true)
+    pub fn argv(&mut self, state: &State) {
+        let arg = std::env::args().nth(self.next.acc.into());
+        if let Some(input) = &arg {
+            let mut page = *state.page();
+            let len = page.write(input.as_bytes().iter());
+            (self.next.acc, self.page) = (len, Some(page));
         }
+        self.next.set_error(arg.is_none());
     }
     pub fn esc(state: &State, key: char) -> Self {
         match u8::try_from(key) {

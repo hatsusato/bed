@@ -26,7 +26,7 @@ impl Bank {
         self.coord = coord;
         self
     }
-    fn set_error(&mut self, error: bool) -> &mut Self {
+    pub fn set_error(&mut self, error: bool) -> &mut Self {
         if error {
             self.error = true;
         }
@@ -158,6 +158,11 @@ impl Bank {
     pub fn rotr(&mut self) {
         let acc = rot(self.acc, false);
         self.update_acc(acc);
+    }
+    pub fn argc(&mut self) {
+        let len = u8::try_from(std::env::args().len());
+        let acc = len.unwrap_or(u8::MAX);
+        self.update_acc(acc).set_error(len.is_err());
     }
 }
 
