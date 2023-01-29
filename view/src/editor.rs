@@ -12,10 +12,9 @@ impl Editor {
     pub fn run(&mut self) {
         let mut exec = Exec::default();
         loop {
-            let state = self.state.get_mut();
-            exec.print(state);
+            exec.print();
             if let Some(key) = Screen::getch() {
-                exec.exec(key, state);
+                exec.exec(key);
             } else {
                 return;
             }

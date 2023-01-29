@@ -7,34 +7,33 @@ enum Mode {
     Ignore,
     Quote(String),
 }
-
-pub struct Exec {
-    mode: Mode,
-    last: char,
-}
-impl Default for Exec {
+impl Default for Mode {
     fn default() -> Self {
-        Self {
-            mode: Mode::Normal,
-            last: ' ',
-        }
+        Self::Normal
     }
 }
+
+#[derive(Default)]
+pub struct Exec {
+    mode: Mode,
+    state: State,
+    last: char,
+}
 impl Exec {
-    pub fn exec(&mut self, key: char, state: &mut State) {
+    pub fn exec(&mut self, key: char) {
         match self.mode.clone() {
-            Mode::Normal => self.exec_normal(key, state),
+            Mode::Normal => self.exec_normal(key),
             Mode::Ignore => self.exec_ignore(key),
-            Mode::Quote(quote) => self.exec_quote(key, state, quote),
+            Mode::Quote(quote) => self.exec_quote(key, quote),
         }
         self.last = key;
     }
-    fn exec_normal(&mut self, key: char, state: &mut State) {
+    fn exec_normal(&mut self, key: char) {
         match key {
             '\n' => self.mode = Mode::Normal,
             '#' => self.mode = Mode::Ignore,
             '"' => self.mode = Mode::Quote(String::new()),
-            _ => Self::exec_cmd(key, state),
+            _ => self.exec_cmd(key),
         }
     }
     fn exec_ignore(&mut self, key: char) {
@@ -42,10 +41,10 @@ impl Exec {
             self.mode = Mode::Normal;
         }
     }
-    fn exec_quote(&mut self, key: char, state: &mut State, quote: String) {
+    fn exec_quote(&mut self, key: char, quote: String) {
         if key == '"' {
-            let count = state.acc();
-            (0..count).for_each(|_| Self::exec_quoted(&quote, state));
+            let count = self.state.acc();
+            (0..count).for_each(|_| self.exec_quoted(&quote));
             self.mode = Mode::Normal;
         } else {
             let mut quote = quote;
@@ -53,11 +52,12 @@ impl Exec {
             self.mode = Mode::Quote(quote);
         }
     }
-    fn exec_quoted(quote: &str, state: &mut State) {
-        quote.chars().for_each(|key| Self::exec_cmd(key, state));
+    fn exec_quoted(&mut self, quote: &str) {
+        quote.chars().for_each(|key| self.exec_cmd(key));
     }
-    fn exec_cmd(key: char, state: &mut State) {
+    fn exec_cmd(&mut self, key: char) {
         use cmd::Command;
+        let state = &self.state;
         let cmd = match key {
             '\n' => unreachable!(),
             '!' => Command::neg(state),
@@ -83,7 +83,7 @@ impl Exec {
             '>' => Command::gt(state),
             '?' => Command::bool(state),
             '@' => Command::argc(state),
-            'A'..='Z' => return Self::exec_cmd(key.to_ascii_lowercase(), state),
+            'A'..='Z' => return self.exec_cmd(key.to_ascii_lowercase()),
             '[' => Command::shl(state),
             '\\' => return,
             ']' => Command::shr(state),
@@ -117,11 +117,11 @@ impl Exec {
             '~' => Command::not(state),
             _ => return,
         };
-        state.restore_bank(cmd.next);
-        state.restore_page(cmd.page);
+        self.state.restore_bank(cmd.next);
+        self.state.restore_page(cmd.page);
     }
-    pub fn print(&self, state: &State) {
-        print::print_state(state, self.last);
+    pub fn print(&self) {
+        print::print_state(&self.state, self.last);
     }
 }
 
