@@ -50,6 +50,33 @@ impl Bank {
         let data = self.data;
         self.update_acc(data);
     }
+    pub fn inc(&mut self) {
+        let (acc, _) = self.acc.overflowing_add(1);
+        self.update_acc(acc);
+    }
+    pub fn dec(&mut self) {
+        let (acc, _) = self.acc.overflowing_sub(1);
+        self.update_acc(acc);
+    }
+    pub fn add(&mut self) {
+        let reg = u16::from(self.acc) + u16::from(self.data);
+        self.update_reg(reg);
+    }
+    pub fn sub(&mut self) {
+        let (reg, _) = u16::from(self.acc).overflowing_sub(self.data.into());
+        self.update_reg(reg);
+    }
+    pub fn mul(&mut self) {
+        let reg = u16::from(self.acc) * u16::from(self.data);
+        self.update_reg(reg);
+    }
+    pub fn div(&mut self) {
+        if self.data != 0 {
+            let (quo, rem) = (self.acc / self.data, self.acc % self.data);
+            self.update_data(rem).update_acc(quo);
+        }
+        self.set_error(self.data == 0);
+    }
 }
 
 const NIBBLE_SHIFT: u32 = u8::BITS / 2;

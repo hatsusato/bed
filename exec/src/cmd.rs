@@ -16,15 +16,15 @@ impl Command {
             '%' => (),
             '&' => return Command::and(state),
             '\'' => (),
-            '(' => return Command::hi(state),
-            ')' => return Command::lo(state),
-            '*' => return Command::mul(state),
-            '+' => return Command::add(state),
+            '(' => (),
+            ')' => (),
+            '*' => (),
+            '+' => (),
             ',' => (),
-            '-' => return Command::sub(state),
+            '-' => (),
             '.' => (),
-            '/' => return Command::div(state),
-            '0'..='9' => return Command::imm(state, translate_hex_digit(key)),
+            '/' => (),
+            '0'..='9' => (),
             ':' => (),
             ';' => (),
             '<' => return Command::lt(state),
@@ -32,27 +32,27 @@ impl Command {
             '>' => return Command::gt(state),
             '?' => return Command::bool(state),
             '@' => return Command::argc(state),
-            'A'..='Z' => return Self::from_key(key.to_ascii_lowercase(), state),
+            'A'..='Z' => (),
             '[' => return Command::shl(state),
             '\\' => (),
             ']' => return Command::shr(state),
             '^' => return Command::xor(state),
             '_' => (),
             '`' => (),
-            'a'..='f' => return Command::imm(state, translate_hex_digit(key)),
+            'a'..='f' => (),
             'g' => return Command::goto(state),
             'h' => return Command::left(state),
             'i' => return Command::load(state),
             'j' => return Command::down(state),
             'k' => return Command::up(state),
             'l' => return Command::right(state),
-            'm' => return Command::dec(state),
-            'n' => return Command::inc(state),
+            'm' => (),
+            'n' => (),
             'o' => return Command::store(state),
             'p' => (),
             'q' => (),
             'r' => (),
-            's' => return Command::swap(state),
+            's' => (),
             't' => return Command::jump(state),
             'u' => (),
             'v' => return Command::pos(state),
@@ -66,7 +66,9 @@ impl Command {
             '~' => return Command::not(state),
             _ => (),
         }
-        Command::new(state)
+        let mut result = Command::new(state);
+        result.update_key(key);
+        result
     }
     pub fn new(state: &State) -> Self {
         Self {
@@ -116,12 +118,12 @@ impl Command {
             '\'' => (),
             '(' => self.next.hi(),
             ')' => self.next.lo(),
-            '*' => (),
-            '+' => (),
+            '*' => self.next.mul(),
+            '+' => self.next.add(),
             ',' => (),
-            '-' => (),
+            '-' => self.next.sub(),
             '.' => (),
-            '/' => (),
+            '/' => self.next.div(),
             '0'..='9' => self.next.imm(translate_hex_digit(key)),
             ':' => (),
             ';' => (),
@@ -144,8 +146,8 @@ impl Command {
             'j' => (),
             'k' => (),
             'l' => (),
-            'm' => (),
-            'n' => (),
+            'm' => self.next.dec(),
+            'n' => self.next.inc(),
             'o' => (),
             'p' => (),
             'q' => (),
@@ -163,58 +165,6 @@ impl Command {
             '}' => (),
             '~' => (),
             _ => (),
-        }
-    }
-    fn from_bank(next: Bank) -> Self {
-        Self { next, page: None }
-    }
-    pub fn imm(state: &State, digit: u8) -> Self {
-        let mut bank = state.bank();
-        bank.imm(digit);
-        Self::from_bank(bank)
-    }
-    pub fn swap(state: &State) -> Self {
-        let mut bank = state.bank();
-        bank.swap();
-        Self::from_bank(bank)
-    }
-    pub fn hi(state: &State) -> Self {
-        let mut bank = state.bank();
-        bank.hi();
-        Self::from_bank(bank)
-    }
-    pub fn lo(state: &State) -> Self {
-        let mut bank = state.bank();
-        bank.lo();
-        Self::from_bank(bank)
-    }
-    pub fn inc(state: &State) -> Self {
-        let (next, _) = state.acc().overflowing_add(1);
-        Self::new(state).update_acc(next)
-    }
-    pub fn dec(state: &State) -> Self {
-        let (next, _) = state.acc().overflowing_sub(1);
-        Self::new(state).update_acc(next)
-    }
-    pub fn add(state: &State) -> Self {
-        let next = u16::from(state.acc()) + u16::from(state.data());
-        Self::new(state).update_reg(next)
-    }
-    pub fn sub(state: &State) -> Self {
-        let (next, _) = u16::from(state.acc()).overflowing_sub(state.data().into());
-        Self::new(state).update_reg(next)
-    }
-    pub fn mul(state: &State) -> Self {
-        let next = u16::from(state.data()) * u16::from(state.acc());
-        Self::new(state).update_reg(next)
-    }
-    pub fn div(state: &State) -> Self {
-        if state.data() == 0 {
-            Self::new(state).update_error(true)
-        } else {
-            Self::new(state)
-                .update_acc(state.acc() / state.data())
-                .update_data(state.acc() % state.data())
         }
     }
     pub fn neg(state: &State) -> Self {
