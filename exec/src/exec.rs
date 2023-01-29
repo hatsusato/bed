@@ -3,6 +3,7 @@ use state::State;
 
 enum Mode {
     Normal,
+    Ignore,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -12,11 +13,22 @@ impl Default for Mode {
 
 #[derive(Default)]
 pub struct Exec {
-    _mode: Mode,
+    mode: Mode,
 }
 impl Exec {
-    pub fn exec(key: char, state: &mut State) {
+    pub fn exec(&mut self, key: char, state: &mut State) {
+        match self.mode {
+            Mode::Normal => self.exec_normal(key, state),
+            Mode::Ignore => (),
+        }
         Self::exec_cmd(key, state);
+    }
+    fn exec_normal(&mut self, key: char, state: &mut State) {
+        if key == '#' {
+            self.mode = Mode::Ignore;
+        } else {
+            Self::exec_cmd(key, state);
+        }
     }
     fn exec_cmd(key: char, state: &mut State) {
         let cmd = match key {
@@ -44,7 +56,7 @@ impl Exec {
             '>' => Command::gt(state),
             '?' => Command::bool(state),
             '@' => Command::argc(state),
-            'A'..='Z' => return Self::exec(key.to_ascii_lowercase(), state),
+            'A'..='Z' => return Self::exec_cmd(key.to_ascii_lowercase(), state),
             '[' => Command::shl(state),
             '\\' => return,
             ']' => Command::shr(state),
