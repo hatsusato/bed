@@ -1,4 +1,5 @@
 use crate::{Bank, State};
+use inst::Inst;
 use util::Page;
 
 pub struct Command {
@@ -6,10 +7,13 @@ pub struct Command {
     pub page: Option<Page>,
 }
 impl Command {
-    pub fn from_key(key: char, state: &State) -> Self {
-        let mut result = Command::new(state);
-        result.update_key(key, state);
-        result
+    pub fn from_inst(inst: &Inst, state: &State) -> Self {
+        let mut this = Self {
+            next: state.bank(),
+            page: None,
+        };
+        this.update_inst(inst, state);
+        this
     }
     pub fn new(state: &State) -> Self {
         Self {
@@ -21,65 +25,44 @@ impl Command {
         self.next.data = data;
         self
     }
-    fn update_key(&mut self, key: char, state: &State) {
-        match key {
-            '\n' => (),
-            '!' => self.next.neg(),
-            '"' => (),
-            '#' => (),
-            '$' => self.argv(state),
-            '%' => self.next.argc(),
-            '&' => self.next.and(),
-            '\'' => (),
-            '(' => self.next.hi(),
-            ')' => self.next.lo(),
-            '*' => self.next.mul(),
-            '+' => self.next.add(),
-            ',' => (),
-            '-' => self.next.sub(),
-            '.' => (),
-            '/' => self.next.div(),
-            '0'..='9' => self.next.imm(translate_hex_digit(key)),
-            ':' => (),
-            ';' => (),
-            '<' => self.next.lt(),
-            '=' => self.next.eq(),
-            '>' => self.next.gt(),
-            '?' => self.next.bool(),
-            '@' => (),
-            'A'..='Z' => self.update_key(key.to_ascii_lowercase(), state),
-            '[' => self.next.shl(),
-            '\\' => (),
-            ']' => self.next.shr(),
-            '^' => self.next.xor(),
-            '_' => (),
-            '`' => (),
-            'a'..='f' => self.next.imm(translate_hex_digit(key)),
-            'g' => self.next.goto(),
-            'h' => self.next.left(),
-            'i' => self.load(state),
-            'j' => self.next.down(),
-            'k' => self.next.up(),
-            'l' => self.next.right(),
-            'm' => self.next.dec(),
-            'n' => self.next.inc(),
-            'o' => self.store(state),
-            'p' => (),
-            'q' => (),
-            'r' => (),
-            's' => self.next.swap(),
-            't' => self.next.jump(),
-            'u' => (),
-            'v' => self.next.pos(),
-            'w' => (),
-            'x' => (),
-            'y' => (),
-            'z' => (),
-            '{' => self.next.rotl(),
-            '|' => self.next.or(),
-            '}' => self.next.rotr(),
-            '~' => self.next.not(),
-            _ => (),
+    fn update_inst(&mut self, inst: &Inst, state: &State) {
+        match inst {
+            Inst::Imm(digit) => self.next.imm(*digit),
+            Inst::Swap => self.next.swap(),
+            Inst::Hi => self.next.hi(),
+            Inst::Lo => self.next.lo(),
+            Inst::Goto => self.next.goto(),
+            Inst::Jump => self.next.jump(),
+            Inst::Pos => self.next.pos(),
+            Inst::Left => self.next.left(),
+            Inst::Right => self.next.right(),
+            Inst::Up => self.next.up(),
+            Inst::Down => self.next.down(),
+            Inst::Inc => self.next.inc(),
+            Inst::Dec => self.next.dec(),
+            Inst::Add => self.next.add(),
+            Inst::Sub => self.next.sub(),
+            Inst::Mul => self.next.mul(),
+            Inst::Div => self.next.div(),
+            Inst::Neg => self.next.neg(),
+            Inst::Bool => self.next.bool(),
+            Inst::Eq => self.next.eq(),
+            Inst::Lt => self.next.lt(),
+            Inst::Gt => self.next.gt(),
+            Inst::Not => self.next.not(),
+            Inst::And => self.next.and(),
+            Inst::Or => self.next.or(),
+            Inst::Xor => self.next.xor(),
+            Inst::Shl => self.next.shl(),
+            Inst::Shr => self.next.shr(),
+            Inst::Rotl => self.next.rotl(),
+            Inst::Rotr => self.next.rotr(),
+            Inst::Load => self.load(state),
+            Inst::Store => self.store(state),
+            Inst::Argc => self.next.argc(),
+            Inst::Argv => self.argv(state),
+            Inst::Esc => (),
+            Inst::Nop => (),
         }
     }
     pub fn load(&mut self, state: &State) {
@@ -104,15 +87,5 @@ impl Command {
             Ok(data) => Self::new(state).update_data(data),
             Err(_) => Self::new(state),
         }
-    }
-}
-
-fn translate_hex_digit(key: char) -> u8 {
-    const ZERO: u8 = b'0';
-    const A: u8 = b'a';
-    match key {
-        '0'..='9' => key as u8 - ZERO,
-        'a'..='f' => key as u8 - A + 0xA,
-        _ => unreachable!(),
     }
 }

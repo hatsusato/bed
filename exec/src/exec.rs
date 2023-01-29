@@ -1,5 +1,6 @@
 use crate::cmd::Command;
 use crate::State;
+use inst::Inst;
 
 #[derive(Clone)]
 enum Mode {
@@ -65,7 +66,7 @@ impl Exec {
         self.mode = Mode::Normal;
     }
     fn exec_cmd(&mut self, key: char) {
-        let cmd = Command::from_key(key, &self.state);
+        let cmd = Command::from_inst(&Inst::new(key), &self.state);
         self.state.restore_bank(cmd.next);
         self.state.restore_page(cmd.page);
     }
