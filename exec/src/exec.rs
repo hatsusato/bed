@@ -19,23 +19,27 @@ impl Exec {
     pub fn exec(&mut self, key: char, state: &mut State) {
         match self.mode {
             Mode::Normal => self.exec_normal(key, state),
-            Mode::Ignore => (),
+            Mode::Ignore => self.exec_ignore(key),
         }
-        Self::exec_cmd(key, state);
     }
     fn exec_normal(&mut self, key: char, state: &mut State) {
-        if key == '#' {
-            self.mode = Mode::Ignore;
-        } else {
-            Self::exec_cmd(key, state);
+        match key {
+            '\n' => self.mode = Mode::Normal,
+            '#' => self.mode = Mode::Ignore,
+            _ => Self::exec_cmd(key, state),
+        }
+    }
+    fn exec_ignore(&mut self, key: char) {
+        if key == '\n' {
+            self.mode = Mode::Normal;
         }
     }
     fn exec_cmd(key: char, state: &mut State) {
         let cmd = match key {
-            '\n' => return,
+            '\n' => unreachable!(),
             '!' => Command::neg(state),
             '"' => return,
-            '#' => return,
+            '#' => unreachable!(),
             '$' => Command::argv(state),
             '%' => return,
             '&' => Command::and(state),
