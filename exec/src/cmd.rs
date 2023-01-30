@@ -34,6 +34,7 @@ impl Command {
             Inst::Sub => self.next.sub(),
             Inst::Mul => self.next.mul(),
             Inst::Div => self.next.div(),
+            Inst::Clear => self.next.clear(),
             Inst::Neg => self.next.neg(),
             Inst::Bool => self.next.bool(),
             Inst::Eq => self.next.eq(),
