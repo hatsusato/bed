@@ -7,7 +7,7 @@ pub struct Command {
     pub page: Option<Page>,
 }
 impl Command {
-    pub fn from_inst(inst: &Inst, state: &State) -> Self {
+    pub fn new(inst: &Inst, state: &State) -> Self {
         let mut this = Self {
             next: state.bank(),
             page: None,
@@ -55,15 +55,15 @@ impl Command {
             Inst::Nop => (),
         }
     }
-    pub fn load(&mut self, state: &State) {
+    fn load(&mut self, state: &State) {
         self.next.data = state.page()[self.next.coord];
     }
-    pub fn store(&mut self, state: &State) {
+    fn store(&mut self, state: &State) {
         let mut page = *state.page();
         page[self.next.coord] = self.next.data;
         self.page = Some(page);
     }
-    pub fn argv(&mut self, state: &State) {
+    fn argv(&mut self, state: &State) {
         let arg = std::env::args().nth(self.next.acc.into());
         if let Some(input) = &arg {
             let mut page = *state.page();

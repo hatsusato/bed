@@ -62,12 +62,12 @@ impl Exec {
     }
     fn exec_escape(&mut self, key: char) {
         let inst = Inst::Esc(key);
-        let cmd = Command::from_inst(&inst, &self.state);
+        let cmd = Command::new(&inst, &self.state);
         self.state.restore_bank(cmd.next);
         self.mode = Mode::Normal;
     }
     fn exec_cmd(&mut self, key: char) {
-        let cmd = Command::from_inst(&Inst::new(key), &self.state);
+        let cmd = Command::new(&Inst::new(key), &self.state);
         self.state.restore_bank(cmd.next);
         self.state.restore_page(cmd.page);
     }
