@@ -2,7 +2,6 @@
 
 members = [
     "exec",
-    "inst",
     "main",
     "screen",
     "util",

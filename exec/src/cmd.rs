@@ -1,5 +1,5 @@
+use crate::inst::Inst;
 use crate::{Bank, State};
-use inst::Inst;
 use util::Page;
 
 pub struct Command {
