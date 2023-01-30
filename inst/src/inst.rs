@@ -33,7 +33,7 @@ pub enum Inst {
     Store,
     Argc,
     Argv,
-    Esc,
+    Esc(char),
     Nop,
 }
 impl Inst {

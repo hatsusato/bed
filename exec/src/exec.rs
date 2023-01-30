@@ -61,7 +61,8 @@ impl Exec {
         quote.chars().for_each(|key| self.exec_cmd(key));
     }
     fn exec_escape(&mut self, key: char) {
-        let cmd = Command::esc(&self.state, key);
+        let inst = Inst::Esc(key);
+        let cmd = Command::from_inst(&inst, &self.state);
         self.state.restore_bank(cmd.next);
         self.mode = Mode::Normal;
     }

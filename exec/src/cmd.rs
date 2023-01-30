@@ -15,16 +15,6 @@ impl Command {
         this.update_inst(inst, state);
         this
     }
-    pub fn new(state: &State) -> Self {
-        Self {
-            next: state.bank(),
-            page: None,
-        }
-    }
-    fn update_data(mut self, data: u8) -> Self {
-        self.next.data = data;
-        self
-    }
     fn update_inst(&mut self, inst: &Inst, state: &State) {
         match inst {
             Inst::Imm(digit) => self.next.imm(*digit),
@@ -61,7 +51,7 @@ impl Command {
             Inst::Store => self.store(state),
             Inst::Argc => self.next.argc(),
             Inst::Argv => self.argv(state),
-            Inst::Esc => (),
+            Inst::Esc(ch) => self.next.esc(*ch),
             Inst::Nop => (),
         }
     }
@@ -81,11 +71,5 @@ impl Command {
             (self.next.acc, self.page) = (len, Some(page));
         }
         self.next.set_error(arg.is_none());
-    }
-    pub fn esc(state: &State, key: char) -> Self {
-        match u8::try_from(key) {
-            Ok(data) => Self::new(state).update_data(data),
-            Err(_) => Self::new(state),
-        }
     }
 }

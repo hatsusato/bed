@@ -164,6 +164,11 @@ impl Bank {
         let acc = len.unwrap_or(u8::MAX);
         self.update_acc(acc).set_error(len.is_err());
     }
+    pub fn esc(&mut self, key: char) {
+        if let Ok(data) = u8::try_from(key) {
+            self.update_data(data);
+        }
+    }
 }
 
 const NIBBLE_SHIFT: u32 = u8::BITS / 2;
