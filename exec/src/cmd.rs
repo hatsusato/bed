@@ -68,9 +68,9 @@ impl Command {
         let arg = std::env::args().nth(self.next.acc.into());
         if let Some(input) = &arg {
             let mut page = *state.page();
-            let len = page.write(input.as_bytes().iter());
-            (self.next.acc, self.page) = (len, Some(page));
+            page.write(input.as_bytes().iter());
+            self.page = Some(page);
         }
-        self.next.set_error(arg.is_none());
+        self.next.argv(arg);
     }
 }

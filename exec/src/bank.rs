@@ -10,11 +10,15 @@ pub struct Bank {
 }
 
 impl Bank {
-    pub fn set_error(&mut self, error: bool) -> &mut Self {
-        if error {
-            self.error = true;
+    pub fn set_len(&mut self, len: Option<usize>) {
+        if let Some(len) = len {
+            let result = u8::try_from(len);
+            self.acc = result.unwrap_or(u8::MAX);
+            if result.is_ok() {
+                return;
+            }
         }
-        self
+        self.error = true;
     }
     fn update_reg(&mut self, reg: u16) -> &mut Self {
         let [data, acc] = reg.to_be_bytes();
@@ -71,10 +75,10 @@ impl Bank {
         self.update_reg(u16::from(self.acc) * u16::from(self.data));
     }
     pub fn div(&mut self) {
-        if self.data != 0 {
-            (self.data, self.acc) = (self.acc % self.data, self.acc / self.data);
-        } else {
+        if self.data == 0 {
             self.error = true;
+        } else {
+            (self.data, self.acc) = (self.acc % self.data, self.acc / self.data);
         }
     }
     pub fn clear(&mut self) {
@@ -120,11 +124,10 @@ impl Bank {
         self.acc = rot(self.acc, false);
     }
     pub fn argc(&mut self) {
-        let len = u8::try_from(std::env::args().len());
-        self.acc = len.unwrap_or(u8::MAX);
-        if len.is_err() {
-            self.error = true;
-        }
+        self.set_len(Some(std::env::args().len()));
+    }
+    pub fn argv(&mut self, arg: Option<String>) {
+        self.set_len(arg.map(|s| s.len()));
     }
     pub fn esc(&mut self, key: char) {
         if let Ok(data) = u8::try_from(key) {
