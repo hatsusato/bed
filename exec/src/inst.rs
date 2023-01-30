@@ -38,6 +38,7 @@ pub enum Inst {
     Nop,
 }
 impl Inst {
+    #[allow(clippy::match_same_arms)]
     pub fn new(key: char) -> Self {
         match key {
             '\n' => unreachable!(),

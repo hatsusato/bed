@@ -55,7 +55,7 @@ impl Exec {
     }
     fn exec_quote(&mut self, key: char, mut quote: String) -> Inst {
         if key == '"' {
-            let count = self.state.acc();
+            let count = self.state.bank().acc;
             (0..count).for_each(|_| self.exec_quoted(&quote));
             self.mode = Mode::Normal;
         } else {

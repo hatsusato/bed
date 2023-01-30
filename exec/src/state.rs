@@ -10,24 +10,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn data(&self) -> u8 {
-        self.bank.data
-    }
-    pub fn acc(&self) -> u8 {
-        self.bank.acc
-    }
-    pub fn block(&self) -> u8 {
-        self.bank.block
-    }
-    pub fn coord(&self) -> u8 {
-        self.bank.coord
-    }
-    pub fn error(&self) -> bool {
-        self.bank.error
-    }
+    #[must_use]
     pub fn page(&self) -> &Page {
         &self.memory[self.bank.block]
     }
+    #[must_use]
     pub fn bank(&self) -> Bank {
         self.bank
     }
@@ -47,11 +34,11 @@ impl State {
         Screen::move_cursor(0, 0);
         Screen::print_display(format!(
             "D: {:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}, KEY: {}",
-            self.data(),
-            self.acc(),
-            self.block(),
-            self.coord(),
-            u8::from(self.error()),
+            self.bank.data,
+            self.bank.acc,
+            self.bank.block,
+            self.bank.coord,
+            u8::from(self.bank.error),
             key
         ));
     }
@@ -62,7 +49,7 @@ impl State {
         move_cell(x, y);
         let index = x + y * BLOCK_SIDE;
         let msg = format!("{:02x}", self.page()[index]);
-        if self.coord() == index {
+        if self.bank.coord == index {
             Screen::print_highlight(msg);
         } else {
             Screen::print_display(msg);
