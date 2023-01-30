@@ -66,11 +66,11 @@ impl Command {
     }
     fn argv(&mut self, state: &State) {
         let arg = std::env::args().nth(self.next.acc.into());
-        if let Some(input) = &arg {
+        self.next.argv(&arg);
+        if let Some(input) = arg {
             let mut page = *state.page();
             page.write(input.as_bytes().iter());
             self.page = Some(page);
         }
-        self.next.argv(arg);
     }
 }

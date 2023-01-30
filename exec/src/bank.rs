@@ -8,7 +8,6 @@ pub struct Bank {
     pub data: u8,
     pub error: bool,
 }
-
 impl Bank {
     pub fn set_len(&mut self, len: Option<usize>) {
         if let Some(len) = len {
@@ -20,11 +19,9 @@ impl Bank {
         }
         self.error = true;
     }
-    fn update_reg(&mut self, reg: u16) -> &mut Self {
+    fn set_reg(&mut self, reg: u16) {
         let [data, acc] = reg.to_be_bytes();
-        self.data = data;
-        self.acc = acc;
-        self
+        (self.data, self.acc) = (data, acc);
     }
     pub fn imm(&mut self, digit: u8) {
         self.data = nibble_combine(self.data, digit);
@@ -66,13 +63,13 @@ impl Bank {
         self.acc = overflow_sub(self.acc, 1);
     }
     pub fn add(&mut self) {
-        self.update_reg(u16::from(self.acc) + u16::from(self.data));
+        self.set_reg(u16::from(self.acc) + u16::from(self.data));
     }
     pub fn sub(&mut self) {
-        self.update_reg(overflow_sub16(u16::from(self.acc), self.data.into()));
+        self.set_reg(overflow_sub16(u16::from(self.acc), self.data.into()));
     }
     pub fn mul(&mut self) {
-        self.update_reg(u16::from(self.acc) * u16::from(self.data));
+        self.set_reg(u16::from(self.acc) * u16::from(self.data));
     }
     pub fn div(&mut self) {
         if self.data == 0 {
@@ -103,13 +100,13 @@ impl Bank {
         self.acc = !self.acc;
     }
     pub fn and(&mut self) {
-        self.acc = self.data & self.acc;
+        self.acc &= self.data;
     }
     pub fn or(&mut self) {
-        self.acc = self.data | self.acc;
+        self.acc |= self.data;
     }
     pub fn xor(&mut self) {
-        self.acc = self.data ^ self.acc;
+        self.acc ^= self.data;
     }
     pub fn shl(&mut self) {
         self.acc = shift(self.acc, true);
@@ -126,8 +123,8 @@ impl Bank {
     pub fn argc(&mut self) {
         self.set_len(Some(std::env::args().len()));
     }
-    pub fn argv(&mut self, arg: Option<String>) {
-        self.set_len(arg.map(|s| s.len()));
+    pub fn argv(&mut self, arg: &Option<String>) {
+        self.set_len(arg.as_ref().map(String::len));
     }
     pub fn esc(&mut self, key: char) {
         if let Ok(data) = u8::try_from(key) {
