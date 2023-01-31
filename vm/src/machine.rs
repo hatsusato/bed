@@ -32,12 +32,12 @@ impl Machine {
         self.exec_inst(&inst);
         self.last = key;
     }
-    fn exec_inst(&mut self, inst: &Inst) {
+    pub fn exec_inst(&mut self, inst: &Inst) {
         let cmd = Command::new(inst, &self.state);
         self.state.restore_bank(cmd.next);
         self.state.restore_page(cmd.page);
     }
-    fn exec_normal(&mut self, key: char) -> Inst {
+    pub fn exec_normal(&mut self, key: char) -> Inst {
         match key {
             '\n' => self.mode = Mode::Normal,
             '#' => self.mode = Mode::Ignore,
@@ -47,13 +47,13 @@ impl Machine {
         }
         Inst::Nop
     }
-    fn exec_ignore(&mut self, key: char) -> Inst {
+    pub fn exec_ignore(&mut self, key: char) -> Inst {
         if key == '\n' {
             self.mode = Mode::Normal;
         }
         Inst::Nop
     }
-    fn exec_quote(&mut self, key: char, mut quote: String) -> Inst {
+    pub fn exec_quote(&mut self, key: char, mut quote: String) -> Inst {
         if key == '"' {
             let count = self.state.bank().acc;
             (0..count).for_each(|_| self.exec_quoted(&quote));
@@ -64,11 +64,11 @@ impl Machine {
         }
         Inst::Nop
     }
-    fn exec_quoted(&mut self, quote: &str) {
+    pub fn exec_quoted(&mut self, quote: &str) {
         self.mode = Mode::Normal;
         quote.chars().for_each(|key| self.exec(key));
     }
-    fn exec_escape(&mut self, key: char) -> Inst {
+    pub fn exec_escape(&mut self, key: char) -> Inst {
         self.mode = Mode::Normal;
         Inst::Esc(key)
     }
