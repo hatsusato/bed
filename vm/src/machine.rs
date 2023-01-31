@@ -16,12 +16,12 @@ impl Default for Mode {
 }
 
 #[derive(Default)]
-pub struct Exec {
+pub struct Machine {
     mode: Mode,
     state: State,
     last: char,
 }
-impl Exec {
+impl Machine {
     pub fn exec(&mut self, key: char) {
         let inst = match self.mode.clone() {
             Mode::Normal => self.exec_normal(key),

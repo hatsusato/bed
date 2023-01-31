@@ -1,9 +1,9 @@
 mod bank;
 mod cmd;
-mod exec;
 mod inst;
+mod machine;
 mod state;
 
 pub use bank::Bank;
-pub use exec::Exec;
+pub use machine::Machine;
 pub use state::State;

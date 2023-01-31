@@ -1,10 +1,10 @@
 use screen::Screen;
-use vm::Exec;
+use vm::Machine;
 
 #[derive(Default)]
 pub struct Editor {
     _screen: Screen,
-    exec: Exec,
+    exec: Machine,
 }
 impl Editor {
     pub fn run(&mut self) {
