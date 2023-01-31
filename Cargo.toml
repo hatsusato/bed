@@ -1,9 +1,9 @@
 [workspace]
 
 members = [
-    "exec",
     "main",
     "screen",
     "util",
     "view",
+    "vm",
 ]

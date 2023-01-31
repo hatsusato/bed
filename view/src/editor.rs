@@ -1,5 +1,5 @@
-use exec::Exec;
 use screen::Screen;
+use vm::Exec;
 
 #[derive(Default)]
 pub struct Editor {
