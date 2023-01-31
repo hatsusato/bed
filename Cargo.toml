@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "exec",
     "main",
     "screen",
     "util",
