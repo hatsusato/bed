@@ -26,7 +26,7 @@ impl Machine {
         let inst = match self.mode.clone() {
             Mode::Normal => self.exec_normal(key),
             Mode::Ignore => self.exec_ignore(key),
-            Mode::Quote(quote) => self.exec_quote(key, quote),
+            Mode::Quote(quote) => self.exec_quote(&quote),
             Mode::Escape => self.exec_escape(key),
         };
         self.exec_inst(&inst);
@@ -53,15 +53,9 @@ impl Machine {
         }
         Inst::Nop
     }
-    pub fn exec_quote(&mut self, key: char, mut quote: String) -> Inst {
-        if key == '"' {
-            let count = self.state.bank().acc;
-            (0..count).for_each(|_| self.exec_quoted(&quote));
-            self.mode = Mode::Normal;
-        } else {
-            quote.push(key);
-            self.mode = Mode::Quote(quote);
-        }
+    pub fn exec_quote(&mut self, quote: &str) -> Inst {
+        let count = self.state.bank().acc;
+        (0..count).for_each(|_| self.exec_quoted(quote));
         Inst::Nop
     }
     pub fn exec_quoted(&mut self, quote: &str) {
@@ -72,7 +66,7 @@ impl Machine {
         self.mode = Mode::Normal;
         Inst::Esc(key)
     }
-    pub fn print(&self) {
-        self.state.print(self.last);
+    pub fn print(&self, key: char) {
+        self.state.print(key);
     }
 }
