@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub enum Inst {
     Imm(u8),
     Swap,

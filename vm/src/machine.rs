@@ -62,6 +62,13 @@ impl Machine {
         self.mode = Mode::Normal;
         quote.chars().for_each(|key| self.exec(key));
     }
+    pub fn exec_repeat(&mut self, block: &[Inst]) {
+        let count = self.state.bank().acc;
+        (0..count).for_each(|_| self.exec_block(block));
+    }
+    fn exec_block(&mut self, block: &[Inst]) {
+        block.iter().for_each(|inst| self.exec_inst(inst));
+    }
     pub fn exec_escape(&mut self, key: char) -> Inst {
         self.mode = Mode::Normal;
         Inst::Esc(key)

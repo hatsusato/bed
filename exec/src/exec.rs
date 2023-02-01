@@ -3,7 +3,7 @@ use vm::{Inst, Machine};
 enum Mode {
     Normal,
     Ignore,
-    Quote(String),
+    Block(Vec<Inst>),
     Escape,
 }
 impl Default for Mode {
@@ -23,7 +23,7 @@ impl Exec {
         if let Some(inst) = match &self.mode {
             Mode::Normal => self.exec_normal(key),
             Mode::Ignore => self.exec_ignore(key),
-            Mode::Quote(quote) => self.exec_quote(key, &quote.clone()),
+            Mode::Block(block) => self.exec_block(key, block.clone()),
             Mode::Escape => Some(self.exec_escape(key)),
         } {
             self.vm.exec_inst(&inst);
@@ -37,7 +37,7 @@ impl Exec {
         match key {
             '\n' => self.mode = Mode::Normal,
             '#' => self.mode = Mode::Ignore,
-            '"' => self.mode = Mode::Quote(String::new()),
+            '"' => self.mode = Mode::Block(Vec::new()),
             '\'' => self.mode = Mode::Escape,
             _ => return Some(Inst::new(key)),
         }
@@ -46,15 +46,18 @@ impl Exec {
     fn exec_ignore(&mut self, key: char) -> Option<Inst> {
         if key == '\n' {
             self.mode = Mode::Normal;
+        } else {
+            self.mode = Mode::Ignore;
         }
         None
     }
-    fn exec_quote(&mut self, key: char, quote: &String) -> Option<Inst> {
+    fn exec_block(&mut self, key: char, mut block: Vec<Inst>) -> Option<Inst> {
         if key == '"' {
-            self.vm.exec_quote(quote);
+            self.vm.exec_repeat(&block);
             self.mode = Mode::Normal;
         } else {
-            self.mode = Mode::Quote(format!("{quote}{key}"));
+            block.push(Inst::new(key));
+            self.mode = Mode::Block(block);
         }
         None
     }
