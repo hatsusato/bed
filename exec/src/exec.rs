@@ -4,7 +4,7 @@ enum Mode {
     Normal,
     Ignore,
     Block(Vec<Inst>),
-    Escape,
+    Quote,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -24,7 +24,7 @@ impl Exec {
             Mode::Normal => self.exec_normal(key),
             Mode::Ignore => self.exec_ignore(key),
             Mode::Block(block) => self.exec_block(key, block.clone()),
-            Mode::Escape => Some(self.exec_escape(key)),
+            Mode::Quote => self.exec_quote(key),
         } {
             self.vm.exec_inst(&inst);
         }
@@ -38,7 +38,7 @@ impl Exec {
             '\n' => self.mode = Mode::Normal,
             '#' => self.mode = Mode::Ignore,
             '"' => self.mode = Mode::Block(Vec::new()),
-            '\'' => self.mode = Mode::Escape,
+            '\'' => self.mode = Mode::Quote,
             _ => return Some(Inst::new(key)),
         }
         None
@@ -61,8 +61,8 @@ impl Exec {
         }
         None
     }
-    fn exec_escape(&mut self, key: char) -> Inst {
+    fn exec_quote(&mut self, key: char) -> Option<Inst> {
         self.mode = Mode::Normal;
-        Inst::Esc(key)
+        u8::try_from(key).ok().map(Inst::Imm)
     }
 }

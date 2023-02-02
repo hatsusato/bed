@@ -8,7 +8,7 @@ pub struct Machine {
 }
 impl Machine {
     pub fn exec_inst(&mut self, inst: &Inst) {
-        let cmd = Command::new(inst, &self.state);
+        let cmd = Command::new(*inst, &self.state);
         self.state.restore_bank(cmd.next);
         self.state.restore_page(cmd.page);
     }

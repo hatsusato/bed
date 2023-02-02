@@ -7,7 +7,7 @@ pub struct Command {
     pub page: Option<Page>,
 }
 impl Command {
-    pub fn new(inst: &Inst, state: &State) -> Self {
+    pub fn new(inst: Inst, state: &State) -> Self {
         let mut this = Self {
             next: state.bank(),
             page: None,
@@ -15,9 +15,10 @@ impl Command {
         this.update_inst(inst, state);
         this
     }
-    fn update_inst(&mut self, inst: &Inst, state: &State) {
+    fn update_inst(&mut self, inst: Inst, state: &State) {
         match inst {
-            Inst::Imm(digit) => self.next.imm(*digit),
+            Inst::Imm(data) => self.next.imm(data),
+            Inst::Ins(digit) => self.next.ins(digit),
             Inst::Swap => self.next.swap(),
             Inst::Hi => self.next.hi(),
             Inst::Lo => self.next.lo(),
@@ -52,8 +53,7 @@ impl Command {
             Inst::Store => self.store(state),
             Inst::Argc => self.next.argc(),
             Inst::Argv => self.argv(state),
-            Inst::Esc(ch) => self.next.esc(*ch),
-            Inst::Nop => (),
+            Inst::Ctrl | Inst::Nop => (),
         }
     }
     fn load(&mut self, state: &State) {

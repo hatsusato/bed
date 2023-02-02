@@ -23,7 +23,10 @@ impl Bank {
         let [data, acc] = reg.to_be_bytes();
         (self.data, self.acc) = (data, acc);
     }
-    pub fn imm(&mut self, digit: u8) {
+    pub fn imm(&mut self, key: u8) {
+        self.data = key;
+    }
+    pub fn ins(&mut self, digit: u8) {
         self.data = nibble_combine(self.data, digit);
     }
     pub fn swap(&mut self) {
@@ -125,11 +128,6 @@ impl Bank {
     }
     pub fn argv(&mut self, arg: &Option<String>) {
         self.set_len(arg.as_ref().map(String::len));
-    }
-    pub fn esc(&mut self, key: char) {
-        if let Ok(data) = u8::try_from(key) {
-            self.data = data;
-        }
     }
 }
 

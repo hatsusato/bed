@@ -1,6 +1,7 @@
 #[derive(Clone, Copy)]
 pub enum Inst {
     Imm(u8),
+    Ins(u8),
     Swap,
     Hi,
     Lo,
@@ -35,21 +36,21 @@ pub enum Inst {
     Store,
     Argc,
     Argv,
-    Esc(char),
+    Ctrl,
     Nop,
 }
 impl Inst {
     #[allow(clippy::match_same_arms)]
     pub fn new(key: char) -> Self {
         match key {
-            '\n' => unreachable!(),
+            '\n' => Inst::Ctrl,
             '!' => Inst::Neg,
-            '"' => unreachable!(),
-            '#' => unreachable!(),
+            '"' => Inst::Ctrl,
+            '#' => Inst::Ctrl,
             '$' => Inst::Argv,
             '%' => Inst::Argc,
             '&' => Inst::And,
-            '\'' => unreachable!(),
+            '\'' => Inst::Ctrl,
             '(' => Inst::Hi,
             ')' => Inst::Lo,
             '*' => Inst::Mul,
@@ -58,7 +59,7 @@ impl Inst {
             '-' => Inst::Sub,
             '.' => Inst::Nop,
             '/' => Inst::Div,
-            '0'..='9' => Inst::Imm(translate_hex_digit(key)),
+            '0'..='9' => Inst::Ins(translate_hex_digit(key)),
             ':' => Inst::Nop,
             ';' => Inst::Nop,
             '<' => Inst::Lt,
@@ -73,7 +74,7 @@ impl Inst {
             '^' => Inst::Xor,
             '_' => Inst::Clear,
             '`' => Inst::Nop,
-            'a'..='f' => Inst::Imm(translate_hex_digit(key)),
+            'a'..='f' => Inst::Ins(translate_hex_digit(key)),
             'g' => Inst::Goto,
             'h' => Inst::Left,
             'i' => Inst::Load,
