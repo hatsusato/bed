@@ -11,7 +11,7 @@ impl Editor {
         loop {
             self.exec.print();
             match Screen::getch() {
-                Some(key) => self.exec.exec(key),
+                Some(key) => self.exec.execute(key),
                 None => return,
             }
         }
