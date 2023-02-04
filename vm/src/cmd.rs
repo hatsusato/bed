@@ -59,6 +59,10 @@ impl Command {
             Inst::Pop => self.next.pop(state.page()),
             Inst::Argc => self.next.argc(),
             Inst::Argv => self.page = self.next.argv(*state.page()),
+            Inst::Put => self.next.put(state.page()),
+            Inst::Get => self.page = self.next.get(*state.page()),
+            Inst::Read => self.page = self.next.read(*state.page()),
+            Inst::Write => self.next.write(state.page()),
             Inst::Eval => self.eval(state),
             Inst::Ctrl | Inst::Nop => (),
         }

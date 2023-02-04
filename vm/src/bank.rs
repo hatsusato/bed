@@ -1,3 +1,4 @@
+use std::io::{self, Read, Write};
 use util::{Page, BLOCK_SIDE};
 
 #[derive(Default, Clone, Copy)]
@@ -13,7 +14,12 @@ impl Bank {
         if let Some(len) = len {
             self.acc = u8::try_from(len).unwrap_or(u8::MAX);
         }
-        self.error = len.map_or(true, |len| usize::from(u8::MAX) < len);
+        self.set_error(len.map_or(true, |len| usize::from(u8::MAX) < len));
+    }
+    fn set_error(&mut self, flag: bool) {
+        if flag {
+            self.error = true;
+        }
     }
     fn set_reg(&mut self, reg: u16) {
         let [data, acc] = reg.to_be_bytes();
@@ -172,6 +178,27 @@ impl Bank {
         } else {
             None
         }
+    }
+    pub fn put(&mut self, page: &Page) {
+        let buf = &[self.current(page)];
+        self.set_error(io::stdout().write(buf).is_err());
+    }
+    pub fn get(&mut self, mut page: Page) -> Option<Page> {
+        let buf = std::slice::from_mut(self.current_mut(&mut page));
+        self.set_error(io::stdin().read(buf).is_err());
+        None
+    }
+    pub fn read(&mut self, mut page: Page) -> Option<Page> {
+        let mut buf: Vec<u8> = std::iter::repeat(0).take(self.acc.into()).collect();
+        let len = io::stdin().read(&mut buf[..]).ok();
+        self.set_len(len);
+        page.write(buf.iter());
+        Some(page)
+    }
+    pub fn write(&mut self, page: &Page) {
+        let buf: Vec<u8> = (0..self.acc).map(|i| page[i]).collect();
+        let len = io::stdout().write(&buf[..]).ok();
+        self.set_len(len);
     }
     fn current(self, page: &Page) -> u8 {
         page[self.coord]
