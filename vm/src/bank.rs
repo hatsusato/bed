@@ -86,6 +86,9 @@ impl Bank {
     pub fn clear(&mut self) {
         (self.acc, self.error) = (u8::from(self.error), false);
     }
+    pub fn raise(&mut self) {
+        self.error = true;
+    }
     pub fn neg(&mut self) {
         self.acc = u8::from(self.data == 0);
     }
@@ -130,6 +133,10 @@ impl Bank {
     }
     pub fn store(&mut self, mut page: Page) -> Option<Page> {
         *self.current_mut(&mut page) = self.data;
+        Some(page)
+    }
+    pub fn del(&mut self, mut page: Page) -> Option<Page> {
+        *self.current_mut(&mut page) = 0;
         Some(page)
     }
     pub fn push(&mut self, mut page: Page) -> Option<Page> {
