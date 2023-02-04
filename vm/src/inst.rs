@@ -42,6 +42,7 @@ pub enum Inst {
     Pop,
     Argc,
     Argv,
+    Eval,
     Ctrl,
     Nop,
 }
@@ -79,7 +80,7 @@ impl Inst {
             ']' => Inst::Shr,
             '^' => Inst::Xor,
             '_' => Inst::Clear,
-            '`' => Inst::Nop,
+            '`' => Inst::Eval,
             'a'..='f' => Inst::Ins(translate_hex_digit(key)),
             'g' => Inst::Goto,
             'h' => Inst::Left,

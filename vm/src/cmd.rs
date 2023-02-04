@@ -59,7 +59,12 @@ impl Command {
             Inst::Pop => self.next.pop(state.page()),
             Inst::Argc => self.next.argc(),
             Inst::Argv => self.page = self.next.argv(*state.page()),
+            Inst::Eval => self.eval(state),
             Inst::Ctrl | Inst::Nop => (),
         }
+    }
+    fn eval(&mut self, state: &State) {
+        let inst = Inst::new(char::from(self.next.data));
+        self.update_inst(inst, state);
     }
 }
