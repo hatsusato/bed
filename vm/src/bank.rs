@@ -34,6 +34,12 @@ impl Bank {
     pub fn lo(&mut self) {
         self.acc = self.data;
     }
+    pub fn zero(&mut self) {
+        (self.data, self.acc) = (0, 0);
+    }
+    pub fn reset(&mut self) {
+        (self.block, self.coord) = (0, 0);
+    }
     pub fn goto(&mut self) {
         self.coord = self.acc;
     }

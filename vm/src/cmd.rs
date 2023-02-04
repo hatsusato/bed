@@ -22,6 +22,8 @@ impl Command {
             Inst::Swap => self.next.swap(),
             Inst::Hi => self.next.hi(),
             Inst::Lo => self.next.lo(),
+            Inst::Zero => self.next.zero(),
+            Inst::Reset => self.next.reset(),
             Inst::Goto => self.next.goto(),
             Inst::Jump => self.next.jump(),
             Inst::Pos => self.next.pos(),
