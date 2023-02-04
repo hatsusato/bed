@@ -49,28 +49,11 @@ impl Command {
             Inst::Shr => self.next.shr(),
             Inst::Rotl => self.next.rotl(),
             Inst::Rotr => self.next.rotr(),
-            Inst::Load => self.load(state),
-            Inst::Store => self.store(state),
+            Inst::Load => self.next.load(state.page()),
+            Inst::Store => self.page = self.next.store(*state.page()),
             Inst::Argc => self.next.argc(),
-            Inst::Argv => self.argv(state),
+            Inst::Argv => self.page = self.next.argv(*state.page()),
             Inst::Ctrl | Inst::Nop => (),
-        }
-    }
-    fn load(&mut self, state: &State) {
-        self.next.data = state.page()[self.next.coord];
-    }
-    fn store(&mut self, state: &State) {
-        let mut page = *state.page();
-        page[self.next.coord] = self.next.data;
-        self.page = Some(page);
-    }
-    fn argv(&mut self, state: &State) {
-        let arg = std::env::args().nth(self.next.acc.into());
-        self.next.argv(&arg);
-        if let Some(input) = arg {
-            let mut page = *state.page();
-            page.write(input.as_bytes().iter());
-            self.page = Some(page);
         }
     }
 }

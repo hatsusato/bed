@@ -1,4 +1,4 @@
-use util::BLOCK_SIDE;
+use util::{Page, BLOCK_SIDE};
 
 #[derive(Default, Clone, Copy)]
 pub struct Bank {
@@ -11,13 +11,9 @@ pub struct Bank {
 impl Bank {
     pub fn set_len(&mut self, len: Option<usize>) {
         if let Some(len) = len {
-            let result = u8::try_from(len);
-            self.acc = result.unwrap_or(u8::MAX);
-            if result.is_ok() {
-                return;
-            }
+            self.acc = u8::try_from(len).unwrap_or(u8::MAX);
         }
-        self.error = true;
+        self.error = len.map_or(true, |len| usize::from(u8::MAX) < len);
     }
     fn set_reg(&mut self, reg: u16) {
         let [data, acc] = reg.to_be_bytes();
@@ -123,11 +119,25 @@ impl Bank {
     pub fn rotr(&mut self) {
         self.acc = rot(self.acc, false);
     }
+    pub fn load(&mut self, page: &Page) {
+        self.data = page[self.coord];
+    }
+    pub fn store(&mut self, mut page: Page) -> Option<Page> {
+        page[self.coord] = self.data;
+        Some(page)
+    }
     pub fn argc(&mut self) {
         self.set_len(Some(std::env::args().len()));
     }
-    pub fn argv(&mut self, arg: &Option<String>) {
+    pub fn argv(&mut self, mut page: Page) -> Option<Page> {
+        let arg = std::env::args().nth(self.acc.into());
         self.set_len(arg.as_ref().map(String::len));
+        if let Some(arg) = arg {
+            page.write(arg.as_bytes().iter());
+            Some(page)
+        } else {
+            None
+        }
     }
 }
 
