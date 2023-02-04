@@ -120,11 +120,32 @@ impl Bank {
         self.acc = rot(self.acc, false);
     }
     pub fn load(&mut self, page: &Page) {
-        self.data = page[self.coord];
+        self.data = self.current(page);
     }
     pub fn store(&mut self, mut page: Page) -> Option<Page> {
-        page[self.coord] = self.data;
+        *self.current_mut(&mut page) = self.data;
         Some(page)
+    }
+    pub fn push(&mut self, mut page: Page) -> Option<Page> {
+        *self.current_mut(&mut page) = self.data;
+        self.right();
+        *self.current_mut(&mut page) = self.acc;
+        self.right();
+        *self.current_mut(&mut page) = self.block;
+        self.right();
+        *self.current_mut(&mut page) = self.coord;
+        self.right();
+        Some(page)
+    }
+    pub fn pop(&mut self, page: &Page) {
+        self.left();
+        self.coord = self.current(page);
+        self.left();
+        self.block = self.current(page);
+        self.left();
+        self.acc = self.current(page);
+        self.left();
+        self.data = self.current(page);
     }
     pub fn argc(&mut self) {
         self.set_len(Some(std::env::args().len()));
@@ -138,6 +159,12 @@ impl Bank {
         } else {
             None
         }
+    }
+    fn current(self, page: &Page) -> u8 {
+        page[self.coord]
+    }
+    fn current_mut(self, page: &mut Page) -> &mut u8 {
+        &mut page[self.coord]
     }
 }
 

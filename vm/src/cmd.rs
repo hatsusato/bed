@@ -51,6 +51,8 @@ impl Command {
             Inst::Rotr => self.next.rotr(),
             Inst::Load => self.next.load(state.page()),
             Inst::Store => self.page = self.next.store(*state.page()),
+            Inst::Push => self.page = self.next.push(*state.page()),
+            Inst::Pop => self.next.pop(state.page()),
             Inst::Argc => self.next.argc(),
             Inst::Argv => self.page = self.next.argv(*state.page()),
             Inst::Ctrl | Inst::Nop => (),
