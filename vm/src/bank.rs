@@ -52,8 +52,11 @@ impl Bank {
     pub fn jump(&mut self) {
         self.block = self.data;
     }
-    pub fn pos(&mut self) {
-        (self.data, self.acc) = (self.block, self.coord);
+    pub fn position(&mut self) {
+        self.acc = self.coord;
+    }
+    pub fn page(&mut self) {
+        self.data = self.block;
     }
     pub fn left(&mut self) {
         self.coord = overflow_sub(self.coord, 1);
@@ -134,10 +137,10 @@ impl Bank {
     pub fn rotr(&mut self) {
         self.acc = rot(self.acc, false);
     }
-    pub fn load(&mut self, page: &Page) {
+    pub fn read(&mut self, page: &Page) {
         self.data = page[self.coord];
     }
-    pub fn store(&mut self, mut page: Page) -> Option<Page> {
+    pub fn write(&mut self, mut page: Page) -> Option<Page> {
         page[self.coord] = self.data;
         Some(page)
     }
