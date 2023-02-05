@@ -135,36 +135,40 @@ impl Bank {
         self.acc = rot(self.acc, false);
     }
     pub fn load(&mut self, page: &Page) {
-        self.data = self.current(page);
+        self.data = page[self.coord];
     }
     pub fn store(&mut self, mut page: Page) -> Option<Page> {
-        *self.current_mut(&mut page) = self.data;
+        page[self.coord] = self.data;
         Some(page)
     }
     pub fn del(&mut self, mut page: Page) -> Option<Page> {
-        *self.current_mut(&mut page) = 0;
+        page[self.coord] = 0;
         Some(page)
     }
-    pub fn push(&mut self, mut page: Page) -> Option<Page> {
-        *self.current_mut(&mut page) = self.data;
-        self.right();
-        *self.current_mut(&mut page) = self.acc;
-        self.right();
-        *self.current_mut(&mut page) = self.block;
-        self.right();
-        *self.current_mut(&mut page) = self.coord;
-        self.right();
+    pub fn put(&mut self, page: &Page) {
+        let buf = &[page[self.coord]];
+        self.set_error(io::stdout().write(buf).is_err());
+    }
+    pub fn get(&mut self, mut page: Page) -> Option<Page> {
+        let buf = std::slice::from_mut(&mut page[self.coord]);
+        self.set_error(io::stdin().read(buf).is_err());
+        None
+    }
+    pub fn save(&mut self, mut page: Page) -> Option<Page> {
+        [self.data, self.acc, self.block, self.coord]
+            .iter()
+            .enumerate()
+            .for_each(|(offset, &src)| page[self.get_index(offset)] = src);
         Some(page)
     }
-    pub fn pop(&mut self, page: &Page) {
-        self.left();
-        self.coord = self.current(page);
-        self.left();
-        self.block = self.current(page);
-        self.left();
-        self.acc = self.current(page);
-        self.left();
-        self.data = self.current(page);
+    pub fn restore(&mut self, page: &Page) {
+        [self.data, self.acc, self.block, self.coord]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(offset, dst)| *dst = page[self.get_index(offset)]);
+    }
+    fn get_index(self, offset: usize) -> u8 {
+        overflow_add(self.coord, u8::try_from(offset).unwrap())
     }
     pub fn argc(&mut self) {
         self.set_len(Some(std::env::args().len()));
@@ -178,33 +182,6 @@ impl Bank {
         } else {
             None
         }
-    }
-    pub fn put(&mut self, page: &Page) {
-        let buf = &[self.current(page)];
-        self.set_error(io::stdout().write(buf).is_err());
-    }
-    pub fn get(&mut self, mut page: Page) -> Option<Page> {
-        let buf = std::slice::from_mut(self.current_mut(&mut page));
-        self.set_error(io::stdin().read(buf).is_err());
-        None
-    }
-    pub fn read(&mut self, mut page: Page) -> Option<Page> {
-        let mut buf: Vec<u8> = std::iter::repeat(0).take(self.acc.into()).collect();
-        let len = io::stdin().read(&mut buf[..]).ok();
-        self.set_len(len);
-        page.write(buf.iter());
-        Some(page)
-    }
-    pub fn write(&mut self, page: &Page) {
-        let buf: Vec<u8> = (0..self.acc).map(|i| page[i]).collect();
-        let len = io::stdout().write(&buf[..]).ok();
-        self.set_len(len);
-    }
-    fn current(self, page: &Page) -> u8 {
-        page[self.coord]
-    }
-    fn current_mut(self, page: &mut Page) -> &mut u8 {
-        &mut page[self.coord]
     }
 }
 

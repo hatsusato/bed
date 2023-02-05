@@ -60,7 +60,7 @@ impl Exec {
         }
     }
     fn execute_quote(&mut self, key: char) {
-        if let Ok(inst) = u8::try_from(key).map(Inst::Imm) {
+        if let Ok(inst) = u8::try_from(key).map(Inst::Immediate) {
             self.vm.exec_inst(inst);
         }
         self.mode = Mode::Normal;
