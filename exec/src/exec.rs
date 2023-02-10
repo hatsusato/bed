@@ -2,8 +2,14 @@ use vm::{Inst, Machine};
 
 enum Mode {
     Normal,
-    Ignore,
     Quote,
+    Ignore,
+    While,
+    Direct,
+    Call,
+    Define,
+    Exec,
+    Macro,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -14,7 +20,7 @@ impl Default for Mode {
 #[derive(Default)]
 pub struct Exec {
     mode: Mode,
-    block: Option<Vec<Inst>>,
+    quote: String,
     vm: Machine,
     last: char,
 }
@@ -22,48 +28,42 @@ impl Exec {
     pub fn execute(&mut self, key: char) {
         match self.mode {
             Mode::Normal => self.execute_normal(key),
-            Mode::Ignore => self.execute_ignore(key),
             Mode::Quote => self.execute_quote(key),
+            Mode::Ignore => self.execute_ignore(key),
+            Mode::While => (),
+            Mode::Direct => (),
+            Mode::Call => (),
+            Mode::Define => (),
+            Mode::Exec => (),
+            Mode::Macro => (),
         }
         self.last = key;
     }
     fn execute_normal(&mut self, key: char) {
         match key {
-            '\n' => (),
-            '#' => {
-                if self.block.is_none() {
-                    self.mode = Mode::Ignore;
-                }
-            }
-            '"' => {
-                if let Some(block) = &self.block {
-                    self.vm.exec_repeat(block);
-                    self.block = None;
-                } else {
-                    self.block = Some(Vec::new());
-                }
-            }
-            '\'' => self.mode = Mode::Quote,
-            _ => {
-                let inst = Inst::new(key);
-                if let Some(block) = &mut self.block {
-                    block.push(inst);
-                } else {
-                    self.vm.exec_inst(inst);
-                }
-            }
+            '\n' => self.mode = Mode::Normal,
+            '"' => self.mode = Mode::Quote,
+            '#' => self.mode = Mode::Ignore,
+            '%' => self.mode = Mode::While,
+            '\'' => self.mode = Mode::Direct,
+            ':' => self.mode = Mode::Call,
+            ';' => self.mode = Mode::Define,
+            '@' => self.mode = Mode::Exec,
+            'q' => self.mode = Mode::Macro,
+            _ => self.vm.exec_inst(Inst::new(key)),
+        }
+    }
+    fn execute_quote(&mut self, key: char) {
+        if key == '"' {
+            self.mode = Mode::Normal;
+        } else {
+            self.quote.push(key);
         }
     }
     fn execute_ignore(&mut self, key: char) {
         if key == '\n' {
             self.mode = Mode::Normal;
         }
-    }
-    fn execute_quote(&mut self, key: char) {
-        if let Ok(inst) = u8::try_from(key).map(Inst::Immediate) {
-            self.vm.exec_inst(inst);
-        }
-        self.mode = Mode::Normal;
     }
     pub fn print(&self) {
         self.vm.print(self.last);
