@@ -22,7 +22,7 @@ impl Exec {
             Ctrl::Direct => (),
             Ctrl::Call => (),
             Ctrl::Define => (),
-            Ctrl::Exec => (),
+            Ctrl::Run => self.execute_run(key),
             Ctrl::Macro => self.execute_macro(key),
         }
         self.last = key;
@@ -45,6 +45,12 @@ impl Exec {
     fn execute_ignore(&mut self, key: char) {
         if key == '\n' {
             self.ctrl = Ctrl::Enter;
+        }
+    }
+    fn execute_run(&mut self, key: char) {
+        self.ctrl = Ctrl::Enter;
+        if let Some(val) = self.map.get(&key) {
+            val.clone().chars().for_each(|key| self.execute(key));
         }
     }
     fn execute_macro(&mut self, key: char) {

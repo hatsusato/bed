@@ -7,7 +7,7 @@ pub enum Ctrl {
     Direct,
     Call,
     Define,
-    Exec,
+    Run,
     Macro,
 }
 impl Default for Ctrl {

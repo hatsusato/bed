@@ -78,7 +78,7 @@ impl Inst {
             '=' => Inst::Eq,
             '>' => Inst::Gt,
             '?' => Inst::Bool,
-            '@' => Inst::Meta(Ctrl::Exec),
+            '@' => Inst::Meta(Ctrl::Run),
             'A'..='Z' => Inst::new(key.to_ascii_lowercase()),
             '[' => Inst::Inc,
             '\\' => Inst::Raise,
