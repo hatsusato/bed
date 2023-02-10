@@ -1,3 +1,4 @@
+use screen::Screen;
 use std::io::{self, Read, Write};
 use util::{Page, BLOCK_SIDE};
 
@@ -10,6 +11,18 @@ pub struct Bank {
     pub error: bool,
 }
 impl Bank {
+    pub fn print(&self, key: char) {
+        Screen::move_cursor(0, 0);
+        Screen::print_display(format!(
+            "D:{:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}, KEY: {}",
+            self.data,
+            self.acc,
+            self.block,
+            self.coord,
+            u8::from(self.error),
+            key
+        ));
+    }
     pub fn set_len(&mut self, len: Option<usize>) {
         if let Some(len) = len {
             self.acc = u8::try_from(len).unwrap_or(u8::MAX);

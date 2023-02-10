@@ -27,20 +27,8 @@ impl State {
         }
     }
     pub fn print(&self, key: char) {
-        self.print_header(key);
+        self.bank.print(key);
         self.print_page();
-    }
-    fn print_header(&self, key: char) {
-        Screen::move_cursor(0, 0);
-        Screen::print_display(format!(
-            "D: {:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}, KEY: {}",
-            self.bank.data,
-            self.bank.acc,
-            self.bank.block,
-            self.bank.coord,
-            u8::from(self.bank.error),
-            key
-        ));
     }
     fn print_page(&self) {
         (0..BLOCK_SIDE).for_each(|y| (0..BLOCK_SIDE).for_each(|x| self.print_cell(x, y)));
