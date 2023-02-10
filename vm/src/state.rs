@@ -5,8 +5,8 @@ use util::{Block, Page};
 
 #[derive(Default)]
 pub struct State {
-    bank: Bank,
-    memory: Block<Page>,
+    pub bank: Bank,
+    pub memory: Block<Page>,
 }
 
 impl State {

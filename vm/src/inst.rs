@@ -1,4 +1,5 @@
-use crate::Ctrl;
+use crate::{Bank, Ctrl};
+use util::Page;
 
 #[derive(Clone)]
 pub enum Inst {
@@ -114,8 +115,62 @@ impl Inst {
             _ => Inst::Nop,
         }
     }
+    pub fn issue(&self, bank: &mut Bank, page: &mut Page) {
+        match *self {
+            Inst::Immediate(data) => bank.imm(data),
+            Inst::Insert(digit) => bank.ins(digit),
+            Inst::Swap => bank.swap(),
+            Inst::High => bank.hi(),
+            Inst::Low => bank.lo(),
+            Inst::Zero => bank.zero(),
+            Inst::Origin => bank.origin(),
+            Inst::Start => bank.start(),
+            Inst::Goto => bank.goto(),
+            Inst::Jump => bank.jump(),
+            Inst::Position => bank.position(),
+            Inst::Page => bank.page(),
+            Inst::Left => bank.left(),
+            Inst::Right => bank.right(),
+            Inst::Up => bank.up(),
+            Inst::Down => bank.down(),
+            Inst::Inc => bank.inc(),
+            Inst::Dec => bank.dec(),
+            Inst::Add => bank.add(),
+            Inst::Sub => bank.sub(),
+            Inst::Mul => bank.mul(),
+            Inst::Div => bank.div(),
+            Inst::Clear => bank.clear(),
+            Inst::Raise => bank.raise(),
+            Inst::Neg => bank.neg(),
+            Inst::Bool => bank.bool(),
+            Inst::Eq => bank.eq(),
+            Inst::Lt => bank.lt(),
+            Inst::Gt => bank.gt(),
+            Inst::Not => bank.not(),
+            Inst::And => bank.and(),
+            Inst::Or => bank.or(),
+            Inst::Xor => bank.xor(),
+            Inst::Shl => bank.shl(),
+            Inst::Shr => bank.shr(),
+            Inst::Rotl => bank.rotl(),
+            Inst::Rotr => bank.rotr(),
+            Inst::Read => bank.read(page),
+            Inst::Write => update_page(&bank.write(*page), page),
+            Inst::Delete => update_page(&bank.del(*page), page),
+            Inst::Put => bank.put(page),
+            Inst::Get => update_page(&bank.get(*page), page),
+            Inst::Save => update_page(&bank.save(*page), page),
+            Inst::Restore => bank.restore(page),
+            Inst::Eval | Inst::Quote(_) | Inst::Meta(_) | Inst::Nop => (),
+        }
+    }
 }
 
+fn update_page(src: &Option<Page>, dst: &mut Page) {
+    if let Some(page) = src {
+        *dst = *page;
+    }
+}
 fn translate_hex_digit(key: char) -> u8 {
     const ZERO: u8 = b'0';
     const A: u8 = b'a';

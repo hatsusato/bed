@@ -12,6 +12,11 @@ impl Machine {
         self.state.restore_bank(cmd.next);
         self.state.restore_page(cmd.page);
     }
+    pub fn issue_inst(&mut self, inst: &Inst) {
+        let mut bank = self.state.bank;
+        let mut page = *self.state.page();
+        inst.issue(&mut bank, &mut page);
+    }
     pub fn issue(&mut self, seq: &str) {
         seq.chars().map(Inst::new).for_each(|inst| {
             let Command { next, page } = Command::new(inst, &self.state);
