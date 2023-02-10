@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::mem;
 use vm::{Ctrl, Inst, Machine};
 
@@ -5,6 +6,9 @@ use vm::{Ctrl, Inst, Machine};
 pub struct Exec {
     ctrl: Ctrl,
     quote: String,
+    record: String,
+    key: Option<char>,
+    map: HashMap<char, String>,
     vm: Machine,
     last: char,
 }
@@ -19,7 +23,7 @@ impl Exec {
             Ctrl::Call => (),
             Ctrl::Define => (),
             Ctrl::Exec => (),
-            Ctrl::Macro => (),
+            Ctrl::Macro => self.execute_macro(key),
         }
         self.last = key;
     }
@@ -41,6 +45,19 @@ impl Exec {
     fn execute_ignore(&mut self, key: char) {
         if key == '\n' {
             self.ctrl = Ctrl::Enter;
+        }
+    }
+    fn execute_macro(&mut self, key: char) {
+        if let Some(k) = self.key {
+            if key == 'q' {
+                let v = mem::take(&mut self.record);
+                self.map.insert(k, v);
+                self.ctrl = Ctrl::Enter;
+            } else {
+                self.record.push(key);
+            }
+        } else {
+            self.key = Some(key);
         }
     }
     pub fn print(&self) {
