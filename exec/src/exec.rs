@@ -1,3 +1,4 @@
+use std::mem;
 use vm::{Ctrl, Inst, Machine};
 
 #[derive(Default)]
@@ -29,9 +30,12 @@ impl Exec {
         }
     }
     fn execute_quote(&mut self, key: char) {
-        match key {
-            '"' => self.ctrl = Ctrl::Enter,
-            _ => self.quote.push(key),
+        if key == '"' {
+            let quote = mem::take(&mut self.quote);
+            self.vm.exec_inst(Inst::Quote(quote));
+            self.ctrl = Ctrl::Enter;
+        } else {
+            self.quote.push(key);
         }
     }
     fn execute_ignore(&mut self, key: char) {

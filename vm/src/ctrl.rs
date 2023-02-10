@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum Ctrl {
     Enter,
     Quote,

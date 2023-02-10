@@ -1,6 +1,6 @@
 use crate::Ctrl;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum Inst {
     Immediate(u8),
     Insert(u8),
@@ -47,6 +47,7 @@ pub enum Inst {
     Save,
     Restore,
     Eval,
+    Quote(String),
     Meta(Ctrl),
     Nop,
 }

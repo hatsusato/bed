@@ -1,5 +1,4 @@
-use crate::inst::Inst;
-use crate::{Bank, State};
+use crate::{Bank, Inst, State};
 use util::Page;
 
 pub struct Command {
@@ -62,11 +61,16 @@ impl Command {
             Inst::Save => self.page = self.next.save(*state.page()),
             Inst::Restore => self.next.restore(state.page()),
             Inst::Eval => self.eval(state),
+            Inst::Quote(quote) => self.quote(&quote, *state.page()),
             Inst::Meta(_) | Inst::Nop => (),
         }
     }
     fn eval(&mut self, state: &State) {
         let inst = Inst::new(char::from(self.next.data));
         self.update_inst(inst, state);
+    }
+    fn quote(&mut self, input: &String, mut page: Page) {
+        page.write(self.next.coord, input.as_bytes().iter());
+        self.page = Some(page);
     }
 }

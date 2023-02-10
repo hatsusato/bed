@@ -26,9 +26,10 @@ impl<T> IndexMut<u8> for Block<T> {
     }
 }
 impl<T: Copy> Block<T> {
-    pub fn write(&mut self, input: Iter<T>) {
+    pub fn write(&mut self, coord: u8, input: Iter<T>) {
         self.block
             .iter_mut()
+            .skip(coord.into())
             .zip(input)
             .for_each(|(dst, src)| *dst = *src);
     }

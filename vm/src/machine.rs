@@ -17,7 +17,7 @@ impl Machine {
         (0..count).for_each(|_| self.exec_block(block));
     }
     fn exec_block(&mut self, block: &[Inst]) {
-        block.iter().for_each(|inst| self.exec_inst(*inst));
+        block.iter().for_each(|inst| self.exec_inst(inst.clone()));
     }
     pub fn print(&self, key: char) {
         self.state.print(key);
