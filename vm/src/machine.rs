@@ -12,6 +12,13 @@ impl Machine {
         self.state.restore_bank(cmd.next);
         self.state.restore_page(cmd.page);
     }
+    pub fn issue(&mut self, seq: &str) {
+        seq.chars().map(Inst::new).for_each(|inst| {
+            let Command { next, page } = Command::new(inst, &self.state);
+            self.state.restore_bank(next);
+            self.state.restore_page(page);
+        });
+    }
     pub fn exec_repeat(&mut self, block: &[Inst]) {
         let count = self.state.bank().acc;
         (0..count).for_each(|_| self.exec_block(block));

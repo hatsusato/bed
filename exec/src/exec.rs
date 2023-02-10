@@ -56,7 +56,7 @@ impl Exec {
     fn execute_run(&mut self, key: char) {
         self.ctrl = Ctrl::Enter;
         if let Some(val) = self.map.get(&key) {
-            val.clone().chars().for_each(|key| self.execute(key));
+            self.vm.issue(val);
         }
     }
     fn execute_macro(&mut self, key: char) {
