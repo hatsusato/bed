@@ -1,68 +1,42 @@
-use vm::{Inst, Machine};
-
-enum Mode {
-    Normal,
-    Quote,
-    Ignore,
-    While,
-    Direct,
-    Call,
-    Define,
-    Exec,
-    Macro,
-}
-impl Default for Mode {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
+use vm::{Ctrl, Inst, Machine};
 
 #[derive(Default)]
 pub struct Exec {
-    mode: Mode,
+    ctrl: Ctrl,
     quote: String,
     vm: Machine,
     last: char,
 }
 impl Exec {
     pub fn execute(&mut self, key: char) {
-        match self.mode {
-            Mode::Normal => self.execute_normal(key),
-            Mode::Quote => self.execute_quote(key),
-            Mode::Ignore => self.execute_ignore(key),
-            Mode::While => (),
-            Mode::Direct => (),
-            Mode::Call => (),
-            Mode::Define => (),
-            Mode::Exec => (),
-            Mode::Macro => (),
+        match self.ctrl {
+            Ctrl::Enter => self.execute_enter(key),
+            Ctrl::Quote => self.execute_quote(key),
+            Ctrl::Ignore => self.execute_ignore(key),
+            Ctrl::While => (),
+            Ctrl::Direct => (),
+            Ctrl::Call => (),
+            Ctrl::Define => (),
+            Ctrl::Exec => (),
+            Ctrl::Macro => (),
         }
         self.last = key;
     }
-    fn execute_normal(&mut self, key: char) {
-        match key {
-            '\n' => self.mode = Mode::Normal,
-            '"' => self.mode = Mode::Quote,
-            '#' => self.mode = Mode::Ignore,
-            '%' => self.mode = Mode::While,
-            '\'' => self.mode = Mode::Direct,
-            ':' => self.mode = Mode::Call,
-            ';' => self.mode = Mode::Define,
-            '@' => self.mode = Mode::Exec,
-            'q' => self.mode = Mode::Macro,
-            _ => self.vm.exec_inst(Inst::new(key)),
+    fn execute_enter(&mut self, key: char) {
+        match Inst::new(key) {
+            Inst::Meta(ctrl) => self.ctrl = ctrl,
+            inst => self.vm.exec_inst(inst),
         }
     }
     fn execute_quote(&mut self, key: char) {
-        if key == '"' {
-            self.mode = Mode::Normal;
-        } else {
-            self.quote.push(key);
+        match key {
+            '"' => self.ctrl = Ctrl::Enter,
+            _ => self.quote.push(key),
         }
     }
     fn execute_ignore(&mut self, key: char) {
         if key == '\n' {
-            self.mode = Mode::Normal;
+            self.ctrl = Ctrl::Enter;
         }
     }
     pub fn print(&self) {

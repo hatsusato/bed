@@ -1,3 +1,5 @@
+use crate::Ctrl;
+
 #[derive(Clone, Copy)]
 pub enum Inst {
     Immediate(u8),
@@ -47,21 +49,21 @@ pub enum Inst {
     Argc,
     Argv,
     Eval,
-    Ctrl,
+    Meta(Ctrl),
     Nop,
 }
 impl Inst {
     #[allow(clippy::match_same_arms)]
     pub fn new(key: char) -> Self {
         match key {
-            '\n' => Inst::Ctrl,
+            '\n' => Inst::Meta(Ctrl::Enter),
             '!' => Inst::Neg,
-            '"' => Inst::Ctrl,
-            '#' => Inst::Ctrl,
-            '$' => Inst::Ctrl,
-            '%' => Inst::Ctrl,
+            '"' => Inst::Meta(Ctrl::Quote),
+            '#' => Inst::Meta(Ctrl::Ignore),
+            '$' => Inst::Nop,
+            '%' => Inst::Meta(Ctrl::While),
             '&' => Inst::And,
-            '\'' => Inst::Ctrl,
+            '\'' => Inst::Meta(Ctrl::Direct),
             '(' => Inst::Rotl,
             ')' => Inst::Rotr,
             '*' => Inst::Mul,
@@ -71,13 +73,13 @@ impl Inst {
             '.' => Inst::Put,
             '/' => Inst::Div,
             '0'..='9' => Inst::Insert(translate_hex_digit(key)),
-            ':' => Inst::Ctrl,
-            ';' => Inst::Ctrl,
+            ':' => Inst::Meta(Ctrl::Call),
+            ';' => Inst::Meta(Ctrl::Define),
             '<' => Inst::Lt,
             '=' => Inst::Eq,
             '>' => Inst::Gt,
             '?' => Inst::Bool,
-            '@' => Inst::Ctrl,
+            '@' => Inst::Meta(Ctrl::Exec),
             'A'..='Z' => Inst::new(key.to_ascii_lowercase()),
             '[' => Inst::Inc,
             '\\' => Inst::Raise,
@@ -96,7 +98,7 @@ impl Inst {
             'n' => Inst::Page,
             'o' => Inst::Low,
             'p' => Inst::Goto,
-            'q' => Inst::Ctrl,
+            'q' => Inst::Meta(Ctrl::Macro),
             'r' => Inst::Read,
             's' => Inst::Start,
             't' => Inst::Restore,

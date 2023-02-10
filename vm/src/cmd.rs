@@ -64,7 +64,7 @@ impl Command {
             Inst::Argc => self.next.argc(),
             Inst::Argv => self.page = self.next.argv(*state.page()),
             Inst::Eval => self.eval(state),
-            Inst::Ctrl | Inst::Nop => (),
+            Inst::Meta(_) | Inst::Nop => (),
         }
     }
     fn eval(&mut self, state: &State) {
