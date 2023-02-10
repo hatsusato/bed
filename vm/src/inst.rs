@@ -46,8 +46,6 @@ pub enum Inst {
     Get,
     Save,
     Restore,
-    Argc,
-    Argv,
     Eval,
     Meta(Ctrl),
     Nop,

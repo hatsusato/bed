@@ -176,19 +176,6 @@ impl Bank {
     fn get_index(self, offset: usize) -> u8 {
         overflow_add(self.coord, u8::try_from(offset).unwrap())
     }
-    pub fn argc(&mut self) {
-        self.set_len(Some(std::env::args().len()));
-    }
-    pub fn argv(&mut self, mut page: Page) -> Option<Page> {
-        let arg = std::env::args().nth(self.acc.into());
-        self.set_len(arg.as_ref().map(String::len));
-        if let Some(arg) = arg {
-            page.write(arg.as_bytes().iter());
-            Some(page)
-        } else {
-            None
-        }
-    }
 }
 
 const NIBBLE_SHIFT: u32 = u8::BITS / 2;

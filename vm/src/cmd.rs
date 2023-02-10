@@ -61,8 +61,6 @@ impl Command {
             Inst::Get => self.page = self.next.get(*state.page()),
             Inst::Save => self.page = self.next.save(*state.page()),
             Inst::Restore => self.next.restore(state.page()),
-            Inst::Argc => self.next.argc(),
-            Inst::Argv => self.page = self.next.argv(*state.page()),
             Inst::Eval => self.eval(state),
             Inst::Meta(_) | Inst::Nop => (),
         }
