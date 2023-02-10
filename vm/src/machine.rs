@@ -19,6 +19,15 @@ impl Machine {
             self.state.restore_page(page);
         });
     }
+    pub fn repeat(&mut self, seq: &str) {
+        let count = self.state.bank().acc;
+        let mut bank = self.state.bank();
+        for i in 0..count {
+            bank.acc = i;
+            self.state.restore_bank(bank);
+            self.issue(seq);
+        }
+    }
     pub fn exec_repeat(&mut self, block: &[Inst]) {
         let count = self.state.bank().acc;
         (0..count).for_each(|_| self.exec_block(block));

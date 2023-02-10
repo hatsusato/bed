@@ -18,7 +18,7 @@ impl Exec {
             Ctrl::Enter => self.execute_enter(key),
             Ctrl::Quote => self.execute_quote(key),
             Ctrl::Ignore => self.execute_ignore(key),
-            Ctrl::While => (),
+            Ctrl::While => self.execute_while(key),
             Ctrl::Direct => self.execute_direct(key),
             Ctrl::Call => (),
             Ctrl::Define => (),
@@ -45,6 +45,12 @@ impl Exec {
     fn execute_ignore(&mut self, key: char) {
         if key == '\n' {
             self.ctrl = Ctrl::Enter;
+        }
+    }
+    fn execute_while(&mut self, key: char) {
+        self.ctrl = Ctrl::Enter;
+        if let Some(val) = self.map.get(&key) {
+            self.vm.repeat(val);
         }
     }
     fn execute_direct(&mut self, key: char) {
