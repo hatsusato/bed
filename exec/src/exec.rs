@@ -62,7 +62,7 @@ impl Exec {
     fn execute_run(&mut self, key: char) {
         self.ctrl = Ctrl::Enter;
         if let Some(val) = self.map.get(&key) {
-            self.vm.issue(val);
+            self.vm.issue_seq(val);
         }
     }
     fn execute_macro(&mut self, key: char) {
