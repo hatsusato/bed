@@ -19,7 +19,7 @@ impl Exec {
             Ctrl::Quote => self.execute_quote(key),
             Ctrl::Ignore => self.execute_ignore(key),
             Ctrl::While => (),
-            Ctrl::Direct => (),
+            Ctrl::Direct => self.execute_direct(key),
             Ctrl::Call => (),
             Ctrl::Define => (),
             Ctrl::Run => self.execute_run(key),
@@ -45,6 +45,12 @@ impl Exec {
     fn execute_ignore(&mut self, key: char) {
         if key == '\n' {
             self.ctrl = Ctrl::Enter;
+        }
+    }
+    fn execute_direct(&mut self, key: char) {
+        self.ctrl = Ctrl::Enter;
+        if let Ok(key) = u8::try_from(key) {
+            self.vm.exec_inst(Inst::Immediate(key));
         }
     }
     fn execute_run(&mut self, key: char) {
