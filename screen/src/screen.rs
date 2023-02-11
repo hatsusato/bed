@@ -40,6 +40,19 @@ impl Drop for RawMode {
     }
 }
 
+struct DisplayReverse {}
+impl Default for DisplayReverse {
+    fn default() -> Self {
+        print(style::Attribute::Reverse);
+        Self {}
+    }
+}
+impl Drop for DisplayReverse {
+    fn drop(&mut self) {
+        print(style::Attribute::NoReverse);
+    }
+}
+
 #[derive(Default)]
 pub struct Screen {
     _alternate_screen: AlternateScreen,
@@ -63,19 +76,14 @@ impl Screen {
             None
         }
     }
-    pub fn print_display(disp: impl Display) {
-        use style::Print;
-        queue(Print(disp));
+    pub fn print_display(disp: impl Display, highlight: bool) {
+        if highlight {
+            let _rev = DisplayReverse::default();
+            print(disp);
+        } else {
+            print(disp);
+        }
         flush();
-    }
-    pub fn print_highlight(disp: impl Display) {
-        use style::Attribute;
-        Self::print_display(format!(
-            "{}{}{}",
-            Attribute::Reverse,
-            disp,
-            Attribute::NoReverse
-        ));
     }
     pub fn move_cursor(x: u16, y: u16) {
         use cursor::MoveTo;
@@ -83,6 +91,10 @@ impl Screen {
     }
 }
 
+fn print(disp: impl Display) {
+    use style::Print;
+    queue(Print(disp));
+}
 fn execute(cmd: impl Command) {
     use crossterm::ExecutableCommand;
     std::io::stdout().execute(cmd).unwrap();

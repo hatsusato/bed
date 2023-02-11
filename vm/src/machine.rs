@@ -1,4 +1,4 @@
-use crate::{Bank, Inst, Page, State};
+use crate::{Bank, Inst, Page};
 use util::Block;
 
 #[derive(Default)]
@@ -34,8 +34,7 @@ impl Machine {
         block.iter().for_each(|inst| self.exec_inst(inst.clone()));
     }
     pub fn print(&self, key: char) {
-        let (bank, memory) = (self.bank, self.memory);
-        let state = State { bank, memory };
-        state.print(key);
+        self.bank.print(key);
+        self.memory[self.bank.block].print(self.bank.coord);
     }
 }
