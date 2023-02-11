@@ -1,5 +1,4 @@
 mod bank;
-mod cmd;
 mod ctrl;
 mod inst;
 mod machine;
