@@ -1,7 +1,7 @@
-use crate::Bank;
+use crate::{Bank, Page};
 use screen::Screen;
+use util::Block;
 use util::BLOCK_SIDE;
-use util::{Block, Page};
 
 #[derive(Default)]
 pub struct State {

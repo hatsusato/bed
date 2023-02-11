@@ -1,6 +1,7 @@
+use crate::Page;
 use screen::Screen;
 use std::io::{self, Read, Write};
-use util::{Page, BLOCK_SIDE};
+use util::BLOCK_SIDE;
 
 #[derive(Default, Clone, Copy)]
 pub struct Bank {

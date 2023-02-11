@@ -1,5 +1,5 @@
-use crate::{Bank, Inst, State};
-use util::{Block, Page};
+use crate::{Bank, Inst, Page, State};
+use util::Block;
 
 #[derive(Default)]
 pub struct Machine {

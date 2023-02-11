@@ -1,5 +1,5 @@
 use std::ops::{Index, IndexMut};
-use std::slice::Iter;
+use std::slice::{Iter, IterMut};
 
 const BLOCK_SIZE: usize = 1 << u8::BITS;
 pub const BLOCK_SIDE: u8 = 1 << (u8::BITS / 2);
@@ -25,14 +25,11 @@ impl<T> IndexMut<u8> for Block<T> {
         &mut self.block[usize::from(index)]
     }
 }
-impl<T: Copy> Block<T> {
-    pub fn write(&mut self, coord: u8, input: Iter<T>) {
-        self.block
-            .iter_mut()
-            .skip(coord.into())
-            .zip(input)
-            .for_each(|(dst, src)| *dst = *src);
+impl<T> Block<T> {
+    pub fn iter(&self) -> Iter<T> {
+        self.block.iter()
+    }
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        self.block.iter_mut()
     }
 }
-
-pub type Page = Block<u8>;

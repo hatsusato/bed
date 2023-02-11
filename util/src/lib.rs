@@ -1,3 +1,3 @@
 mod block;
 
-pub use block::{Block, Page, BLOCK_SIDE};
+pub use block::{Block, BLOCK_SIDE};

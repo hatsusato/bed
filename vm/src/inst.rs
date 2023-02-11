@@ -1,5 +1,4 @@
-use crate::{Bank, Ctrl};
-use util::Page;
+use crate::{Bank, Ctrl, Page};
 
 #[derive(Clone)]
 pub enum Inst {
