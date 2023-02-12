@@ -115,9 +115,9 @@ impl Inst {
         }
     }
     pub fn issue(&self, bank: &mut Bank, page: &mut Page) {
-        match *self {
-            Inst::Immediate(data) => bank.imm(data),
-            Inst::Insert(digit) => bank.ins(digit),
+        match self {
+            Inst::Immediate(data) => bank.imm(*data),
+            Inst::Insert(digit) => bank.ins(*digit),
             Inst::Swap => bank.swap(),
             Inst::High => bank.hi(),
             Inst::Low => bank.lo(),
@@ -160,7 +160,8 @@ impl Inst {
             Inst::Get => page.get(bank),
             Inst::Save => page.save(bank),
             Inst::Restore => page.restore(bank),
-            Inst::Eval | Inst::Quote(_) | Inst::Meta(_) | Inst::Nop => (),
+            Inst::Quote(input) => page.quote(input, bank),
+            Inst::Eval | Inst::Meta(_) | Inst::Nop => (),
         }
     }
 }

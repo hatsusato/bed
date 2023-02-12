@@ -1,6 +1,5 @@
 use crate::Bank;
 use screen::Screen;
-use std::io::{self, Read, Write};
 use std::ops::{Index, IndexMut};
 use util::{Block, BLOCK_SIDE};
 
@@ -23,12 +22,38 @@ impl IndexMut<u8> for Page {
     }
 }
 impl Page {
-    pub fn write(&mut self, coord: u8, input: &str) {
-        self.page
-            .iter_mut()
-            .skip(coord.into())
-            .zip(input.as_bytes())
-            .for_each(|(dst, src)| *dst = *src);
+    pub fn load(&self, bank: &mut Bank) {
+        bank.load(&self[bank.coord]);
+    }
+    pub fn store(&mut self, bank: &Bank) {
+        bank.store(&mut self[bank.coord]);
+    }
+    pub fn delete(&mut self, bank: &Bank) {
+        self[bank.coord] = 0;
+    }
+    pub fn put(&self, bank: &mut Bank) {
+        let mut buf = [0];
+        buf[0] = self[bank.coord];
+        bank.put(&buf);
+    }
+    pub fn get(&mut self, bank: &mut Bank) {
+        let mut buf = [0];
+        bank.get(&mut buf);
+        self[bank.coord] = buf[0];
+    }
+    pub fn save(&mut self, bank: &mut Bank) {
+        let mut buf = [0; 4];
+        bank.save(&mut buf);
+        copy(self.page.iter_mut().skip(bank.coord.into()), buf.iter());
+    }
+    pub fn restore(&self, bank: &mut Bank) {
+        let mut buf = [0; 4];
+        copy(buf.iter_mut(), self.page.iter().skip(bank.coord.into()));
+        bank.restore(&buf);
+    }
+    pub fn quote(&mut self, input: &str, bank: &Bank) {
+        let input = input.as_bytes().iter();
+        copy(self.page.iter_mut().skip(bank.coord.into()), input);
     }
     pub fn print(&self, coord: u8) {
         for y in 0..BLOCK_SIDE {
@@ -37,40 +62,6 @@ impl Page {
                 self.print_cell(coord, x, y);
             }
         }
-    }
-    pub fn load(&self, bank: &mut Bank) {
-        bank.data = self[bank.coord];
-    }
-    pub fn store(&mut self, bank: &Bank) {
-        self[bank.coord] = bank.data;
-    }
-    pub fn delete(&mut self, bank: &Bank) {
-        self[bank.coord] = 0;
-    }
-    pub fn put(&self, bank: &mut Bank) {
-        let buf = &[self[bank.coord]];
-        bank.set_error(io::stdout().write(buf).is_err());
-    }
-    pub fn get(&mut self, bank: &mut Bank) {
-        let buf = &mut [u8::from(0)];
-        bank.set_error(io::stdin().read(buf).is_err());
-        self[bank.coord] = buf[0];
-    }
-    pub fn save(&mut self, bank: &mut Bank) {
-        self.page
-            .iter_mut()
-            .skip(bank.coord.into())
-            .zip(bank.save().iter())
-            .for_each(|(dst, src)| *dst = *src);
-    }
-    pub fn restore(&self, bank: &mut Bank) {
-        let mut buf = [0; 4];
-        self.page
-            .iter()
-            .skip(bank.coord.into())
-            .zip(buf.iter_mut())
-            .for_each(|(src, dst)| *dst = *src);
-        bank.restore(buf);
     }
     fn print_cell(&self, coord: u8, x: u8, y: u8) {
         let index = x + y * BLOCK_SIDE;
@@ -82,4 +73,8 @@ impl Page {
         let y = u16::from(y) + LINE_OFFSET;
         Screen::move_cursor(x, y);
     }
+}
+
+fn copy<'a, 'b>(dst: impl Iterator<Item = &'a mut u8>, src: impl Iterator<Item = &'b u8>) {
+    dst.zip(src).for_each(|(dst, src)| *dst = *src);
 }

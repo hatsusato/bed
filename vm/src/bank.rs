@@ -1,4 +1,5 @@
 use screen::Screen;
+use std::io::{Read, Write};
 use util::BLOCK_SIDE;
 
 #[derive(Default, Clone, Copy)]
@@ -10,34 +11,6 @@ pub struct Bank {
     pub error: bool,
 }
 impl Bank {
-    pub fn print(&self, key: char) {
-        Screen::move_cursor(0, 0);
-        let msg = format!(
-            "D:{:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}, KEY: {}",
-            self.data,
-            self.acc,
-            self.block,
-            self.coord,
-            u8::from(self.error),
-            key
-        );
-        Screen::print_display(msg, false);
-    }
-    pub fn set_len(&mut self, len: Option<usize>) {
-        if let Some(len) = len {
-            self.acc = u8::try_from(len).unwrap_or(u8::MAX);
-        }
-        self.set_error(len.map_or(true, |len| usize::from(u8::MAX) < len));
-    }
-    pub fn set_error(&mut self, flag: bool) {
-        if flag {
-            self.error = true;
-        }
-    }
-    fn set_reg(&mut self, reg: u16) {
-        let [data, acc] = reg.to_be_bytes();
-        (self.data, self.acc) = (data, acc);
-    }
     pub fn imm(&mut self, key: u8) {
         self.data = key;
     }
@@ -153,11 +126,45 @@ impl Bank {
     pub fn rotr(&mut self) {
         self.acc = rot(self.acc, false);
     }
-    pub fn save(&self) -> [u8; 4] {
-        [self.data, self.acc, self.block, self.coord]
+    pub fn load(&mut self, val: &u8) {
+        self.data = *val;
     }
-    pub fn restore(&mut self, buf: [u8; 4]) {
-        [self.data, self.acc, self.block, self.coord] = buf;
+    pub fn store(&self, val: &mut u8) {
+        *val = self.data;
+    }
+    pub fn put(&mut self, buf: &[u8; 1]) {
+        self.set_error(std::io::stdout().write(buf).is_err());
+    }
+    pub fn get(&mut self, buf: &mut [u8; 1]) {
+        self.set_error(std::io::stdin().read(buf).is_err());
+    }
+    pub fn save(&self, buf: &mut [u8; 4]) {
+        *buf = [self.data, self.acc, self.block, self.coord];
+    }
+    pub fn restore(&mut self, buf: &[u8; 4]) {
+        [self.data, self.acc, self.block, self.coord] = *buf;
+    }
+    pub fn print(&self, key: char) {
+        Screen::move_cursor(0, 0);
+        let msg = format!(
+            "D:{:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}, KEY: {}",
+            self.data,
+            self.acc,
+            self.block,
+            self.coord,
+            u8::from(self.error),
+            key
+        );
+        Screen::print_display(msg, false);
+    }
+    fn set_error(&mut self, flag: bool) {
+        if flag {
+            self.error = true;
+        }
+    }
+    fn set_reg(&mut self, reg: u16) {
+        let [data, acc] = reg.to_be_bytes();
+        (self.data, self.acc) = (data, acc);
     }
 }
 
