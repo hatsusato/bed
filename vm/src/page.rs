@@ -1,4 +1,6 @@
+use crate::Bank;
 use screen::Screen;
+use std::io::{self, Read, Write};
 use std::ops::{Index, IndexMut};
 use util::{Block, BLOCK_SIDE};
 
@@ -35,6 +37,40 @@ impl Page {
                 self.print_cell(coord, x, y);
             }
         }
+    }
+    pub fn load(&self, bank: &mut Bank) {
+        bank.data = self[bank.coord];
+    }
+    pub fn store(&mut self, bank: &Bank) {
+        self[bank.coord] = bank.data;
+    }
+    pub fn delete(&mut self, bank: &Bank) {
+        self[bank.coord] = 0;
+    }
+    pub fn put(&self, bank: &mut Bank) {
+        let buf = &[self[bank.coord]];
+        bank.set_error(io::stdout().write(buf).is_err());
+    }
+    pub fn get(&mut self, bank: &mut Bank) {
+        let buf = &mut [u8::from(0)];
+        bank.set_error(io::stdin().read(buf).is_err());
+        self[bank.coord] = buf[0];
+    }
+    pub fn save(&mut self, bank: &mut Bank) {
+        self.page
+            .iter_mut()
+            .skip(bank.coord.into())
+            .zip(bank.save().iter())
+            .for_each(|(dst, src)| *dst = *src);
+    }
+    pub fn restore(&self, bank: &mut Bank) {
+        let mut buf = [0; 4];
+        self.page
+            .iter()
+            .skip(bank.coord.into())
+            .zip(buf.iter_mut())
+            .for_each(|(src, dst)| *dst = *src);
+        bank.restore(buf);
     }
     fn print_cell(&self, coord: u8, x: u8, y: u8) {
         let index = x + y * BLOCK_SIDE;

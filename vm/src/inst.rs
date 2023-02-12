@@ -39,8 +39,8 @@ pub enum Inst {
     Shr,
     Rotl,
     Rotr,
-    Read,
-    Write,
+    Load,
+    Store,
     Delete,
     Put,
     Get,
@@ -98,12 +98,12 @@ impl Inst {
             'o' => Inst::Low,
             'p' => Inst::Goto,
             'q' => Inst::Meta(Ctrl::Macro),
-            'r' => Inst::Read,
+            'r' => Inst::Load,
             's' => Inst::Start,
             't' => Inst::Restore,
             'u' => Inst::Jump,
             'v' => Inst::Save,
-            'w' => Inst::Write,
+            'w' => Inst::Store,
             'x' => Inst::Delete,
             'y' => Inst::Swap,
             'z' => Inst::Zero,
@@ -153,23 +153,18 @@ impl Inst {
             Inst::Shr => bank.shr(),
             Inst::Rotl => bank.rotl(),
             Inst::Rotr => bank.rotr(),
-            Inst::Read => bank.read(page),
-            Inst::Write => update_page(&bank.write(*page), page),
-            Inst::Delete => update_page(&bank.del(*page), page),
-            Inst::Put => bank.put(page),
-            Inst::Get => update_page(&bank.get(*page), page),
-            Inst::Save => update_page(&bank.save(*page), page),
-            Inst::Restore => bank.restore(page),
+            Inst::Load => page.load(bank),
+            Inst::Store => page.store(bank),
+            Inst::Delete => page.delete(bank),
+            Inst::Put => page.put(bank),
+            Inst::Get => page.get(bank),
+            Inst::Save => page.save(bank),
+            Inst::Restore => page.restore(bank),
             Inst::Eval | Inst::Quote(_) | Inst::Meta(_) | Inst::Nop => (),
         }
     }
 }
 
-fn update_page(src: &Option<Page>, dst: &mut Page) {
-    if let Some(page) = src {
-        *dst = *page;
-    }
-}
 fn translate_hex_digit(key: char) -> u8 {
     const ZERO: u8 = b'0';
     const A: u8 = b'a';

@@ -1,6 +1,4 @@
-use crate::Page;
 use screen::Screen;
-use std::io::{self, Read, Write};
 use util::BLOCK_SIDE;
 
 #[derive(Default, Clone, Copy)]
@@ -31,7 +29,7 @@ impl Bank {
         }
         self.set_error(len.map_or(true, |len| usize::from(u8::MAX) < len));
     }
-    fn set_error(&mut self, flag: bool) {
+    pub fn set_error(&mut self, flag: bool) {
         if flag {
             self.error = true;
         }
@@ -155,41 +153,11 @@ impl Bank {
     pub fn rotr(&mut self) {
         self.acc = rot(self.acc, false);
     }
-    pub fn read(&mut self, page: &Page) {
-        self.data = page[self.coord];
-    }
-    pub fn write(&mut self, mut page: Page) -> Option<Page> {
-        page[self.coord] = self.data;
-        Some(page)
-    }
-    pub fn del(&mut self, mut page: Page) -> Option<Page> {
-        page[self.coord] = 0;
-        Some(page)
-    }
-    pub fn put(&mut self, page: &Page) {
-        let buf = &[page[self.coord]];
-        self.set_error(io::stdout().write(buf).is_err());
-    }
-    pub fn get(&mut self, mut page: Page) -> Option<Page> {
-        let buf = std::slice::from_mut(&mut page[self.coord]);
-        self.set_error(io::stdin().read(buf).is_err());
-        None
-    }
-    pub fn save(&mut self, mut page: Page) -> Option<Page> {
+    pub fn save(&self) -> [u8; 4] {
         [self.data, self.acc, self.block, self.coord]
-            .iter()
-            .enumerate()
-            .for_each(|(offset, &src)| page[self.get_index(offset)] = src);
-        Some(page)
     }
-    pub fn restore(&mut self, page: &Page) {
-        [self.data, self.acc, self.block, self.coord]
-            .iter_mut()
-            .enumerate()
-            .for_each(|(offset, dst)| *dst = page[self.get_index(offset)]);
-    }
-    fn get_index(self, offset: usize) -> u8 {
-        overflow_add(self.coord, u8::try_from(offset).unwrap())
+    pub fn restore(&mut self, buf: [u8; 4]) {
+        [self.data, self.acc, self.block, self.coord] = buf;
     }
 }
 
