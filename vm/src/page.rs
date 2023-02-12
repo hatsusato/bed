@@ -65,7 +65,7 @@ impl Page {
     }
     fn print_cell(&self, coord: u8, x: u8, y: u8) {
         let index = x + y * BLOCK_SIDE;
-        let msg = format!("{:02x}", self[index]);
+        let msg = util::as_hex(self[index]);
         Screen::print_display(msg, coord == index);
     }
     fn move_cell(x: u8, y: u8) {

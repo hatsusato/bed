@@ -147,12 +147,12 @@ impl Bank {
     pub fn print(&self, key: char) {
         Screen::move_cursor(0, 0);
         let msg = format!(
-            "D:{:02x}, A: {:02x}, B: {:02x}, C: {:02x}, E: {:1x}, KEY: {}",
-            self.data,
-            self.acc,
-            self.block,
-            self.coord,
-            u8::from(self.error),
+            "D: {}, A: {}, B: {}, C: {}, E: {}, KEY: {}",
+            util::as_hex(self.data),
+            util::as_hex(self.acc),
+            util::as_hex(self.block),
+            util::as_hex(self.coord),
+            util::as_hex(self.error),
             key
         );
         Screen::print_display(msg, false);
