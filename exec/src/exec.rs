@@ -30,13 +30,13 @@ impl Exec {
     fn execute_enter(&mut self, key: char) {
         match Inst::new(key) {
             Inst::Meta(ctrl) => self.ctrl = ctrl,
-            inst => self.vm.exec_inst(inst),
+            inst => self.vm.issue_inst(&inst),
         }
     }
     fn execute_quote(&mut self, key: char) {
         if key == '"' {
             let quote = mem::take(&mut self.quote);
-            self.vm.exec_inst(Inst::Quote(quote));
+            self.vm.issue_inst(&Inst::Quote(quote));
             self.ctrl = Ctrl::Enter;
         } else {
             self.quote.push(key);
@@ -56,13 +56,13 @@ impl Exec {
     fn execute_direct(&mut self, key: char) {
         self.ctrl = Ctrl::Enter;
         if let Ok(key) = u8::try_from(key) {
-            self.vm.exec_inst(Inst::Immediate(key));
+            self.vm.issue_inst(&Inst::Immediate(key));
         }
     }
     fn execute_run(&mut self, key: char) {
         self.ctrl = Ctrl::Enter;
         if let Some(val) = self.map.get(&key) {
-            self.vm.issue_seq(val);
+            self.vm.issue_run(val);
         }
     }
     fn execute_macro(&mut self, key: char) {
