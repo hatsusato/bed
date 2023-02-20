@@ -1,6 +1,6 @@
+use crate::ctrl::{Ctrl, IssueType, NameType};
+use crate::Machine;
 use std::collections::HashMap;
-use vm::ctrl::{IssueType, NameType};
-use vm::{Ctrl, Machine};
 
 #[derive(Default)]
 pub struct Exec {
