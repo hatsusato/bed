@@ -1,5 +1,5 @@
 mod bank;
-mod ctrl;
+pub mod ctrl;
 mod inst;
 mod machine;
 mod page;

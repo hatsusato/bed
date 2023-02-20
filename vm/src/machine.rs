@@ -22,6 +22,7 @@ impl Machine {
             self.bank.acc = i;
             self.issue_run(seq);
         }
+        self.bank.acc = count;
     }
     pub fn print(&self, key: char) {
         self.bank.print(key);

@@ -1,4 +1,4 @@
-use crate::{Bank, Ctrl, Page};
+use crate::{Bank, Page};
 
 #[derive(Clone)]
 pub enum Inst {
@@ -48,21 +48,21 @@ pub enum Inst {
     Restore,
     Eval,
     Quote(String),
-    Meta(Ctrl),
+    Meta,
     Nop,
 }
 impl Inst {
     #[allow(clippy::match_same_arms)]
     pub fn new(key: char) -> Self {
         match key {
-            '\n' => Inst::Meta(Ctrl::Enter),
+            '\n' => Inst::Meta,
             '!' => Inst::Neg,
-            '"' => Inst::Meta(Ctrl::Quote),
-            '#' => Inst::Meta(Ctrl::Ignore),
+            '"' => Inst::Meta,
+            '#' => Inst::Meta,
             '$' => Inst::Nop,
-            '%' => Inst::Meta(Ctrl::While),
+            '%' => Inst::Meta,
             '&' => Inst::And,
-            '\'' => Inst::Meta(Ctrl::Direct),
+            '\'' => Inst::Meta,
             '(' => Inst::Rotl,
             ')' => Inst::Rotr,
             '*' => Inst::Mul,
@@ -72,13 +72,13 @@ impl Inst {
             '.' => Inst::Put,
             '/' => Inst::Div,
             '0'..='9' => Inst::Insert(translate_hex_digit(key)),
-            ':' => Inst::Meta(Ctrl::Call),
-            ';' => Inst::Meta(Ctrl::Define),
+            ':' => Inst::Meta,
+            ';' => Inst::Meta,
             '<' => Inst::Lt,
             '=' => Inst::Eq,
             '>' => Inst::Gt,
             '?' => Inst::Bool,
-            '@' => Inst::Meta(Ctrl::Run),
+            '@' => Inst::Meta,
             'A'..='Z' => Inst::new(key.to_ascii_lowercase()),
             '[' => Inst::Inc,
             '\\' => Inst::Raise,
@@ -97,7 +97,7 @@ impl Inst {
             'n' => Inst::Page,
             'o' => Inst::Low,
             'p' => Inst::Goto,
-            'q' => Inst::Meta(Ctrl::Macro),
+            'q' => Inst::Meta,
             'r' => Inst::Load,
             's' => Inst::Start,
             't' => Inst::Restore,
@@ -161,7 +161,7 @@ impl Inst {
             Inst::Save => page.save(bank),
             Inst::Restore => page.restore(bank),
             Inst::Quote(input) => page.quote(input, bank),
-            Inst::Eval | Inst::Meta(_) | Inst::Nop => (),
+            Inst::Eval | Inst::Meta | Inst::Nop => (),
         }
     }
 }
