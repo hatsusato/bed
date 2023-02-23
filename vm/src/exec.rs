@@ -27,11 +27,16 @@ impl Exec {
     fn execute_inst(&mut self, inst: &Inst) {
         self.vm.issue_inst(inst);
     }
+    fn execute_macro(&mut self, input: char) {
+        let seq = self.map.get(&input);
+        self.vm.issue_run(seq.unwrap_or(&String::default()));
+    }
     fn execute_normal(&mut self, input: char) {
         match input {
             '"' => self.ctrl = Ctrl::Quote,
             '#' => self.ctrl = Ctrl::Ignore,
             '\'' => self.ctrl = Ctrl::Delay(DelayType::Immediate),
+            '@' => self.ctrl = Ctrl::Delay(DelayType::Macro),
             'q' => self.ctrl = Ctrl::Delay(DelayType::Record),
             _ => self.execute_inst(&Inst::new(input)),
         }
@@ -42,10 +47,11 @@ impl Exec {
         }
     }
     fn execute_delay(&mut self, input: char, ty: &DelayType) {
-        use DelayType::{Immediate, Record};
+        use DelayType::{Immediate, Macro, Record};
         match ty {
             Immediate => self.execute_inst(&Inst::immediate(input)),
             Record => self.ctrl = Ctrl::Record(input),
+            Macro => self.execute_macro(input),
         }
     }
     fn execute_record(&mut self, input: char, key: char) {
