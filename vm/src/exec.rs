@@ -1,4 +1,4 @@
-use crate::ctrl::{Ctrl, DelayType, IssueType, NameType};
+use crate::ctrl::{Ctrl, DelayType, NameType};
 use crate::{Inst, Machine};
 use std::collections::HashMap;
 use std::mem;
@@ -18,7 +18,6 @@ impl Exec {
             Ctrl::Ignore => self.execute_ignore(input),
             Ctrl::Delay(ty) => self.execute_delay(input, &ty),
             Ctrl::Record(key) => self.execute_record(input, key),
-            Ctrl::Issue(ty) => self.execute_issue(input, ty),
             Ctrl::Name(ty) => self.execute_name(input, ty),
             Ctrl::Body => self.execute_body(input),
             Ctrl::Quote => self.execute_quote(input),
@@ -62,7 +61,6 @@ impl Exec {
             self.queue.push(input);
         }
     }
-    fn execute_issue(&mut self, input: char, ty: IssueType) {}
     fn execute_name(&mut self, input: char, ty: NameType) {}
     fn execute_body(&mut self, input: char) {}
     fn execute_quote(&mut self, input: char) {
