@@ -18,8 +18,8 @@ impl Exec {
             Ctrl::Ignore => self.execute_ignore(input),
             Ctrl::Delay(ty) => self.execute_delay(input, &ty),
             Ctrl::Record(key) => self.execute_record(input, key),
-            Ctrl::Name(ty) => self.execute_name(input, ty),
-            Ctrl::Body => self.execute_body(input),
+            Ctrl::Name(ty) => self.execute_name(input, &ty),
+            Ctrl::Body(name) => self.execute_body(input, name),
             Ctrl::Quote => self.execute_quote(input),
         }
     }
@@ -40,6 +40,7 @@ impl Exec {
             '#' => self.ctrl = Ctrl::Ignore,
             '%' => self.ctrl = Ctrl::Delay(DelayType::While),
             '\'' => self.ctrl = Ctrl::Delay(DelayType::Immediate),
+            ';' => self.ctrl = Ctrl::Name(NameType::Define),
             '@' => self.ctrl = Ctrl::Delay(DelayType::Macro),
             'q' => self.ctrl = Ctrl::Delay(DelayType::Record),
             _ => self.execute_inst(&Inst::new(input)),
@@ -67,8 +68,17 @@ impl Exec {
             self.queue.push(input);
         }
     }
-    fn execute_name(&mut self, input: char, ty: NameType) {}
-    fn execute_body(&mut self, input: char) {}
+    fn execute_name(&mut self, input: char, ty: &NameType) {
+        use NameType::Define;
+        if '\n' == input {
+            match ty {
+                Define => self.ctrl = Ctrl::Body(mem::take(&mut self.queue)),
+            }
+        } else {
+            self.queue.push(input);
+        }
+    }
+    fn execute_body(&mut self, input: char, name: String) {}
     fn execute_quote(&mut self, input: char) {
         if '"' == input {
             let queue = mem::take(&mut self.queue);

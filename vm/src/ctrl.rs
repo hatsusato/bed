@@ -18,7 +18,7 @@ pub enum Ctrl {
     Delay(DelayType),
     Record(char),
     Name(NameType),
-    Body,
+    Body(String),
     Quote,
 }
 impl Default for Ctrl {
