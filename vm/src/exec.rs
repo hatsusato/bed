@@ -26,14 +26,19 @@ impl Exec {
     fn execute_inst(&mut self, inst: &Inst) {
         self.vm.issue_inst(inst);
     }
-    fn execute_macro(&mut self, input: char) {
-        let seq = self.map.get(&input);
+    fn execute_macro(&mut self, key: char) {
+        let seq = self.map.get(&key);
         self.vm.issue_run(seq.unwrap_or(&String::default()));
+    }
+    fn execute_while(&mut self, key: char) {
+        let seq = self.map.get(&key);
+        self.vm.repeat(seq.unwrap_or(&String::default()));
     }
     fn execute_normal(&mut self, input: char) {
         match input {
             '"' => self.ctrl = Ctrl::Quote,
             '#' => self.ctrl = Ctrl::Ignore,
+            '%' => self.ctrl = Ctrl::Delay(DelayType::While),
             '\'' => self.ctrl = Ctrl::Delay(DelayType::Immediate),
             '@' => self.ctrl = Ctrl::Delay(DelayType::Macro),
             'q' => self.ctrl = Ctrl::Delay(DelayType::Record),
@@ -46,11 +51,12 @@ impl Exec {
         }
     }
     fn execute_delay(&mut self, input: char, ty: &DelayType) {
-        use DelayType::{Immediate, Macro, Record};
+        use DelayType::{Immediate, Macro, Record, While};
         match ty {
             Immediate => self.execute_inst(&Inst::immediate(input)),
             Record => self.ctrl = Ctrl::Record(input),
             Macro => self.execute_macro(input),
+            While => self.execute_while(input),
         }
     }
     fn execute_record(&mut self, input: char, key: char) {

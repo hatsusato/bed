@@ -3,6 +3,7 @@ pub enum DelayType {
     Immediate,
     Record,
     Macro,
+    While,
 }
 
 #[derive(Clone)]
