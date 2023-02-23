@@ -8,6 +8,7 @@ pub struct Exec {
     ctrl: Ctrl,
     queue: String,
     map: HashMap<char, String>,
+    routines: HashMap<String, String>,
     vm: Machine,
     last: char,
 }
@@ -22,6 +23,7 @@ impl Exec {
             Ctrl::Body(name) => self.execute_body(input, name),
             Ctrl::Quote => self.execute_quote(input),
         }
+        self.last = input;
     }
     fn execute_inst(&mut self, inst: &Inst) {
         self.vm.issue_inst(inst);
@@ -78,7 +80,17 @@ impl Exec {
             self.queue.push(input);
         }
     }
-    fn execute_body(&mut self, input: char, name: String) {}
+    fn execute_body(&mut self, input: char, name: String) {
+        if self.last == '\n' && input == '\n' {
+            self.routines.insert(name, mem::take(&mut self.queue));
+            self.ctrl = Ctrl::Normal;
+        } else if input == ';' {
+            self.routines.insert(name, mem::take(&mut self.queue));
+            self.ctrl = Ctrl::Name(NameType::Define);
+        } else {
+            self.queue.push(input);
+        }
+    }
     fn execute_quote(&mut self, input: char) {
         if '"' == input {
             let queue = mem::take(&mut self.queue);
