@@ -1,6 +1,7 @@
 #[derive(Clone)]
 pub enum DelayType {
     Immediate,
+    Record,
 }
 
 #[derive(Clone)]

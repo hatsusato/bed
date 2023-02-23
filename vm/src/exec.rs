@@ -7,8 +7,6 @@ use std::mem;
 pub struct Exec {
     ctrl: Ctrl,
     queue: String,
-    record: String,
-    key: Option<char>,
     map: HashMap<char, String>,
     vm: Machine,
     last: char,
@@ -34,6 +32,7 @@ impl Exec {
             '"' => self.ctrl = Ctrl::Quote,
             '#' => self.ctrl = Ctrl::Ignore,
             '\'' => self.ctrl = Ctrl::Delay(DelayType::Immediate),
+            'q' => self.ctrl = Ctrl::Delay(DelayType::Record),
             _ => self.execute_inst(&Inst::new(input)),
         }
     }
@@ -43,11 +42,20 @@ impl Exec {
         }
     }
     fn execute_delay(&mut self, input: char, ty: &DelayType) {
+        use DelayType::{Immediate, Record};
         match ty {
-            DelayType::Immediate => self.execute_inst(&Inst::immediate(input)),
+            Immediate => self.execute_inst(&Inst::immediate(input)),
+            Record => self.ctrl = Ctrl::Record(input),
         }
     }
-    fn execute_record(&mut self, input: char, key: char) {}
+    fn execute_record(&mut self, input: char, key: char) {
+        if 'q' == input {
+            let queue = mem::take(&mut self.queue);
+            self.map.insert(key, queue);
+        } else {
+            self.queue.push(input);
+        }
+    }
     fn execute_issue(&mut self, input: char, ty: IssueType) {}
     fn execute_name(&mut self, input: char, ty: NameType) {}
     fn execute_body(&mut self, input: char) {}
