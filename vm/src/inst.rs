@@ -164,6 +164,13 @@ impl Inst {
             Inst::Eval | Inst::Meta | Inst::Nop => (),
         }
     }
+    pub fn immediate(input: char) -> Self {
+        if let Ok(input) = u8::try_from(input) {
+            Inst::Immediate(input)
+        } else {
+            Inst::Nop
+        }
+    }
 }
 
 fn translate_hex_digit(key: char) -> u8 {

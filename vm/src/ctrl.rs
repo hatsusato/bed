@@ -1,4 +1,9 @@
 #[derive(Clone)]
+pub enum DelayType {
+    Immediate,
+}
+
+#[derive(Clone)]
 pub enum IssueType {
     Macro,
 }
@@ -12,6 +17,7 @@ pub enum NameType {
 pub enum Ctrl {
     Normal,
     Ignore,
+    Delay(DelayType),
     Record(char),
     Issue(IssueType),
     Name(NameType),
