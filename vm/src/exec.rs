@@ -1,5 +1,5 @@
 use crate::ctrl::{Ctrl, IssueType, NameType};
-use crate::Machine;
+use crate::{Inst, Machine};
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -24,8 +24,21 @@ impl Exec {
             Ctrl::Quote => self.execute_quote(input),
         }
     }
-    fn execute_normal(&mut self, input: char) {}
-    fn execute_ignore(&mut self, input: char) {}
+    fn execute_other(&mut self, input: char) {
+        let inst = Inst::new(input);
+        self.vm.issue_inst(&inst);
+    }
+    fn execute_normal(&mut self, input: char) {
+        match input {
+            '#' => self.ctrl = Ctrl::Ignore,
+            _ => self.execute_other(input),
+        }
+    }
+    fn execute_ignore(&mut self, input: char) {
+        if '\n' == input {
+            self.ctrl = Ctrl::Normal;
+        }
+    }
     fn execute_record(&mut self, input: char, key: char) {}
     fn execute_issue(&mut self, input: char, ty: IssueType) {}
     fn execute_name(&mut self, input: char, ty: NameType) {}
