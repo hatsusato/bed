@@ -29,12 +29,19 @@ impl Exec {
         self.vm.issue_inst(inst);
     }
     fn execute_macro(&mut self, key: char) {
-        let seq = self.map.get(&key);
-        self.vm.issue_run(seq.unwrap_or(&String::default()));
+        if let Some(seq) = self.map.get(&key) {
+            self.vm.issue_run(seq);
+        }
     }
     fn execute_while(&mut self, key: char) {
-        let seq = self.map.get(&key);
-        self.vm.repeat(seq.unwrap_or(&String::default()));
+        if let Some(seq) = self.map.get(&key) {
+            self.vm.repeat(seq);
+        }
+    }
+    fn execute_call(&mut self, name: &str) {
+        if let Some(seq) = self.routines.get(name) {
+            self.vm.issue_run(seq);
+        }
     }
     fn execute_normal(&mut self, input: char) {
         match input {
@@ -42,6 +49,7 @@ impl Exec {
             '#' => self.ctrl = Ctrl::Ignore,
             '%' => self.ctrl = Ctrl::Delay(DelayType::While),
             '\'' => self.ctrl = Ctrl::Delay(DelayType::Immediate),
+            ':' => self.ctrl = Ctrl::Name(NameType::Call),
             ';' => self.ctrl = Ctrl::Name(NameType::Define),
             '@' => self.ctrl = Ctrl::Delay(DelayType::Macro),
             'q' => self.ctrl = Ctrl::Delay(DelayType::Record),
@@ -71,10 +79,12 @@ impl Exec {
         }
     }
     fn execute_name(&mut self, input: char, ty: &NameType) {
-        use NameType::Define;
+        use NameType::{Call, Define};
         if '\n' == input {
+            let name = mem::take(&mut self.queue);
             match ty {
-                Define => self.ctrl = Ctrl::Body(mem::take(&mut self.queue)),
+                Define => self.ctrl = Ctrl::Body(name),
+                Call => self.execute_call(&name),
             }
         } else {
             self.queue.push(input);

@@ -9,6 +9,7 @@ pub enum DelayType {
 #[derive(Clone)]
 pub enum NameType {
     Define,
+    Call,
 }
 
 #[derive(Clone)]
