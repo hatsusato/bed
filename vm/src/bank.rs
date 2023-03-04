@@ -138,11 +138,11 @@ impl Bank {
     pub fn get(&mut self, buf: &mut [u8; 1]) {
         self.set_error(std::io::stdin().read(buf).is_err());
     }
-    pub fn save(&self, buf: &mut [u8; 4]) {
-        *buf = [self.data, self.acc, self.block, self.coord];
+    pub fn save(&self, buf: &mut [u8]) {
+        (buf[0], buf[1], buf[2], buf[3]) = (self.data, self.acc, self.block, self.coord);
     }
-    pub fn restore(&mut self, buf: &[u8; 4]) {
-        [self.data, self.acc, self.block, self.coord] = *buf;
+    pub fn restore(&mut self, buf: &[u8]) {
+        (self.data, self.acc, self.block, self.coord) = (buf[0], buf[1], buf[2], buf[3]);
     }
     pub fn print(&self, key: char) {
         Screen::move_cursor(0, 0);

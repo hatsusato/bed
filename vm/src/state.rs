@@ -1,11 +1,11 @@
-use crate::{Bank, Inst, Page};
+use crate::{Bank, Inst};
 use std::io;
 use util::Block;
 
 #[derive(Default)]
 pub struct State {
     bank: Bank,
-    memory: Block<Page>,
+    memory: Block<Block<u8>>,
 }
 impl State {
     pub fn issue(&mut self, inst: Inst) {
@@ -53,45 +53,62 @@ impl State {
             Inst::Delete => self.delete(),
             Inst::Put => self.put(),
             Inst::Get => self.get(),
-            Inst::Save => (),
-            Inst::Restore => (),
-            Inst::Quote(_input) => (),
+            Inst::Save => self.save(),
+            Inst::Restore => self.restore(),
+            Inst::Quote(input) => self.quote(&input),
             Inst::Eval | Inst::Meta | Inst::Nop => (),
         }
     }
     fn load(&mut self) {
-        self.bank.data = *self.current();
+        self.bank.data = self.current()[0];
     }
     fn store(&mut self) {
-        *self.current_mut() = self.bank.data;
+        self.current_mut()[0] = self.bank.data;
     }
     fn delete(&mut self) {
-        *self.current_mut() = 0;
+        self.current_mut()[0] = 0;
     }
     fn put(&mut self) {
-        let flag = put_byte(self.current()).is_err();
-        self.bank.set_error(flag);
+        use io::Write;
+        let src = &self.current()[0..1];
+        let result = io::stdout().write(src);
+        self.bank.set_error(result.is_err());
     }
     fn get(&mut self) {
-        let flag = get_byte(self.current_mut()).is_err();
-        self.bank.set_error(flag);
+        use io::Read;
+        let dst = &mut self.current_mut()[0..1];
+        let result = io::stdin().read(dst);
+        self.bank.set_error(result.is_err());
     }
-    fn current(&self) -> &u8 {
-        &self.memory[self.bank.block][self.bank.coord]
+    fn save(&mut self) {
+        let buf = &mut [0; 4];
+        self.bank.save(buf);
+        copy(self.current_mut(), buf);
     }
-    fn current_mut(&mut self) -> &mut u8 {
-        &mut self.memory[self.bank.block][self.bank.coord]
+    fn restore(&mut self) {
+        let buf = &mut [0; 4];
+        copy(buf, self.current());
+        self.bank.restore(buf);
+    }
+    fn quote(&mut self, input: &str) {
+        copy(self.current_mut(), input.as_bytes());
+    }
+    fn page(&self) -> &[u8] {
+        self.memory[self.bank.block].iter().as_slice()
+    }
+    fn page_mut(&mut self) -> &mut [u8] {
+        self.memory[self.bank.block].iter_mut().into_slice()
+    }
+    fn current(&self) -> &[u8] {
+        let coord = usize::from(self.bank.coord);
+        &self.page()[coord..]
+    }
+    fn current_mut(&mut self) -> &mut [u8] {
+        let coord = usize::from(self.bank.coord);
+        &mut self.page_mut()[coord..]
     }
 }
 
-fn put_byte(data: &u8) -> io::Result<usize> {
-    use io::Write;
-    io::stdout().write(&[*data])
-}
-fn get_byte(data: &mut u8) -> io::Result<usize> {
-    use io::Read;
-    let buf = &mut [0];
-    let result = io::stdin().read(buf);
-    *data = buf[0];
-    result
+fn copy(dst: &mut [u8], src: &[u8]) {
+    dst.iter_mut().zip(src).for_each(|(dst, src)| *dst = *src);
 }
