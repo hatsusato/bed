@@ -1,11 +1,11 @@
-use crate::{Bank, Inst};
+use crate::{Inst, Regs};
 use screen::Screen;
 use std::io;
 use util::{Block, BLOCK_SIDE};
 
 #[derive(Default)]
 pub struct State {
-    bank: Bank,
+    bank: Regs,
     memory: Block<Block<u8>>,
 }
 impl State {

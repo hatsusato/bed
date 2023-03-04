@@ -2,15 +2,15 @@ use screen::Screen;
 use std::io::{Read, Write};
 use util::BLOCK_SIDE;
 
-#[derive(Default, Clone, Copy)]
-pub struct Bank {
+#[derive(Default, Clone)]
+pub struct Regs {
     pub acc: u8,
     pub block: u8,
     pub coord: u8,
     pub data: u8,
     pub error: bool,
 }
-impl Bank {
+impl Regs {
     pub fn imm(&mut self, key: u8) {
         self.data = key;
     }
