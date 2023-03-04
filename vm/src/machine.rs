@@ -1,8 +1,10 @@
+use crate::state::State;
 use crate::{Bank, Inst, Page};
 use util::Block;
 
 #[derive(Default)]
 pub struct Machine {
+    state: State,
     bank: Bank,
     memory: Block<Page>,
 }

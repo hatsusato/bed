@@ -4,6 +4,7 @@ mod exec;
 mod inst;
 mod machine;
 mod page;
+mod state;
 
 pub use bank::Bank;
 pub use exec::Exec;
