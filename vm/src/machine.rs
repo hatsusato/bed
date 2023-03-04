@@ -22,7 +22,6 @@ impl Machine {
         self.state.repeat(insts.as_slice());
     }
     pub fn print(&self, key: char) {
-        self.bank.print(key);
-        self.memory[self.bank.block].print(self.bank.coord);
+        self.state.print(key);
     }
 }
