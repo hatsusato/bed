@@ -59,6 +59,17 @@ impl State {
             Inst::Eval | Inst::Meta | Inst::Nop => (),
         }
     }
+    pub fn run(&mut self, insts: &[Inst]) {
+        insts.iter().for_each(|i| self.issue(i.clone()));
+    }
+    pub fn repeat(&mut self, insts: &[Inst]) {
+        let count = self.bank.acc;
+        for i in 0..count {
+            self.bank.acc = i;
+            self.run(insts);
+        }
+        self.bank.acc = count;
+    }
     fn load(&mut self) {
         self.bank.data = self.current()[0];
     }

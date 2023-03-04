@@ -14,17 +14,12 @@ impl Machine {
         inst.issue(&mut self.bank, page);
     }
     pub fn issue_run(&mut self, seq: &str) {
-        seq.chars()
-            .map(Inst::new)
-            .for_each(|inst| self.issue_inst(&inst));
+        let insts: Vec<_> = seq.chars().map(Inst::new).collect();
+        self.state.run(insts.as_slice());
     }
     pub fn repeat(&mut self, seq: &str) {
-        let count = self.bank.acc;
-        for i in 0..count {
-            self.bank.acc = i;
-            self.issue_run(seq);
-        }
-        self.bank.acc = count;
+        let insts: Vec<_> = seq.chars().map(Inst::new).collect();
+        self.state.repeat(insts.as_slice());
     }
     pub fn print(&self, key: char) {
         self.bank.print(key);
