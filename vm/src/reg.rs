@@ -1,5 +1,4 @@
 use screen::Screen;
-use std::io::{Read, Write};
 use util::BLOCK_SIDE;
 
 #[derive(Default, Clone)]
@@ -126,22 +125,10 @@ impl Regs {
     pub fn rotr(&mut self) {
         self.acc = rot(self.acc, false);
     }
-    pub fn load(&mut self, val: &u8) {
-        self.data = *val;
-    }
-    pub fn store(&self, val: &mut u8) {
-        *val = self.data;
-    }
-    pub fn put(&mut self, buf: &[u8; 1]) {
-        self.set_error(std::io::stdout().write(buf).is_err());
-    }
-    pub fn get(&mut self, buf: &mut [u8; 1]) {
-        self.set_error(std::io::stdin().read(buf).is_err());
-    }
-    pub fn save(&self, buf: &mut [u8]) {
+    pub fn save(&self, buf: &mut [u8; 4]) {
         (buf[0], buf[1], buf[2], buf[3]) = (self.data, self.acc, self.block, self.coord);
     }
-    pub fn restore(&mut self, buf: &[u8]) {
+    pub fn restore(&mut self, buf: &[u8; 4]) {
         (self.data, self.acc, self.block, self.coord) = (buf[0], buf[1], buf[2], buf[3]);
     }
     pub fn print(&self, key: char) {
