@@ -2,8 +2,8 @@ use crate::{Bank, Page};
 
 #[derive(Clone)]
 pub enum Inst {
-    Immediate(u8),
-    Insert(u8),
+    Imm(u8),
+    Ins(u8),
     Swap,
     High,
     Low,
@@ -12,7 +12,7 @@ pub enum Inst {
     Start,
     Goto,
     Jump,
-    Position,
+    Pos,
     Page,
     Left,
     Right,
@@ -71,7 +71,7 @@ impl Inst {
             '-' => Inst::Sub,
             '.' => Inst::Put,
             '/' => Inst::Div,
-            '0'..='9' => Inst::Insert(translate_hex_digit(key)),
+            '0'..='9' => Inst::Ins(translate_hex_digit(key)),
             ':' => Inst::Meta,
             ';' => Inst::Meta,
             '<' => Inst::Lt,
@@ -86,14 +86,14 @@ impl Inst {
             '^' => Inst::Xor,
             '_' => Inst::Clear,
             '`' => Inst::Eval,
-            'a'..='f' => Inst::Insert(translate_hex_digit(key)),
+            'a'..='f' => Inst::Ins(translate_hex_digit(key)),
             'g' => Inst::Origin,
             'h' => Inst::Left,
             'i' => Inst::High,
             'j' => Inst::Down,
             'k' => Inst::Up,
             'l' => Inst::Right,
-            'm' => Inst::Position,
+            'm' => Inst::Pos,
             'n' => Inst::Page,
             'o' => Inst::Low,
             'p' => Inst::Goto,
@@ -116,17 +116,17 @@ impl Inst {
     }
     pub fn issue(&self, bank: &mut Bank, page: &mut Page) {
         match self {
-            Inst::Immediate(data) => bank.imm(*data),
-            Inst::Insert(digit) => bank.ins(*digit),
+            Inst::Imm(data) => bank.imm(*data),
+            Inst::Ins(digit) => bank.ins(*digit),
             Inst::Swap => bank.swap(),
-            Inst::High => bank.hi(),
-            Inst::Low => bank.lo(),
+            Inst::High => bank.high(),
+            Inst::Low => bank.low(),
             Inst::Zero => bank.zero(),
             Inst::Origin => bank.origin(),
             Inst::Start => bank.start(),
             Inst::Goto => bank.goto(),
             Inst::Jump => bank.jump(),
-            Inst::Position => bank.position(),
+            Inst::Pos => bank.pos(),
             Inst::Page => bank.page(),
             Inst::Left => bank.left(),
             Inst::Right => bank.right(),
@@ -166,7 +166,7 @@ impl Inst {
     }
     pub fn immediate(input: char) -> Self {
         if let Ok(input) = u8::try_from(input) {
-            Inst::Immediate(input)
+            Inst::Imm(input)
         } else {
             Inst::Nop
         }

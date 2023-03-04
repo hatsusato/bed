@@ -20,10 +20,10 @@ impl Bank {
     pub fn swap(&mut self) {
         (self.data, self.acc) = (self.acc, self.data);
     }
-    pub fn hi(&mut self) {
+    pub fn high(&mut self) {
         self.data = self.acc;
     }
-    pub fn lo(&mut self) {
+    pub fn low(&mut self) {
         self.acc = self.data;
     }
     pub fn zero(&mut self) {
@@ -41,7 +41,7 @@ impl Bank {
     pub fn jump(&mut self) {
         self.block = self.data;
     }
-    pub fn position(&mut self) {
+    pub fn pos(&mut self) {
         self.acc = self.coord;
     }
     pub fn page(&mut self) {
