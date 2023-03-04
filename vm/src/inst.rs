@@ -1,5 +1,3 @@
-use crate::{Bank, Page};
-
 #[derive(Clone)]
 pub enum Inst {
     Imm(u8),
@@ -112,56 +110,6 @@ impl Inst {
             '}' => Inst::Shr,
             '~' => Inst::Not,
             _ => Inst::Nop,
-        }
-    }
-    pub fn issue(&self, bank: &mut Bank, page: &mut Page) {
-        match self {
-            Inst::Imm(data) => bank.imm(*data),
-            Inst::Ins(digit) => bank.ins(*digit),
-            Inst::Swap => bank.swap(),
-            Inst::High => bank.high(),
-            Inst::Low => bank.low(),
-            Inst::Zero => bank.zero(),
-            Inst::Origin => bank.origin(),
-            Inst::Start => bank.start(),
-            Inst::Goto => bank.goto(),
-            Inst::Jump => bank.jump(),
-            Inst::Pos => bank.pos(),
-            Inst::Page => bank.page(),
-            Inst::Left => bank.left(),
-            Inst::Right => bank.right(),
-            Inst::Up => bank.up(),
-            Inst::Down => bank.down(),
-            Inst::Inc => bank.inc(),
-            Inst::Dec => bank.dec(),
-            Inst::Add => bank.add(),
-            Inst::Sub => bank.sub(),
-            Inst::Mul => bank.mul(),
-            Inst::Div => bank.div(),
-            Inst::Clear => bank.clear(),
-            Inst::Raise => bank.raise(),
-            Inst::Neg => bank.neg(),
-            Inst::Bool => bank.bool(),
-            Inst::Eq => bank.eq(),
-            Inst::Lt => bank.lt(),
-            Inst::Gt => bank.gt(),
-            Inst::Not => bank.not(),
-            Inst::And => bank.and(),
-            Inst::Or => bank.or(),
-            Inst::Xor => bank.xor(),
-            Inst::Shl => bank.shl(),
-            Inst::Shr => bank.shr(),
-            Inst::Rotl => bank.rotl(),
-            Inst::Rotr => bank.rotr(),
-            Inst::Load => page.load(bank),
-            Inst::Store => page.store(bank),
-            Inst::Delete => page.delete(bank),
-            Inst::Put => page.put(bank),
-            Inst::Get => page.get(bank),
-            Inst::Save => page.save(bank),
-            Inst::Restore => page.restore(bank),
-            Inst::Quote(input) => page.quote(input, bank),
-            Inst::Eval | Inst::Meta | Inst::Nop => (),
         }
     }
     pub fn immediate(input: char) -> Self {
