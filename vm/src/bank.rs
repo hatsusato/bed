@@ -157,7 +157,7 @@ impl Bank {
         );
         Screen::print_display(msg, false);
     }
-    fn set_error(&mut self, flag: bool) {
+    pub fn set_error(&mut self, flag: bool) {
         if flag {
             self.error = true;
         }

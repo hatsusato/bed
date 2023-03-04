@@ -1,4 +1,5 @@
 use crate::{Bank, Inst, Page};
+use std::io;
 use util::Block;
 
 #[derive(Default)]
@@ -47,15 +48,50 @@ impl State {
             Inst::Shr => bank.shr(),
             Inst::Rotl => bank.rotl(),
             Inst::Rotr => bank.rotr(),
-            Inst::Load => (),
-            Inst::Store => (),
-            Inst::Delete => (),
-            Inst::Put => (),
-            Inst::Get => (),
+            Inst::Load => self.load(),
+            Inst::Store => self.store(),
+            Inst::Delete => self.delete(),
+            Inst::Put => self.put(),
+            Inst::Get => self.get(),
             Inst::Save => (),
             Inst::Restore => (),
             Inst::Quote(_input) => (),
             Inst::Eval | Inst::Meta | Inst::Nop => (),
         }
     }
+    fn load(&mut self) {
+        self.bank.data = *self.current();
+    }
+    fn store(&mut self) {
+        *self.current_mut() = self.bank.data;
+    }
+    fn delete(&mut self) {
+        *self.current_mut() = 0;
+    }
+    fn put(&mut self) {
+        let flag = put_byte(self.current()).is_err();
+        self.bank.set_error(flag);
+    }
+    fn get(&mut self) {
+        let flag = get_byte(self.current_mut()).is_err();
+        self.bank.set_error(flag);
+    }
+    fn current(&self) -> &u8 {
+        &self.memory[self.bank.block][self.bank.coord]
+    }
+    fn current_mut(&mut self) -> &mut u8 {
+        &mut self.memory[self.bank.block][self.bank.coord]
+    }
+}
+
+fn put_byte(data: &u8) -> io::Result<usize> {
+    use io::Write;
+    io::stdout().write(&[*data])
+}
+fn get_byte(data: &mut u8) -> io::Result<usize> {
+    use io::Read;
+    let buf = &mut [0];
+    let result = io::stdin().read(buf);
+    *data = buf[0];
+    result
 }
