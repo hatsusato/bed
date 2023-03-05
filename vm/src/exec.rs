@@ -1,4 +1,5 @@
 use crate::ctrl::{Ctrl, DelayType, NameType};
+use crate::lexer::Lexer;
 use crate::{Inst, Machine};
 use std::collections::HashMap;
 use std::mem;
@@ -11,9 +12,14 @@ pub struct Exec {
     routines: HashMap<String, String>,
     vm: Machine,
     last: char,
+    lexer: Lexer,
 }
 impl Exec {
     pub fn execute(&mut self, input: char) {
+        if let Some(inst) = self.lexer.consume(input) {
+            self.vm.issue_inst(&inst);
+            return;
+        }
         match self.ctrl.clone() {
             Ctrl::Normal => self.execute_normal(input),
             Ctrl::Ignore => self.execute_ignore(input),

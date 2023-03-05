@@ -1,6 +1,7 @@
 mod ctrl;
 mod exec;
 mod inst;
+mod lexer;
 mod machine;
 mod reg;
 mod state;
