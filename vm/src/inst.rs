@@ -46,6 +46,7 @@ pub enum Inst {
     Restore,
     Eval,
     Quote(String),
+    Call(String),
     Meta,
     Nop,
 }
