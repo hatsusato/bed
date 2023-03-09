@@ -56,7 +56,7 @@ impl Lexer {
     fn consume_newline(&mut self) -> Option<Inst> {
         match self.mode {
             Mode::Normal | Mode::Body | Mode::Quote => return self.push('\n'),
-            Mode::Ignore => self.next_take(),
+            Mode::Ignore => return self.finish_ignore(),
             Mode::Call => return self.finish(),
             Mode::Name => self.mode = Mode::Body,
         }
@@ -110,6 +110,16 @@ impl Lexer {
     }
     fn next_replace(&mut self, next: Mode) {
         *self.next.select(next) = mem::replace(&mut self.mode, next);
+    }
+    fn finish_ignore(&mut self) -> Option<Inst> {
+        match self.mode {
+            Mode::Ignore => self.next_take(),
+            _ => unreachable!(),
+        }
+        match self.mode {
+            Mode::Normal | Mode::Call | Mode::Name | Mode::Body => None,
+            _ => unreachable!(),
+        }
     }
     fn finish(&mut self) -> Option<Inst> {
         let inst = match self.mode {
