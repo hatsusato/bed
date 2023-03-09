@@ -57,7 +57,7 @@ impl State {
             Inst::Save => self.save(),
             Inst::Restore => self.restore(),
             Inst::Quote(input) => self.quote(&input),
-            Inst::Call(_) | Inst::Eval | Inst::Meta | Inst::Nop => (),
+            Inst::Call(_) | Inst::Define(_, _) | Inst::Eval | Inst::Meta | Inst::Nop => (),
         }
     }
     pub fn run(&mut self, insts: &[Inst]) {

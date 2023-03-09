@@ -47,6 +47,7 @@ pub enum Inst {
     Eval,
     Quote(String),
     Call(String),
+    Define(String, Vec<Inst>),
     Meta,
     Nop,
 }
