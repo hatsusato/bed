@@ -1,7 +1,7 @@
 use crate::inst::Inst;
 use std::mem;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum Mode {
     Normal,
     Ignore,
@@ -31,6 +31,9 @@ impl Next {
             _ => unreachable!(),
         }
     }
+    fn is_normal(&self) -> bool {
+        self.ignore == Mode::Normal && self.call == Mode::Normal && self.body == Mode::Normal
+    }
 }
 
 #[derive(Default)]
@@ -44,6 +47,9 @@ pub struct Lexer {
 }
 impl Lexer {
     pub fn consume(&mut self, input: char) -> Option<Inst> {
+        if self.mode == Mode::Normal {
+            assert!(self.next.is_normal());
+        }
         match input {
             '\n' => self.consume_newline(),
             '"' => self.consume_quote(),
@@ -55,12 +61,11 @@ impl Lexer {
     }
     fn consume_newline(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Quote => return self.push('\n'),
-            Mode::Ignore => return self.finish_ignore(),
-            Mode::Call => return self.finish(),
-            Mode::Name => self.mode = Mode::Body,
+            Mode::Normal | Mode::Body | Mode::Quote => self.push('\n'),
+            Mode::Ignore => self.finish_ignore(),
+            Mode::Call => self.finish(),
+            Mode::Name => self.finish_name(),
         }
-        None
     }
     fn consume_quote(&mut self) -> Option<Inst> {
         match self.mode {
@@ -117,9 +122,18 @@ impl Lexer {
             _ => unreachable!(),
         }
         match self.mode {
-            Mode::Normal | Mode::Call | Mode::Name | Mode::Body => None,
+            Mode::Normal | Mode::Body => None,
+            Mode::Call => self.finish(),
+            Mode::Name => self.finish_name(),
             _ => unreachable!(),
         }
+    }
+    fn finish_name(&mut self) -> Option<Inst> {
+        match self.mode {
+            Mode::Name => self.mode = Mode::Body,
+            _ => unreachable!(),
+        }
+        None
     }
     fn finish(&mut self) -> Option<Inst> {
         let inst = match self.mode {
