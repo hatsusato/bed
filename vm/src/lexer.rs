@@ -8,6 +8,7 @@ enum Mode {
     Call,
     Name,
     Body,
+    Quote,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -38,12 +39,14 @@ pub struct Lexer {
     next: Next,
     call: String,
     name: String,
+    quote: String,
     body: Vec<Inst>,
 }
 impl Lexer {
     pub fn consume(&mut self, input: char) -> Option<Inst> {
         match input {
             '\n' => self.consume_newline(),
+            '"' => self.consume_quote(),
             '#' => self.consume_hash(),
             ':' => self.consume_colon(),
             ';' => self.consume_semicolon(),
@@ -52,11 +55,20 @@ impl Lexer {
     }
     fn consume_newline(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal => return Some(Inst::Nop),
+            Mode::Normal | Mode::Body | Mode::Quote => return self.push('\n'),
             Mode::Ignore => self.next_take(),
-            Mode::Call => return self.finish_call(),
+            Mode::Call => return self.finish(),
             Mode::Name => self.mode = Mode::Body,
-            Mode::Body => self.body.push(Inst::Nop),
+        }
+        None
+    }
+    fn consume_quote(&mut self) -> Option<Inst> {
+        match self.mode {
+            Mode::Normal => self.mode = Mode::Quote,
+            Mode::Ignore => (),
+            Mode::Call | Mode::Name => return self.push('"'),
+            Mode::Body => self.next_replace(Mode::Quote),
+            Mode::Quote => return self.finish(),
         }
         None
     }
@@ -64,6 +76,7 @@ impl Lexer {
         match self.mode {
             Mode::Ignore => (),
             Mode::Normal | Mode::Call | Mode::Name | Mode::Body => self.next_replace(Mode::Ignore),
+            Mode::Quote => return self.push('#'),
         }
         None
     }
@@ -71,7 +84,7 @@ impl Lexer {
         match self.mode {
             Mode::Ignore => (),
             Mode::Normal | Mode::Body => self.next_replace(Mode::Call),
-            Mode::Call | Mode::Name => self.push(':'),
+            Mode::Call | Mode::Name | Mode::Quote => return self.push(':'),
         }
         None
     }
@@ -79,8 +92,8 @@ impl Lexer {
         match self.mode {
             Mode::Ignore => (),
             Mode::Normal => self.mode = Mode::Name,
-            Mode::Call | Mode::Name => self.push(';'),
-            Mode::Body => return Some(self.finish_body()),
+            Mode::Call | Mode::Name | Mode::Quote => return self.push(';'),
+            Mode::Body => return self.finish(),
         }
         None
     }
@@ -88,8 +101,7 @@ impl Lexer {
         match self.mode {
             Mode::Ignore => (),
             Mode::Normal => return Some(Inst::new(input)),
-            Mode::Call | Mode::Name => self.push(input),
-            Mode::Body => self.body.push(Inst::new(input)),
+            Mode::Call | Mode::Name | Mode::Quote | Mode::Body => return self.push(input),
         }
         None
     }
@@ -99,23 +111,30 @@ impl Lexer {
     fn next_replace(&mut self, next: Mode) {
         *self.next.select(next) = mem::replace(&mut self.mode, next);
     }
-    fn finish_call(&mut self) -> Option<Inst> {
-        match self.next.call {
-            Mode::Normal => Some(Inst::Call(mem::take(&mut self.call))),
+    fn finish(&mut self) -> Option<Inst> {
+        let inst = match self.mode {
+            Mode::Call => Inst::Call(mem::take(&mut self.call)),
+            Mode::Body => Inst::Define(mem::take(&mut self.name), mem::take(&mut self.body)),
+            Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
+            _ => unreachable!(),
+        };
+        self.next_take();
+        match self.mode {
+            Mode::Normal => return Some(inst),
+            Mode::Body => self.body.push(inst),
             _ => unreachable!(),
         }
+        None
     }
-    fn finish_body(&mut self) -> Inst {
-        self.next_take();
-        let name = mem::take(&mut self.name);
-        let body = mem::take(&mut self.body);
-        Inst::Define(name, body)
-    }
-    fn push(&mut self, input: char) {
+    fn push(&mut self, input: char) -> Option<Inst> {
         match self.mode {
+            Mode::Normal => return Some(Inst::new(input)),
             Mode::Call => self.call.push(input),
             Mode::Name => self.name.push(input),
+            Mode::Quote => self.quote.push(input),
+            Mode::Body => self.body.push(Inst::new(input)),
             _ => unreachable!(),
         }
+        None
     }
 }

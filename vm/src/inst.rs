@@ -55,7 +55,7 @@ impl Inst {
     #[allow(clippy::match_same_arms)]
     pub fn new(key: char) -> Self {
         match key {
-            '\n' => Inst::Meta,
+            '\n' => Inst::Nop,
             '!' => Inst::Neg,
             '"' => Inst::Meta,
             '#' => Inst::Meta,
