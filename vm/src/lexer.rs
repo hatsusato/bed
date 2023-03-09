@@ -17,10 +17,15 @@ impl Default for Mode {
 #[derive(Default)]
 struct Next {
     ignore: Mode,
+    call: Mode,
 }
 impl Next {
-    fn replace_ignore(&mut self, mode: &mut Mode) {
-        self.ignore = mem::replace(mode, Mode::Ignore);
+    fn replace(&mut self, mode: &mut Mode, next: Mode) {
+        match next {
+            Mode::Ignore => self.ignore = mem::replace(mode, next),
+            Mode::Call => self.call = mem::replace(mode, next),
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -45,7 +50,7 @@ impl Lexer {
         match self.mode {
             Mode::Normal => return Some(Inst::Nop),
             Mode::Ignore => self.mode = mem::take(&mut self.next.ignore),
-            Mode::Call => return Some(self.finish_call()),
+            Mode::Call => return self.finish_call(),
             Mode::Name => (),
         }
         None
@@ -53,13 +58,13 @@ impl Lexer {
     fn consume_hash(&mut self) -> Option<Inst> {
         match self.mode {
             Mode::Ignore => (),
-            Mode::Normal | Mode::Call | Mode::Name => self.next.replace_ignore(&mut self.mode),
+            Mode::Normal | Mode::Call | Mode::Name => self.next_replace(Mode::Ignore),
         }
         None
     }
     fn consume_colon(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal => self.mode = Mode::Call,
+            Mode::Normal => self.next_replace(Mode::Call),
             Mode::Ignore => (),
             Mode::Call => self.call.push(':'),
             Mode::Name => self.name.push(':'),
@@ -84,8 +89,13 @@ impl Lexer {
         }
         None
     }
-    fn finish_call(&mut self) -> Inst {
-        self.mode = Mode::Normal;
-        Inst::Call(mem::take(&mut self.call))
+    fn next_replace(&mut self, next: Mode) {
+        self.next.replace(&mut self.mode, next);
+    }
+    fn finish_call(&mut self) -> Option<Inst> {
+        match self.next.call {
+            Mode::Normal => Some(Inst::Call(mem::take(&mut self.call))),
+            _ => unreachable!(),
+        }
     }
 }
