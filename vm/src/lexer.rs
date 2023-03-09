@@ -20,14 +20,18 @@ impl Default for Mode {
 struct Next {
     ignore: Mode,
     call: Mode,
+    name: Mode,
     body: Mode,
+    quote: Mode,
 }
 impl Next {
     fn select(&mut self, mode: Mode) -> &mut Mode {
         match mode {
             Mode::Ignore => &mut self.ignore,
             Mode::Call => &mut self.call,
+            Mode::Name => &mut self.name,
             Mode::Body => &mut self.body,
+            Mode::Quote => &mut self.quote,
             _ => unreachable!(),
         }
     }
@@ -35,6 +39,12 @@ impl Next {
         self.ignore == Mode::Normal && self.call == Mode::Normal && self.body == Mode::Normal
     }
 }
+
+const NEWLINE: char = '\n';
+const QUOTE: char = '"';
+const HASH: char = '#';
+const COLON: char = ':';
+const SEMICOLON: char = ';';
 
 #[derive(Default)]
 pub struct Lexer {
@@ -51,17 +61,17 @@ impl Lexer {
             assert!(self.next.is_normal());
         }
         match input {
-            '\n' => self.consume_newline(),
-            '"' => self.consume_quote(),
-            '#' => self.consume_hash(),
-            ':' => self.consume_colon(),
-            ';' => self.consume_semicolon(),
+            NEWLINE => self.consume_newline(),
+            QUOTE => self.consume_quote(),
+            HASH => self.consume_hash(),
+            COLON => self.consume_colon(),
+            SEMICOLON => self.consume_semicolon(),
             _ => self.consume_other(input),
         }
     }
     fn consume_newline(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Quote => self.push('\n'),
+            Mode::Normal | Mode::Body | Mode::Quote => self.push(NEWLINE),
             Mode::Ignore => self.finish_ignore(),
             Mode::Call => self.finish(),
             Mode::Name => self.finish_name(),
@@ -69,52 +79,62 @@ impl Lexer {
     }
     fn consume_quote(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal => self.mode = Mode::Quote,
-            Mode::Ignore => (),
-            Mode::Call | Mode::Name => return self.push('"'),
-            Mode::Body => self.next_replace(Mode::Quote),
-            Mode::Quote => return self.finish(),
+            Mode::Ignore => None,
+            Mode::Normal | Mode::Body => self.transit(Mode::Quote),
+            Mode::Call | Mode::Name => self.push(QUOTE),
+            Mode::Quote => self.finish(),
         }
-        None
     }
     fn consume_hash(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => (),
-            Mode::Normal | Mode::Call | Mode::Name | Mode::Body => self.next_replace(Mode::Ignore),
-            Mode::Quote => return self.push('#'),
+            Mode::Ignore => None,
+            Mode::Normal | Mode::Call | Mode::Name | Mode::Body => self.transit(Mode::Ignore),
+            Mode::Quote => self.push(HASH),
         }
-        None
     }
     fn consume_colon(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => (),
-            Mode::Normal | Mode::Body => self.next_replace(Mode::Call),
-            Mode::Call | Mode::Name | Mode::Quote => return self.push(':'),
+            Mode::Ignore => None,
+            Mode::Normal | Mode::Body => self.transit(Mode::Call),
+            Mode::Call | Mode::Name | Mode::Quote => self.push(COLON),
         }
-        None
     }
     fn consume_semicolon(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => (),
-            Mode::Normal => self.mode = Mode::Name,
-            Mode::Call | Mode::Name | Mode::Quote => return self.push(';'),
-            Mode::Body => return self.finish(),
+            Mode::Ignore => None,
+            Mode::Normal => self.transit(Mode::Name),
+            Mode::Call | Mode::Name | Mode::Quote => self.push(SEMICOLON),
+            Mode::Body => self.finish(),
         }
-        None
     }
     fn consume_other(&mut self, input: char) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => (),
-            Mode::Normal => return Some(Inst::new(input)),
-            Mode::Call | Mode::Name | Mode::Quote | Mode::Body => return self.push(input),
+            Mode::Ignore => None,
+            Mode::Normal => Some(Inst::new(input)),
+            Mode::Call | Mode::Name | Mode::Quote | Mode::Body => self.push(input),
         }
+    }
+    fn transit(&mut self, next: Mode) -> Option<Inst> {
+        *self.next.select(next) = mem::replace(&mut self.mode, next);
         None
     }
     fn next_take(&mut self) {
         self.mode = mem::take(self.next.select(self.mode));
     }
-    fn next_replace(&mut self, next: Mode) {
-        *self.next.select(next) = mem::replace(&mut self.mode, next);
+    fn finish(&mut self) -> Option<Inst> {
+        let inst = match self.mode {
+            Mode::Call => Inst::Call(mem::take(&mut self.call)),
+            Mode::Body => Inst::Define(mem::take(&mut self.name), mem::take(&mut self.body)),
+            Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
+            _ => unreachable!(),
+        };
+        self.next_take();
+        match self.mode {
+            Mode::Normal => return Some(inst),
+            Mode::Body => self.body.push(inst),
+            _ => unreachable!(),
+        }
+        None
     }
     fn finish_ignore(&mut self) -> Option<Inst> {
         match self.mode {
@@ -131,21 +151,6 @@ impl Lexer {
     fn finish_name(&mut self) -> Option<Inst> {
         match self.mode {
             Mode::Name => self.mode = Mode::Body,
-            _ => unreachable!(),
-        }
-        None
-    }
-    fn finish(&mut self) -> Option<Inst> {
-        let inst = match self.mode {
-            Mode::Call => Inst::Call(mem::take(&mut self.call)),
-            Mode::Body => Inst::Define(mem::take(&mut self.name), mem::take(&mut self.body)),
-            Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
-            _ => unreachable!(),
-        };
-        self.next_take();
-        match self.mode {
-            Mode::Normal => return Some(inst),
-            Mode::Body => self.body.push(inst),
             _ => unreachable!(),
         }
         None
