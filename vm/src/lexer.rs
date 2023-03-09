@@ -6,6 +6,7 @@ enum Mode {
     Normal,
     Ignore,
     Call,
+    Name,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -17,6 +18,7 @@ impl Default for Mode {
 pub struct Lexer {
     mode: Mode,
     call: String,
+    name: String,
 }
 impl Lexer {
     pub fn consume(&mut self, input: char) -> Option<Inst> {
@@ -24,6 +26,7 @@ impl Lexer {
             '\n' => self.consume_newline(),
             '#' => self.consume_hash(),
             ':' => self.consume_colon(),
+            ';' => self.consume_semicolon(),
             _ => self.consume_other(input),
         }
     }
@@ -32,6 +35,7 @@ impl Lexer {
             Mode::Normal => return Some(Inst::Nop),
             Mode::Ignore => self.mode = Mode::Normal,
             Mode::Call => return Some(self.finish_call()),
+            Mode::Name => (),
         }
         None
     }
@@ -40,6 +44,7 @@ impl Lexer {
             Mode::Normal => self.mode = Mode::Ignore,
             Mode::Ignore => (),
             Mode::Call => self.call.push('#'),
+            Mode::Name => self.name.push('#'),
         }
         None
     }
@@ -48,6 +53,16 @@ impl Lexer {
             Mode::Normal => self.mode = Mode::Call,
             Mode::Ignore => (),
             Mode::Call => self.call.push(':'),
+            Mode::Name => self.name.push(':'),
+        }
+        None
+    }
+    fn consume_semicolon(&mut self) -> Option<Inst> {
+        match self.mode {
+            Mode::Normal => self.mode = Mode::Name,
+            Mode::Ignore => (),
+            Mode::Call => self.call.push(';'),
+            Mode::Name => self.name.push(';'),
         }
         None
     }
@@ -56,6 +71,7 @@ impl Lexer {
             Mode::Normal => return Some(Inst::new(input)),
             Mode::Ignore => (),
             Mode::Call => self.call.push(input),
+            Mode::Name => self.name.push(input),
         }
         None
     }
