@@ -15,8 +15,19 @@ impl Default for Mode {
 }
 
 #[derive(Default)]
+struct Next {
+    ignore: Mode,
+}
+impl Next {
+    fn replace_ignore(&mut self, mode: &mut Mode) {
+        self.ignore = mem::replace(mode, Mode::Ignore);
+    }
+}
+
+#[derive(Default)]
 pub struct Lexer {
     mode: Mode,
+    next: Next,
     call: String,
     name: String,
 }
@@ -33,7 +44,7 @@ impl Lexer {
     fn consume_newline(&mut self) -> Option<Inst> {
         match self.mode {
             Mode::Normal => return Some(Inst::Nop),
-            Mode::Ignore => self.mode = Mode::Normal,
+            Mode::Ignore => self.mode = mem::take(&mut self.next.ignore),
             Mode::Call => return Some(self.finish_call()),
             Mode::Name => (),
         }
@@ -41,10 +52,8 @@ impl Lexer {
     }
     fn consume_hash(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal => self.mode = Mode::Ignore,
             Mode::Ignore => (),
-            Mode::Call => self.call.push('#'),
-            Mode::Name => self.name.push('#'),
+            Mode::Normal | Mode::Call | Mode::Name => self.next.replace_ignore(&mut self.mode),
         }
         None
     }
