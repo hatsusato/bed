@@ -9,6 +9,7 @@ enum Mode {
     Name,
     Body,
     Quote,
+    Direct,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -20,42 +21,42 @@ impl Default for Mode {
 struct Next {
     ignore: Mode,
     call: Mode,
-    name: Mode,
     quote: Mode,
+    direct: Mode,
 }
 impl Next {
-    fn select(&mut self, mode: Mode) -> &mut Mode {
+    fn give(&mut self, next: Mode, prev: Mode) {
+        match next {
+            Mode::Ignore => self.ignore = prev,
+            Mode::Call => self.call = prev,
+            Mode::Quote => self.quote = prev,
+            Mode::Direct => self.direct = prev,
+            Mode::Name => assert!(prev == Mode::Normal),
+            Mode::Normal | Mode::Body => unreachable!(),
+        }
+    }
+    fn take(&mut self, mode: Mode) -> Mode {
         match mode {
-            Mode::Ignore => &mut self.ignore,
-            Mode::Call => &mut self.call,
-            Mode::Name => &mut self.name,
-            Mode::Quote => &mut self.quote,
+            Mode::Ignore => mem::take(&mut self.ignore),
+            Mode::Call => mem::take(&mut self.call),
+            Mode::Body => Mode::Normal,
+            Mode::Quote => mem::take(&mut self.quote),
             _ => unreachable!(),
         }
     }
     fn is_valid(&self) -> bool {
-        match self.ignore {
-            Mode::Normal | Mode::Call | Mode::Name | Mode::Body => (),
-            _ => return false,
-        }
-        match self.call {
-            Mode::Normal | Mode::Body => (),
-            _ => return false,
-        }
-        match self.name {
-            Mode::Normal => (),
-            _ => return false,
-        }
-        match self.quote {
-            Mode::Normal | Mode::Body => (),
-            _ => return false,
-        }
-        true
+        matches!(
+            self.ignore,
+            Mode::Normal | Mode::Call | Mode::Name | Mode::Body
+        ) && matches!(self.call, Mode::Name | Mode::Body)
+            && matches!(self.quote, Mode::Name | Mode::Body)
+            && matches!(self.direct, Mode::Name | Mode::Body)
     }
 }
 
 const NEWLINE: char = '\n';
 const QUOTE: char = '"';
+const APOSTROPHE: char = '\'';
 const HASH: char = '#';
 const COLON: char = ':';
 const SEMICOLON: char = ';';
@@ -66,8 +67,8 @@ pub struct Lexer {
     next: Next,
     call: String,
     name: String,
-    quote: String,
     body: Vec<Inst>,
+    quote: String,
 }
 impl Lexer {
     pub fn consume(&mut self, input: char) -> Option<Inst> {
@@ -76,6 +77,7 @@ impl Lexer {
             NEWLINE => self.consume_newline(),
             QUOTE => self.consume_quote(),
             HASH => self.consume_hash(),
+            APOSTROPHE => self.consume_apostrophe(),
             COLON => self.consume_colon(),
             SEMICOLON => self.consume_semicolon(),
             _ => self.consume_other(input),
@@ -83,55 +85,63 @@ impl Lexer {
     }
     fn consume_newline(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Quote => self.push(NEWLINE),
             Mode::Ignore => self.finish_ignore(),
             Mode::Call => self.finish_call(),
             Mode::Name => self.finish_name(),
+            _ => self.consume_other(NEWLINE),
         }
     }
     fn consume_quote(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => None,
             Mode::Normal | Mode::Body => self.transit(Mode::Quote),
-            Mode::Call | Mode::Name => self.push(QUOTE),
             Mode::Quote => self.finish_quote(),
+            _ => self.consume_other(QUOTE),
         }
     }
     fn consume_hash(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => None,
             Mode::Normal | Mode::Call | Mode::Name | Mode::Body => self.transit(Mode::Ignore),
-            Mode::Quote => self.push(HASH),
+            _ => self.consume_other(HASH),
+        }
+    }
+    fn consume_apostrophe(&mut self) -> Option<Inst> {
+        match self.mode {
+            Mode::Normal | Mode::Body => self.transit(Mode::Direct),
+            _ => self.consume_other(APOSTROPHE),
         }
     }
     fn consume_colon(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => None,
             Mode::Normal | Mode::Body => self.transit(Mode::Call),
-            Mode::Call | Mode::Name | Mode::Quote => self.push(COLON),
+            _ => self.consume_other(COLON),
         }
     }
     fn consume_semicolon(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => None,
             Mode::Normal => self.transit(Mode::Name),
-            Mode::Call | Mode::Name | Mode::Quote => self.push(SEMICOLON),
             Mode::Body => self.finish_body(),
+            _ => self.consume_other(SEMICOLON),
         }
     }
     fn consume_other(&mut self, input: char) -> Option<Inst> {
         match self.mode {
-            Mode::Ignore => None,
-            Mode::Normal => Some(Inst::new(input)),
-            Mode::Call | Mode::Name | Mode::Quote | Mode::Body => self.push(input),
+            Mode::Normal => return Some(Inst::new(input)),
+            Mode::Ignore => (),
+            Mode::Call => self.call.push(input),
+            Mode::Name => self.name.push(input),
+            Mode::Body => self.body.push(Inst::new(input)),
+            Mode::Quote => self.quote.push(input),
+            Mode::Direct => return self.finish(Inst::immediate(input)),
         }
+        None
     }
     fn transit(&mut self, next: Mode) -> Option<Inst> {
-        *self.next.select(next) = mem::replace(&mut self.mode, next);
+        let prev = mem::replace(&mut self.mode, next);
+        self.next.give(next, prev);
         None
     }
     fn next_take(&mut self) {
-        self.mode = mem::take(self.next.select(self.mode));
+        self.mode = self.next.take(self.mode);
     }
     fn finish(&mut self, inst: Inst) -> Option<Inst> {
         match self.mode {
@@ -159,8 +169,7 @@ impl Lexer {
     }
     fn finish_name(&mut self) -> Option<Inst> {
         assert!(self.mode == Mode::Name);
-        self.mode = Mode::Body;
-        None
+        self.transit(Mode::Body)
     }
     fn finish_body(&mut self) -> Option<Inst> {
         assert!(self.mode == Mode::Body);
@@ -174,16 +183,5 @@ impl Lexer {
         let quote = mem::take(&mut self.quote);
         self.next_take();
         self.finish(Inst::Quote(quote))
-    }
-    fn push(&mut self, input: char) -> Option<Inst> {
-        match self.mode {
-            Mode::Normal => return Some(Inst::new(input)),
-            Mode::Call => self.call.push(input),
-            Mode::Name => self.name.push(input),
-            Mode::Quote => self.quote.push(input),
-            Mode::Body => self.body.push(Inst::new(input)),
-            _ => unreachable!(),
-        }
-        None
     }
 }
