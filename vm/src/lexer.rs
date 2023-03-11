@@ -10,6 +10,7 @@ enum Mode {
     Body,
     Quote,
     Direct,
+    Register,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -23,6 +24,7 @@ struct Next {
     call: Mode,
     quote: Mode,
     direct: Mode,
+    record: Mode,
 }
 impl Next {
     fn give(&mut self, next: Mode, prev: Mode) {
@@ -31,12 +33,14 @@ impl Next {
             _ => matches!(prev, Mode::Normal | Mode::Body),
         });
         match next {
+            Mode::Normal => unreachable!(),
             Mode::Ignore => self.ignore = prev,
             Mode::Call => self.call = prev,
+            Mode::Func => assert!(matches!(prev, Mode::Normal)),
+            Mode::Body => assert!(matches!(prev, Mode::Func)),
             Mode::Quote => self.quote = prev,
             Mode::Direct => self.direct = prev,
-            Mode::Func => assert!(matches!(prev, Mode::Normal)),
-            Mode::Normal | Mode::Body => unreachable!(),
+            Mode::Register => self.record = prev,
         }
     }
     fn take(&mut self, mode: Mode) -> Mode {
@@ -45,6 +49,7 @@ impl Next {
             Mode::Call => mem::take(&mut self.call),
             Mode::Body => Mode::Normal,
             Mode::Quote => mem::take(&mut self.quote),
+            Mode::Register => mem::take(&mut self.record),
             _ => unreachable!(),
         }
     }
@@ -56,6 +61,7 @@ const HASH: char = '#';
 const APOSTROPHE: char = '\'';
 const COLON: char = ':';
 const SEMICOLON: char = ';';
+const Q: char = 'q';
 
 #[derive(Default)]
 pub struct Lexer {
@@ -65,6 +71,7 @@ pub struct Lexer {
     func: String,
     body: Vec<Inst>,
     quote: String,
+    register: Option<char>,
 }
 impl Lexer {
     pub fn consume(&mut self, input: char) -> Option<Inst> {
@@ -75,6 +82,7 @@ impl Lexer {
             APOSTROPHE => self.consume_apostrophe(),
             COLON => self.consume_colon(),
             SEMICOLON => self.consume_semicolon(),
+            Q => self.consume_q(),
             _ => self.consume_other(input),
         }
     }
@@ -83,6 +91,7 @@ impl Lexer {
             Mode::Ignore => self.finish_ignore(),
             Mode::Call => self.finish_call(),
             Mode::Func => self.finish_func(),
+            Mode::Register => self.rewind(),
             _ => self.consume_other(NEWLINE),
         }
     }
@@ -118,27 +127,41 @@ impl Lexer {
             _ => self.consume_other(SEMICOLON),
         }
     }
+    fn consume_q(&mut self) -> Option<Inst> {
+        match self.mode {
+            Mode::Normal | Mode::Body => self.transit(Mode::Register),
+            _ => self.consume_other(Q),
+        }
+    }
     fn consume_other(&mut self, input: char) -> Option<Inst> {
         match self.mode {
-            Mode::Normal => return Some(Inst::new(input)),
-            Mode::Ignore => (),
-            Mode::Call => self.call.push(input),
-            Mode::Func => self.func.push(input),
-            Mode::Body => self.body.push(Inst::new(input)),
-            Mode::Quote => self.quote.push(input),
-            Mode::Direct => return self.finish(Inst::immediate(input)),
+            Mode::Ignore => None,
+            Mode::Normal | Mode::Body => self.add(Inst::new(input)),
+            Mode::Call | Mode::Func | Mode::Quote => self.push(input),
+            Mode::Direct => self.add(Inst::immediate(input)),
+            Mode::Register => self.finish_register(input),
         }
-        None
     }
     fn transit(&mut self, next: Mode) -> Option<Inst> {
         let prev = mem::replace(&mut self.mode, next);
         self.next.give(next, prev);
         None
     }
-    fn next_take(&mut self) {
+    fn rewind(&mut self) -> Option<Inst> {
         self.mode = self.next.take(self.mode);
+        None
     }
-    fn finish(&mut self, inst: Inst) -> Option<Inst> {
+    fn push(&mut self, input: char) -> Option<Inst> {
+        match self.mode {
+            Mode::Call => self.call.push(input),
+            Mode::Func => self.func.push(input),
+            Mode::Quote => self.quote.push(input),
+            Mode::Register => self.register = Some(input),
+            _ => unreachable!(),
+        }
+        None
+    }
+    fn add(&mut self, inst: Inst) -> Option<Inst> {
         match self.mode {
             Mode::Normal => return Some(inst),
             Mode::Body => self.body.push(inst),
@@ -148,7 +171,7 @@ impl Lexer {
     }
     fn finish_ignore(&mut self) -> Option<Inst> {
         assert!(matches!(self.mode, Mode::Ignore));
-        self.next_take();
+        self.rewind();
         match self.mode {
             Mode::Normal | Mode::Body => None,
             Mode::Call => self.finish_call(),
@@ -159,8 +182,8 @@ impl Lexer {
     fn finish_call(&mut self) -> Option<Inst> {
         assert!(matches!(self.mode, Mode::Call));
         let call = mem::take(&mut self.call);
-        self.next_take();
-        self.finish(Inst::Call(call))
+        self.rewind();
+        self.add(Inst::Call(call))
     }
     fn finish_func(&mut self) -> Option<Inst> {
         assert!(matches!(self.mode, Mode::Func));
@@ -170,13 +193,17 @@ impl Lexer {
         assert!(matches!(self.mode, Mode::Body));
         let func = mem::take(&mut self.func);
         let body = mem::take(&mut self.body);
-        self.next_take();
-        self.finish(Inst::Define(func, body))
+        self.rewind();
+        self.add(Inst::Define(func, body))
     }
     fn finish_quote(&mut self) -> Option<Inst> {
         assert!(matches!(self.mode, Mode::Quote));
         let quote = mem::take(&mut self.quote);
-        self.next_take();
-        self.finish(Inst::Quote(quote))
+        self.rewind();
+        self.add(Inst::Quote(quote))
+    }
+    fn finish_register(&mut self, input: char) -> Option<Inst> {
+        assert!(matches!(self.mode, Mode::Register));
+        self.push(input)
     }
 }
