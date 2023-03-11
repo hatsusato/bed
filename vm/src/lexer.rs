@@ -87,7 +87,7 @@ pub struct Lexer {
     record: Vec<Inst>,
 }
 impl Lexer {
-    pub fn consume(&mut self, input: char) -> Option<Inst> {
+    pub fn consume(&mut self, input: char) -> Inst {
         match input {
             NEWLINE => self.consume_newline(),
             QUOTE => self.consume_quote(),
@@ -100,7 +100,7 @@ impl Lexer {
             _ => self.consume_other(input),
         }
     }
-    fn consume_newline(&mut self) -> Option<Inst> {
+    fn consume_newline(&mut self) -> Inst {
         match self.mode {
             Mode::Ignore => self.finish_ignore(),
             Mode::Call => self.finish_call(),
@@ -108,14 +108,14 @@ impl Lexer {
             _ => self.consume_other(NEWLINE),
         }
     }
-    fn consume_quote(&mut self) -> Option<Inst> {
+    fn consume_quote(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Quote),
             Mode::Quote => self.finish_quote(),
             _ => self.consume_other(QUOTE),
         }
     }
-    fn consume_hash(&mut self) -> Option<Inst> {
+    fn consume_hash(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Call | Mode::Func | Mode::Body | Mode::Record => {
                 self.transit(Mode::Ignore)
@@ -123,41 +123,41 @@ impl Lexer {
             _ => self.consume_other(HASH),
         }
     }
-    fn consume_apostrophe(&mut self) -> Option<Inst> {
+    fn consume_apostrophe(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Direct),
             _ => self.consume_other(APOSTROPHE),
         }
     }
-    fn consume_colon(&mut self) -> Option<Inst> {
+    fn consume_colon(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Call),
             _ => self.consume_other(COLON),
         }
     }
-    fn consume_semicolon(&mut self) -> Option<Inst> {
+    fn consume_semicolon(&mut self) -> Inst {
         match self.mode {
             Mode::Normal => self.transit(Mode::Func),
             Mode::Body => self.finish_body(),
             _ => self.consume_other(SEMICOLON),
         }
     }
-    fn consume_at(&mut self) -> Option<Inst> {
+    fn consume_at(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Exec),
             _ => self.consume_other(AT),
         }
     }
-    fn consume_q(&mut self) -> Option<Inst> {
+    fn consume_q(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Body => self.transit(Mode::Register),
             Mode::Record => self.finish_record(),
             _ => self.consume_other(Q),
         }
     }
-    fn consume_other(&mut self, input: char) -> Option<Inst> {
+    fn consume_other(&mut self, input: char) -> Inst {
         match self.mode {
-            Mode::Ignore => None,
+            Mode::Ignore => Inst::Skip,
             Mode::Normal | Mode::Body | Mode::Record => self.add(Inst::new(input)),
             Mode::Call | Mode::Func | Mode::Quote => self.push(input),
             Mode::Direct => self.finish_direct(input),
@@ -165,16 +165,16 @@ impl Lexer {
             Mode::Register => self.finish_register(input),
         }
     }
-    fn transit(&mut self, next: Mode) -> Option<Inst> {
+    fn transit(&mut self, next: Mode) -> Inst {
         let prev = mem::replace(&mut self.mode, next);
         self.next.give(next, prev);
-        None
+        Inst::Skip
     }
-    fn rewind(&mut self) -> Option<Inst> {
+    fn rewind(&mut self) -> Inst {
         self.mode = self.next.take(self.mode);
-        None
+        Inst::Skip
     }
-    fn push(&mut self, input: char) -> Option<Inst> {
+    fn push(&mut self, input: char) -> Inst {
         match self.mode {
             Mode::Call => self.call.push(input),
             Mode::Func => self.func.push(input),
@@ -182,56 +182,56 @@ impl Lexer {
             Mode::Register => self.register = Some(input),
             _ => unreachable!(),
         }
-        None
+        Inst::Skip
     }
-    fn add(&mut self, inst: Inst) -> Option<Inst> {
+    fn add(&mut self, inst: Inst) -> Inst {
         match self.mode {
-            Mode::Normal => return Some(inst),
+            Mode::Normal => return inst,
             Mode::Body => self.body.push(inst),
             Mode::Record => self.record.push(inst),
             _ => unreachable!(),
         }
-        None
+        Inst::Skip
     }
-    fn finish_ignore(&mut self) -> Option<Inst> {
+    fn finish_ignore(&mut self) -> Inst {
         assert!(matches!(self.mode, Mode::Ignore));
         self.rewind();
         match self.mode {
-            Mode::Normal | Mode::Body => None,
+            Mode::Normal | Mode::Body => Inst::Skip,
             Mode::Call => self.finish_call(),
             Mode::Func => self.finish_func(),
             _ => unreachable!(),
         }
     }
-    fn finish_call(&mut self) -> Option<Inst> {
+    fn finish_call(&mut self) -> Inst {
         assert!(matches!(self.mode, Mode::Call));
         let call = mem::take(&mut self.call);
         self.rewind();
         self.add(Inst::Call(call))
     }
-    fn finish_func(&mut self) -> Option<Inst> {
+    fn finish_func(&mut self) -> Inst {
         assert!(matches!(self.mode, Mode::Func));
         self.transit(Mode::Body)
     }
-    fn finish_body(&mut self) -> Option<Inst> {
+    fn finish_body(&mut self) -> Inst {
         assert!(matches!(self.mode, Mode::Body));
         let func = mem::take(&mut self.func);
         let body = mem::take(&mut self.body);
         self.rewind();
         self.add(Inst::Define(func, body))
     }
-    fn finish_quote(&mut self) -> Option<Inst> {
+    fn finish_quote(&mut self) -> Inst {
         assert!(matches!(self.mode, Mode::Quote));
         let quote = mem::take(&mut self.quote);
         self.rewind();
         self.add(Inst::Quote(quote))
     }
-    fn finish_direct(&mut self, input: char) -> Option<Inst> {
+    fn finish_direct(&mut self, input: char) -> Inst {
         assert!(matches!(self.mode, Mode::Direct));
         self.rewind();
         self.add(Inst::immediate(input))
     }
-    fn finish_exec(&mut self, input: char) -> Option<Inst> {
+    fn finish_exec(&mut self, input: char) -> Inst {
         assert!(matches!(self.mode, Mode::Exec));
         if input.is_ascii_graphic() {
             self.rewind();
@@ -240,7 +240,7 @@ impl Lexer {
             self.rewind()
         }
     }
-    fn finish_register(&mut self, input: char) -> Option<Inst> {
+    fn finish_register(&mut self, input: char) -> Inst {
         assert!(matches!(self.mode, Mode::Register));
         if input.is_ascii_graphic() {
             self.push(input);
@@ -249,7 +249,7 @@ impl Lexer {
             self.rewind()
         }
     }
-    fn finish_record(&mut self) -> Option<Inst> {
+    fn finish_record(&mut self) -> Inst {
         assert!(matches!(self.mode, Mode::Record));
         assert!(self.register.is_some());
         let register = mem::take(&mut self.register).unwrap();

@@ -52,6 +52,7 @@ pub enum Inst {
     Exec(char),
     Meta,
     Nop,
+    Skip,
 }
 impl Inst {
     #[allow(clippy::match_same_arms)]

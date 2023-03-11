@@ -16,20 +16,8 @@ pub struct Exec {
 }
 impl Exec {
     pub fn execute(&mut self, input: char) {
-        if let Some(inst) = self.lexer.consume(input) {
-            self.vm.issue_inst(&inst);
-            return;
-        }
-        match self.ctrl.clone() {
-            Ctrl::Normal => self.execute_normal(input),
-            Ctrl::Ignore => self.execute_ignore(input),
-            Ctrl::Delay(ty) => self.execute_delay(input, &ty),
-            Ctrl::Record(key) => self.execute_record(input, key),
-            Ctrl::Name(ty) => self.execute_name(input, &ty),
-            Ctrl::Body(name) => self.execute_body(input, name),
-            Ctrl::Quote => self.execute_quote(input),
-        }
-        self.last = input;
+        let inst = self.lexer.consume(input);
+        self.vm.issue_inst(&inst);
     }
     fn execute_inst(&mut self, inst: &Inst) {
         self.vm.issue_inst(inst);

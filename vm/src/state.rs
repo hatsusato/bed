@@ -63,7 +63,8 @@ impl State {
             | Inst::Exec(_)
             | Inst::Eval
             | Inst::Meta
-            | Inst::Nop => (),
+            | Inst::Nop
+            | Inst::Skip => (),
         }
     }
     pub fn run(&mut self, insts: &[Inst]) {
