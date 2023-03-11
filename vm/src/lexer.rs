@@ -10,6 +10,7 @@ enum Mode {
     Body,
     Quote,
     Direct,
+    Exec,
     Register,
     Record,
 }
@@ -25,13 +26,18 @@ struct Next {
     call: Mode,
     quote: Mode,
     direct: Mode,
+    exec: Mode,
     record: Mode,
 }
 impl Next {
     fn give(&mut self, next: Mode, prev: Mode) {
         assert!(match next {
-            Mode::Ignore => matches!(prev, Mode::Normal | Mode::Call | Mode::Func | Mode::Body),
-            _ => matches!(prev, Mode::Normal | Mode::Body),
+            Mode::Ignore => matches!(
+                prev,
+                Mode::Normal | Mode::Call | Mode::Func | Mode::Body | Mode::Record
+            ),
+            Mode::Register => matches!(prev, Mode::Normal | Mode::Body),
+            _ => matches!(prev, Mode::Normal | Mode::Body | Mode::Record),
         });
         match next {
             Mode::Normal => unreachable!(),
@@ -41,6 +47,7 @@ impl Next {
             Mode::Body => assert!(matches!(prev, Mode::Func)),
             Mode::Quote => self.quote = prev,
             Mode::Direct => self.direct = prev,
+            Mode::Exec => self.exec = prev,
             Mode::Register => self.record = prev,
             Mode::Record => assert!(matches!(prev, Mode::Register)),
         }
@@ -52,6 +59,7 @@ impl Next {
             Mode::Body => Mode::Normal,
             Mode::Quote => mem::take(&mut self.quote),
             Mode::Direct => mem::take(&mut self.direct),
+            Mode::Exec => mem::take(&mut self.exec),
             Mode::Register | Mode::Record => mem::take(&mut self.record),
             _ => unreachable!(),
         }
@@ -64,6 +72,7 @@ const HASH: char = '#';
 const APOSTROPHE: char = '\'';
 const COLON: char = ':';
 const SEMICOLON: char = ';';
+const AT: char = '@';
 const Q: char = 'q';
 
 #[derive(Default)]
@@ -86,6 +95,7 @@ impl Lexer {
             APOSTROPHE => self.consume_apostrophe(),
             COLON => self.consume_colon(),
             SEMICOLON => self.consume_semicolon(),
+            AT => self.consume_at(),
             Q => self.consume_q(),
             _ => self.consume_other(input),
         }
@@ -95,7 +105,6 @@ impl Lexer {
             Mode::Ignore => self.finish_ignore(),
             Mode::Call => self.finish_call(),
             Mode::Func => self.finish_func(),
-            Mode::Register => self.rewind(),
             _ => self.consume_other(NEWLINE),
         }
     }
@@ -133,6 +142,12 @@ impl Lexer {
             _ => self.consume_other(SEMICOLON),
         }
     }
+    fn consume_at(&mut self) -> Option<Inst> {
+        match self.mode {
+            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Exec),
+            _ => self.consume_other(AT),
+        }
+    }
     fn consume_q(&mut self) -> Option<Inst> {
         match self.mode {
             Mode::Normal | Mode::Body => self.transit(Mode::Register),
@@ -146,6 +161,7 @@ impl Lexer {
             Mode::Normal | Mode::Body | Mode::Record => self.add(Inst::new(input)),
             Mode::Call | Mode::Func | Mode::Quote => self.push(input),
             Mode::Direct => self.finish_direct(input),
+            Mode::Exec => self.finish_exec(input),
             Mode::Register => self.finish_register(input),
         }
     }
@@ -215,10 +231,23 @@ impl Lexer {
         self.rewind();
         self.add(Inst::immediate(input))
     }
+    fn finish_exec(&mut self, input: char) -> Option<Inst> {
+        assert!(matches!(self.mode, Mode::Exec));
+        if input.is_ascii_graphic() {
+            self.rewind();
+            self.add(Inst::Exec(input))
+        } else {
+            self.rewind()
+        }
+    }
     fn finish_register(&mut self, input: char) -> Option<Inst> {
         assert!(matches!(self.mode, Mode::Register));
-        self.push(input);
-        self.transit(Mode::Record)
+        if input.is_ascii_graphic() {
+            self.push(input);
+            self.transit(Mode::Record)
+        } else {
+            self.rewind()
+        }
     }
     fn finish_record(&mut self) -> Option<Inst> {
         assert!(matches!(self.mode, Mode::Record));

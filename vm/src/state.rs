@@ -60,6 +60,7 @@ impl State {
             Inst::Call(_)
             | Inst::Define(_, _)
             | Inst::Macro(_, _)
+            | Inst::Exec(_)
             | Inst::Eval
             | Inst::Meta
             | Inst::Nop => (),
