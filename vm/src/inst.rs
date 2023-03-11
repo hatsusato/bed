@@ -48,6 +48,7 @@ pub enum Inst {
     Quote(String),
     Call(String),
     Define(String, Vec<Inst>),
+    Macro(char, Vec<Inst>),
     Meta,
     Nop,
 }

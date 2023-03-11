@@ -11,6 +11,7 @@ enum Mode {
     Quote,
     Direct,
     Register,
+    Record,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -41,6 +42,7 @@ impl Next {
             Mode::Quote => self.quote = prev,
             Mode::Direct => self.direct = prev,
             Mode::Register => self.record = prev,
+            Mode::Record => assert!(matches!(prev, Mode::Register)),
         }
     }
     fn take(&mut self, mode: Mode) -> Mode {
@@ -49,7 +51,8 @@ impl Next {
             Mode::Call => mem::take(&mut self.call),
             Mode::Body => Mode::Normal,
             Mode::Quote => mem::take(&mut self.quote),
-            Mode::Register => mem::take(&mut self.record),
+            Mode::Direct => mem::take(&mut self.direct),
+            Mode::Register | Mode::Record => mem::take(&mut self.record),
             _ => unreachable!(),
         }
     }
@@ -72,6 +75,7 @@ pub struct Lexer {
     body: Vec<Inst>,
     quote: String,
     register: Option<char>,
+    record: Vec<Inst>,
 }
 impl Lexer {
     pub fn consume(&mut self, input: char) -> Option<Inst> {
@@ -97,26 +101,28 @@ impl Lexer {
     }
     fn consume_quote(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal | Mode::Body => self.transit(Mode::Quote),
+            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Quote),
             Mode::Quote => self.finish_quote(),
             _ => self.consume_other(QUOTE),
         }
     }
     fn consume_hash(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal | Mode::Call | Mode::Func | Mode::Body => self.transit(Mode::Ignore),
+            Mode::Normal | Mode::Call | Mode::Func | Mode::Body | Mode::Record => {
+                self.transit(Mode::Ignore)
+            }
             _ => self.consume_other(HASH),
         }
     }
     fn consume_apostrophe(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal | Mode::Body => self.transit(Mode::Direct),
+            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Direct),
             _ => self.consume_other(APOSTROPHE),
         }
     }
     fn consume_colon(&mut self) -> Option<Inst> {
         match self.mode {
-            Mode::Normal | Mode::Body => self.transit(Mode::Call),
+            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Call),
             _ => self.consume_other(COLON),
         }
     }
@@ -130,15 +136,16 @@ impl Lexer {
     fn consume_q(&mut self) -> Option<Inst> {
         match self.mode {
             Mode::Normal | Mode::Body => self.transit(Mode::Register),
+            Mode::Record => self.finish_record(),
             _ => self.consume_other(Q),
         }
     }
     fn consume_other(&mut self, input: char) -> Option<Inst> {
         match self.mode {
             Mode::Ignore => None,
-            Mode::Normal | Mode::Body => self.add(Inst::new(input)),
+            Mode::Normal | Mode::Body | Mode::Record => self.add(Inst::new(input)),
             Mode::Call | Mode::Func | Mode::Quote => self.push(input),
-            Mode::Direct => self.add(Inst::immediate(input)),
+            Mode::Direct => self.finish_direct(input),
             Mode::Register => self.finish_register(input),
         }
     }
@@ -165,6 +172,7 @@ impl Lexer {
         match self.mode {
             Mode::Normal => return Some(inst),
             Mode::Body => self.body.push(inst),
+            Mode::Record => self.record.push(inst),
             _ => unreachable!(),
         }
         None
@@ -202,8 +210,22 @@ impl Lexer {
         self.rewind();
         self.add(Inst::Quote(quote))
     }
+    fn finish_direct(&mut self, input: char) -> Option<Inst> {
+        assert!(matches!(self.mode, Mode::Direct));
+        self.rewind();
+        self.add(Inst::immediate(input))
+    }
     fn finish_register(&mut self, input: char) -> Option<Inst> {
         assert!(matches!(self.mode, Mode::Register));
-        self.push(input)
+        self.push(input);
+        self.transit(Mode::Record)
+    }
+    fn finish_record(&mut self) -> Option<Inst> {
+        assert!(matches!(self.mode, Mode::Record));
+        assert!(self.register.is_some());
+        let register = mem::take(&mut self.register).unwrap();
+        let record = mem::take(&mut self.record);
+        self.rewind();
+        self.add(Inst::Macro(register, record))
     }
 }
