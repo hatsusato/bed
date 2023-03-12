@@ -58,7 +58,7 @@ pub enum Inst {
     Skip,
 }
 impl Inst {
-    #[allow(clippy::match_same_arms, clippy::must_use_candidate)]
+    #[allow(clippy::match_same_arms)]
     pub fn new(key: u8) -> Self {
         match key as char {
             '!' => Inst::Neg,

@@ -67,7 +67,8 @@ impl State {
             Inst::Macro(key, val) => self.register_macro(key, val),
             Inst::Exec(key) => self.exec_macro(key),
             Inst::Repeat(key) => self.repeat_macro(key),
-            Inst::Eval | Inst::Nop | Inst::Skip => (),
+            Inst::Eval => self.eval(),
+            Inst::Nop | Inst::Skip => (),
         }
     }
     fn run(&mut self, seq: &[Inst]) {
@@ -80,6 +81,9 @@ impl State {
             self.run(seq);
         }
         self.regs.acc = count;
+    }
+    fn eval(&mut self) {
+        self.exec_macro(self.regs.data);
     }
     fn register_macro(&mut self, key: u8, val: Seq) {
         self.macros.insert(key, val);
