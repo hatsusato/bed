@@ -45,19 +45,19 @@ pub enum Inst {
     Save,
     Restore,
     Eval,
-    Quote(String),
-    Call(String),
-    Define(String, Vec<Inst>),
-    Macro(char, Vec<Inst>),
-    Exec(char),
-    Repeat(char),
+    Quote(Vec<u8>),
+    Call(Vec<u8>),
+    Define(Vec<u8>, Vec<Inst>),
+    Macro(u8, Vec<Inst>),
+    Exec(u8),
+    Repeat(u8),
     Nop,
     Skip,
 }
 impl Inst {
     #[allow(clippy::match_same_arms, clippy::must_use_candidate)]
-    pub fn new(key: char) -> Self {
-        match key {
+    pub fn new(key: u8) -> Self {
+        match key as char {
             '!' => Inst::Neg,
             '"' => unreachable!(),
             '#' => unreachable!(),
@@ -116,17 +116,17 @@ impl Inst {
             _ => Inst::Nop,
         }
     }
-    fn translate_hex_digit(key: char) -> Inst {
+    fn translate_hex_digit(key: u8) -> Inst {
         const ZERO: u8 = b'0';
         const A: u8 = b'a';
         let digit = match key {
-            '0'..='9' => key as u8 - ZERO,
-            'a'..='f' => key as u8 - A + 0xA,
+            b'0'..=b'9' => key as u8 - ZERO,
+            b'a'..=b'f' => key as u8 - A + 0xA,
             _ => unreachable!(),
         };
         Inst::Ins(digit)
     }
-    fn translate_lowercase(key: char) -> Inst {
+    fn translate_lowercase(key: u8) -> Inst {
         Inst::new(key.to_ascii_lowercase())
     }
 }

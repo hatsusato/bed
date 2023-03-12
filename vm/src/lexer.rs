@@ -70,30 +70,29 @@ impl Next {
     }
 }
 
-const NEWLINE: char = '\n';
-const QUOTE: char = '"';
-const HASH: char = '#';
-const PERCENT: char = '%';
-const APOSTROPHE: char = '\'';
-const COLON: char = ':';
-const SEMICOLON: char = ';';
-const AT: char = '@';
-const Q: char = 'q';
+const NEWLINE: u8 = b'\n';
+const QUOTE: u8 = b'"';
+const HASH: u8 = b'#';
+const PERCENT: u8 = b'%';
+const APOSTROPHE: u8 = b'\'';
+const COLON: u8 = b':';
+const SEMICOLON: u8 = b';';
+const AT: u8 = b'@';
+const Q: u8 = b'q';
 
 #[derive(Default)]
 pub struct Lexer {
     mode: Mode,
     next: Next,
-    call: String,
-    func: String,
+    call: Vec<u8>,
+    func: Vec<u8>,
     body: Vec<Inst>,
-    quote: String,
-    register: Option<char>,
+    quote: Vec<u8>,
+    register: Option<u8>,
     record: Vec<Inst>,
 }
 impl Lexer {
     pub fn consume(&mut self, input: u8) -> Inst {
-        let input = input as char;
         match input {
             NEWLINE => self.consume_newline(),
             QUOTE => self.consume_quote(),
@@ -169,7 +168,7 @@ impl Lexer {
             _ => self.consume_other(Q),
         }
     }
-    fn consume_other(&mut self, input: char) -> Inst {
+    fn consume_other(&mut self, input: u8) -> Inst {
         match self.mode {
             Mode::Ignore => Inst::Skip,
             Mode::Normal | Mode::Body | Mode::Record => self.add(Inst::new(input)),
@@ -189,7 +188,7 @@ impl Lexer {
         self.mode = self.next.take(self.mode);
         Inst::Skip
     }
-    fn push(&mut self, input: char) -> Inst {
+    fn push(&mut self, input: u8) -> Inst {
         match self.mode {
             Mode::Call => self.call.push(input),
             Mode::Func => self.func.push(input),
@@ -241,7 +240,7 @@ impl Lexer {
         self.rewind();
         self.add(Inst::Quote(quote))
     }
-    fn finish_direct(&mut self, input: char) -> Inst {
+    fn finish_direct(&mut self, input: u8) -> Inst {
         assert!(matches!(self.mode, Mode::Direct));
         let inst = if let Ok(input) = u8::try_from(input) {
             Inst::Imm(input)
@@ -251,7 +250,7 @@ impl Lexer {
         self.rewind();
         self.add(inst)
     }
-    fn finish_exec(&mut self, input: char) -> Inst {
+    fn finish_exec(&mut self, input: u8) -> Inst {
         assert!(matches!(self.mode, Mode::Exec));
         self.rewind();
         self.add(if input.is_ascii_graphic() {
@@ -260,7 +259,7 @@ impl Lexer {
             Inst::Nop
         })
     }
-    fn finish_repeat(&mut self, input: char) -> Inst {
+    fn finish_repeat(&mut self, input: u8) -> Inst {
         assert!(matches!(self.mode, Mode::Repeat));
         self.rewind();
         self.add(if input.is_ascii_graphic() {
@@ -269,7 +268,7 @@ impl Lexer {
             Inst::Nop
         })
     }
-    fn finish_register(&mut self, input: char) -> Inst {
+    fn finish_register(&mut self, input: u8) -> Inst {
         assert!(matches!(self.mode, Mode::Register));
         if input.is_ascii_graphic() {
             self.push(input);

@@ -10,12 +10,12 @@ pub struct State {
     memory: Block<Block<u8>>,
 }
 impl State {
-    pub fn issue(&mut self, inst: Inst) {
+    pub fn issue(&mut self, inst: &Inst) {
         let regs = &mut self.regs;
         let mut page = Page::new(regs, &mut self.memory);
         match inst {
-            Inst::Imm(data) => regs.imm(data),
-            Inst::Ins(digit) => regs.ins(digit),
+            Inst::Imm(data) => regs.imm(*data),
+            Inst::Ins(digit) => regs.ins(*digit),
             Inst::Swap => regs.swap(),
             Inst::High => regs.high(),
             Inst::Low => regs.low(),
@@ -58,7 +58,7 @@ impl State {
             Inst::Get => page.get(),
             Inst::Save => page.save(),
             Inst::Restore => page.restore(),
-            Inst::Quote(input) => page.quote(&input),
+            Inst::Quote(input) => page.quote(input.as_slice()),
             Inst::Call(_)
             | Inst::Define(_, _)
             | Inst::Macro(_, _)
@@ -70,7 +70,7 @@ impl State {
         }
     }
     pub fn run(&mut self, insts: &[Inst]) {
-        insts.iter().for_each(|i| self.issue(i.clone()));
+        insts.iter().for_each(|i| self.issue(i));
     }
     pub fn repeat(&mut self, insts: &[Inst]) {
         let count = self.regs.acc;

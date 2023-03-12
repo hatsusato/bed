@@ -42,8 +42,8 @@ impl<'a> Page<'a> {
         Self::copy(buf, self.cur());
         self.regs.restore(*buf);
     }
-    pub fn quote(&mut self, input: &str) {
-        Self::copy(self.cur_mut(), input.as_bytes());
+    pub fn quote(&mut self, input: &[u8]) {
+        Self::copy(self.cur_mut(), input);
     }
     fn cur(&mut self) -> &[u8] {
         let index = usize::from(self.regs.coord);
