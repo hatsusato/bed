@@ -55,7 +55,7 @@ pub enum Inst {
     Skip,
 }
 impl Inst {
-    #[allow(clippy::match_same_arms)]
+    #[allow(clippy::match_same_arms, clippy::must_use_candidate)]
     pub fn new(key: char) -> Self {
         match key {
             '!' => Inst::Neg,
@@ -73,7 +73,7 @@ impl Inst {
             '-' => Inst::Sub,
             '.' => Inst::Put,
             '/' => Inst::Div,
-            '0'..='9' => Inst::Ins(translate_hex_digit(key)),
+            '0'..='9' => Self::translate_hex_digit(key),
             ':' => unreachable!(),
             ';' => unreachable!(),
             '<' => Inst::Lt,
@@ -81,14 +81,14 @@ impl Inst {
             '>' => Inst::Gt,
             '?' => Inst::Bool,
             '@' => unreachable!(),
-            'A'..='Z' => Inst::new(key.to_ascii_lowercase()),
+            'A'..='Z' => Self::translate_lowercase(key),
             '[' => Inst::Inc,
             '\\' => Inst::Raise,
             ']' => Inst::Dec,
             '^' => Inst::Xor,
             '_' => Inst::Clear,
             '`' => Inst::Eval,
-            'a'..='f' => Inst::Ins(translate_hex_digit(key)),
+            'a'..='f' => Self::translate_hex_digit(key),
             'g' => Inst::Origin,
             'h' => Inst::Left,
             'i' => Inst::High,
@@ -123,14 +123,17 @@ impl Inst {
             Inst::Nop
         }
     }
-}
-
-fn translate_hex_digit(key: char) -> u8 {
-    const ZERO: u8 = b'0';
-    const A: u8 = b'a';
-    match key {
-        '0'..='9' => key as u8 - ZERO,
-        'a'..='f' => key as u8 - A + 0xA,
-        _ => unreachable!(),
+    fn translate_hex_digit(key: char) -> Inst {
+        const ZERO: u8 = b'0';
+        const A: u8 = b'a';
+        let digit = match key {
+            '0'..='9' => key as u8 - ZERO,
+            'a'..='f' => key as u8 - A + 0xA,
+            _ => unreachable!(),
+        };
+        Inst::Ins(digit)
+    }
+    fn translate_lowercase(key: char) -> Inst {
+        Inst::new(key.to_ascii_lowercase())
     }
 }

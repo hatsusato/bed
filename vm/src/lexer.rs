@@ -242,8 +242,13 @@ impl Lexer {
     }
     fn finish_direct(&mut self, input: char) -> Inst {
         assert!(matches!(self.mode, Mode::Direct));
+        let inst = if let Ok(input) = u8::try_from(input) {
+            Inst::Imm(input)
+        } else {
+            Inst::Nop
+        };
         self.rewind();
-        self.add(Inst::immediate(input))
+        self.add(inst)
     }
     fn finish_exec(&mut self, input: char) -> Inst {
         assert!(matches!(self.mode, Mode::Exec));
