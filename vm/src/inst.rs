@@ -1,3 +1,6 @@
+pub type Name = Vec<u8>;
+pub type Seq = Vec<Inst>;
+
 #[derive(Clone)]
 pub enum Inst {
     Imm(u8),
@@ -45,10 +48,10 @@ pub enum Inst {
     Save,
     Restore,
     Eval,
-    Quote(Vec<u8>),
-    Call(Vec<u8>),
-    Define(Vec<u8>, Vec<Inst>),
-    Macro(u8, Vec<Inst>),
+    Quote(Name),
+    Call(Name),
+    Define(Name, Seq),
+    Macro(u8, Seq),
     Exec(u8),
     Repeat(u8),
     Nop,
@@ -118,10 +121,12 @@ impl Inst {
     }
     fn translate_hex_digit(key: u8) -> Inst {
         const ZERO: u8 = b'0';
+        const NINE: u8 = b'9';
         const A: u8 = b'a';
+        const F: u8 = b'f';
         let digit = match key {
-            b'0'..=b'9' => key as u8 - ZERO,
-            b'a'..=b'f' => key as u8 - A + 0xA,
+            ZERO..=NINE => key - ZERO,
+            A..=F => key - A + 0xA,
             _ => unreachable!(),
         };
         Inst::Ins(digit)

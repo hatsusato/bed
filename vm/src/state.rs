@@ -1,4 +1,4 @@
-use crate::inst::Inst;
+use crate::inst::{Inst, Name, Seq};
 use crate::page::Page;
 use crate::reg::Registers;
 use screen::Screen;
@@ -9,7 +9,8 @@ use util::{Block, BLOCK_SIDE};
 pub struct State {
     regs: Registers,
     memory: Block<Block<u8>>,
-    macros: HashMap<u8, Vec<Inst>>,
+    macros: HashMap<u8, Seq>,
+    funcs: HashMap<Name, Seq>,
 }
 impl State {
     pub fn issue(&mut self, inst: &Inst) {
@@ -61,35 +62,45 @@ impl State {
             Inst::Save => page.save(),
             Inst::Restore => page.restore(),
             Inst::Quote(input) => page.quote(input.as_slice()),
-            Inst::Macro(key, val) => self.insert_macro(key, val),
+            Inst::Call(name) => self.call_func(&name),
+            Inst::Define(name, body) => self.define_func(name, body),
+            Inst::Macro(key, val) => self.register_macro(key, val),
             Inst::Exec(key) => self.exec_macro(key),
             Inst::Repeat(key) => self.repeat_macro(key),
-            Inst::Call(_) | Inst::Define(_, _) | Inst::Eval | Inst::Nop | Inst::Skip => (),
+            Inst::Eval | Inst::Nop | Inst::Skip => (),
         }
     }
-    fn run(&mut self, insts: &[Inst]) {
-        insts.iter().for_each(|i| self.issue(i));
+    fn run(&mut self, seq: &[Inst]) {
+        seq.iter().for_each(|i| self.issue(i));
     }
-    fn repeat(&mut self, insts: &[Inst]) {
+    fn repeat(&mut self, seq: &[Inst]) {
         let count = self.regs.acc;
         for i in 0..count {
             self.regs.acc = i;
-            self.run(insts);
+            self.run(seq);
         }
         self.regs.acc = count;
     }
-    fn insert_macro(&mut self, key: u8, val: Vec<Inst>) {
+    fn register_macro(&mut self, key: u8, val: Seq) {
         self.macros.insert(key, val);
     }
     fn exec_macro(&mut self, key: u8) {
-        if let Some(insts) = self.macros.get(&key).cloned() {
-            self.run(insts.as_slice());
+        if let Some(record) = self.macros.get(&key).cloned() {
+            self.run(record.as_slice());
         }
     }
     fn repeat_macro(&mut self, key: u8) {
-        if let Some(insts) = self.macros.get(&key).cloned() {
-            self.repeat(insts.as_slice());
+        if let Some(record) = self.macros.get(&key).cloned() {
+            self.repeat(record.as_slice());
         }
+    }
+    fn call_func(&mut self, name: &Name) {
+        if let Some(body) = self.funcs.get(name).cloned() {
+            self.run(body.as_slice());
+        }
+    }
+    fn define_func(&mut self, name: Name, body: Seq) {
+        self.funcs.insert(name, body);
     }
     pub fn print(&self, key: char) {
         self.regs.print(key);
