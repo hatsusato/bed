@@ -2,20 +2,22 @@ use crate::inst::Inst;
 use crate::page::Page;
 use crate::reg::Registers;
 use screen::Screen;
+use std::collections::HashMap;
 use util::{Block, BLOCK_SIDE};
 
 #[derive(Default)]
 pub struct State {
     regs: Registers,
     memory: Block<Block<u8>>,
+    macros: HashMap<u8, Vec<Inst>>,
 }
 impl State {
     pub fn issue(&mut self, inst: &Inst) {
         let regs = &mut self.regs;
         let mut page = Page::new(regs, &mut self.memory);
-        match inst {
-            Inst::Imm(data) => regs.imm(*data),
-            Inst::Ins(digit) => regs.ins(*digit),
+        match inst.clone() {
+            Inst::Imm(data) => regs.imm(data),
+            Inst::Ins(digit) => regs.ins(digit),
             Inst::Swap => regs.swap(),
             Inst::High => regs.high(),
             Inst::Low => regs.low(),
@@ -59,26 +61,35 @@ impl State {
             Inst::Save => page.save(),
             Inst::Restore => page.restore(),
             Inst::Quote(input) => page.quote(input.as_slice()),
-            Inst::Call(_)
-            | Inst::Define(_, _)
-            | Inst::Macro(_, _)
-            | Inst::Exec(_)
-            | Inst::Repeat(_)
-            | Inst::Eval
-            | Inst::Nop
-            | Inst::Skip => (),
+            Inst::Macro(key, val) => self.insert_macro(key, val),
+            Inst::Exec(key) => self.exec_macro(key),
+            Inst::Repeat(key) => self.repeat_macro(key),
+            Inst::Call(_) | Inst::Define(_, _) | Inst::Eval | Inst::Nop | Inst::Skip => (),
         }
     }
-    pub fn run(&mut self, insts: &[Inst]) {
+    fn run(&mut self, insts: &[Inst]) {
         insts.iter().for_each(|i| self.issue(i));
     }
-    pub fn repeat(&mut self, insts: &[Inst]) {
+    fn repeat(&mut self, insts: &[Inst]) {
         let count = self.regs.acc;
         for i in 0..count {
             self.regs.acc = i;
             self.run(insts);
         }
         self.regs.acc = count;
+    }
+    fn insert_macro(&mut self, key: u8, val: Vec<Inst>) {
+        self.macros.insert(key, val);
+    }
+    fn exec_macro(&mut self, key: u8) {
+        if let Some(insts) = self.macros.get(&key).cloned() {
+            self.run(insts.as_slice());
+        }
+    }
+    fn repeat_macro(&mut self, key: u8) {
+        if let Some(insts) = self.macros.get(&key).cloned() {
+            self.repeat(insts.as_slice());
+        }
     }
     pub fn print(&self, key: char) {
         self.regs.print(key);
