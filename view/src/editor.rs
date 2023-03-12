@@ -1,17 +1,17 @@
 use screen::Screen;
-use vm::Exec;
+use vm::Machine;
 
 #[derive(Default)]
 pub struct Editor {
     _screen: Screen,
-    exec: Exec,
+    vm: Machine,
 }
 impl Editor {
     pub fn run(&mut self) {
         loop {
-            self.exec.print();
+            self.vm.print();
             match Screen::getch() {
-                Some(key) => self.exec.execute(key),
+                Some(key) => self.vm.execute(key),
                 None => return,
             }
         }

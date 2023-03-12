@@ -1,11 +1,18 @@
+use crate::lexer::Lexer;
 use crate::state::State;
 use crate::Inst;
 
 #[derive(Default)]
 pub struct Machine {
     state: State,
+    lexer: Lexer,
+    last: char,
 }
 impl Machine {
+    pub fn execute(&mut self, input: char) {
+        let inst = self.lexer.consume(input);
+        self.state.issue(inst);
+    }
     pub fn issue_inst(&mut self, inst: &Inst) {
         self.state.issue(inst.clone());
     }
@@ -17,7 +24,7 @@ impl Machine {
         let insts: Vec<_> = seq.chars().map(Inst::new).collect();
         self.state.repeat(insts.as_slice());
     }
-    pub fn print(&self, key: char) {
-        self.state.print(key);
+    pub fn print(&self) {
+        self.state.print(self.last);
     }
 }
