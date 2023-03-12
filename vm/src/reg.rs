@@ -2,14 +2,14 @@ use screen::Screen;
 use util::BLOCK_SIDE;
 
 #[derive(Default, Clone)]
-pub struct Regs {
+pub struct Registers {
     pub acc: u8,
     pub block: u8,
     pub coord: u8,
     pub data: u8,
     pub error: bool,
 }
-impl Regs {
+impl Registers {
     pub fn imm(&mut self, key: u8) {
         self.data = key;
     }

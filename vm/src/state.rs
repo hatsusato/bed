@@ -1,54 +1,55 @@
-use crate::{Inst, Regs};
+use crate::mem::Page;
+use crate::{Inst, Registers};
 use screen::Screen;
 use std::io;
 use util::{Block, BLOCK_SIDE};
 
 #[derive(Default)]
 pub struct State {
-    bank: Regs,
-    memory: Block<Block<u8>>,
+    regs: Registers,
+    memory: Block<Page>,
 }
 impl State {
     pub fn issue(&mut self, inst: Inst) {
-        let bank = &mut self.bank;
+        let regs = &mut self.regs;
         match inst {
-            Inst::Imm(data) => bank.imm(data),
-            Inst::Ins(digit) => bank.ins(digit),
-            Inst::Swap => bank.swap(),
-            Inst::High => bank.high(),
-            Inst::Low => bank.low(),
-            Inst::Zero => bank.zero(),
-            Inst::Origin => bank.origin(),
-            Inst::Start => bank.start(),
-            Inst::Goto => bank.goto(),
-            Inst::Jump => bank.jump(),
-            Inst::Pos => bank.pos(),
-            Inst::Page => bank.page(),
-            Inst::Left => bank.left(),
-            Inst::Right => bank.right(),
-            Inst::Up => bank.up(),
-            Inst::Down => bank.down(),
-            Inst::Inc => bank.inc(),
-            Inst::Dec => bank.dec(),
-            Inst::Add => bank.add(),
-            Inst::Sub => bank.sub(),
-            Inst::Mul => bank.mul(),
-            Inst::Div => bank.div(),
-            Inst::Clear => bank.clear(),
-            Inst::Raise => bank.raise(),
-            Inst::Neg => bank.neg(),
-            Inst::Bool => bank.bool(),
-            Inst::Eq => bank.eq(),
-            Inst::Lt => bank.lt(),
-            Inst::Gt => bank.gt(),
-            Inst::Not => bank.not(),
-            Inst::And => bank.and(),
-            Inst::Or => bank.or(),
-            Inst::Xor => bank.xor(),
-            Inst::Shl => bank.shl(),
-            Inst::Shr => bank.shr(),
-            Inst::Rotl => bank.rotl(),
-            Inst::Rotr => bank.rotr(),
+            Inst::Imm(data) => regs.imm(data),
+            Inst::Ins(digit) => regs.ins(digit),
+            Inst::Swap => regs.swap(),
+            Inst::High => regs.high(),
+            Inst::Low => regs.low(),
+            Inst::Zero => regs.zero(),
+            Inst::Origin => regs.origin(),
+            Inst::Start => regs.start(),
+            Inst::Goto => regs.goto(),
+            Inst::Jump => regs.jump(),
+            Inst::Pos => regs.pos(),
+            Inst::Page => regs.page(),
+            Inst::Left => regs.left(),
+            Inst::Right => regs.right(),
+            Inst::Up => regs.up(),
+            Inst::Down => regs.down(),
+            Inst::Inc => regs.inc(),
+            Inst::Dec => regs.dec(),
+            Inst::Add => regs.add(),
+            Inst::Sub => regs.sub(),
+            Inst::Mul => regs.mul(),
+            Inst::Div => regs.div(),
+            Inst::Clear => regs.clear(),
+            Inst::Raise => regs.raise(),
+            Inst::Neg => regs.neg(),
+            Inst::Bool => regs.bool(),
+            Inst::Eq => regs.eq(),
+            Inst::Lt => regs.lt(),
+            Inst::Gt => regs.gt(),
+            Inst::Not => regs.not(),
+            Inst::And => regs.and(),
+            Inst::Or => regs.or(),
+            Inst::Xor => regs.xor(),
+            Inst::Shl => regs.shl(),
+            Inst::Shr => regs.shr(),
+            Inst::Rotl => regs.rotl(),
+            Inst::Rotr => regs.rotr(),
             Inst::Load => self.load(),
             Inst::Store => self.store(),
             Inst::Delete => self.delete(),
@@ -71,18 +72,18 @@ impl State {
         insts.iter().for_each(|i| self.issue(i.clone()));
     }
     pub fn repeat(&mut self, insts: &[Inst]) {
-        let count = self.bank.acc;
+        let count = self.regs.acc;
         for i in 0..count {
-            self.bank.acc = i;
+            self.regs.acc = i;
             self.run(insts);
         }
-        self.bank.acc = count;
+        self.regs.acc = count;
     }
     fn load(&mut self) {
-        self.bank.data = self.current()[0];
+        self.regs.data = self.current()[0];
     }
     fn store(&mut self) {
-        self.current_mut()[0] = self.bank.data;
+        self.current_mut()[0] = self.regs.data;
     }
     fn delete(&mut self) {
         self.current_mut()[0] = 0;
@@ -91,43 +92,46 @@ impl State {
         use io::Write;
         let src = &self.current()[0..1];
         let result = io::stdout().write(src);
-        self.bank.set_error(result.is_err());
+        self.regs.set_error(result.is_err());
     }
     fn get(&mut self) {
         use io::Read;
         let dst = &mut self.current_mut()[0..1];
         let result = io::stdin().read(dst);
-        self.bank.set_error(result.is_err());
+        self.regs.set_error(result.is_err());
     }
     fn save(&mut self) {
         let buf = &mut [0; 4];
-        self.bank.save(buf);
+        self.regs.save(buf);
         copy(self.current_mut(), buf);
     }
     fn restore(&mut self) {
         let buf = &mut [0; 4];
         copy(buf, self.current());
-        self.bank.restore(buf);
+        self.regs.restore(buf);
     }
     fn quote(&mut self, input: &str) {
         copy(self.current_mut(), input.as_bytes());
     }
     fn page(&self) -> &[u8] {
-        self.memory[self.bank.block].iter().as_slice()
+        self.memory[self.regs.block].get().iter().as_slice()
     }
     fn page_mut(&mut self) -> &mut [u8] {
-        self.memory[self.bank.block].iter_mut().into_slice()
+        self.memory[self.regs.block]
+            .get_mut()
+            .iter_mut()
+            .into_slice()
     }
     fn current(&self) -> &[u8] {
-        let coord = usize::from(self.bank.coord);
+        let coord = usize::from(self.regs.coord);
         &self.page()[coord..]
     }
     fn current_mut(&mut self) -> &mut [u8] {
-        let coord = usize::from(self.bank.coord);
+        let coord = usize::from(self.regs.coord);
         &mut self.page_mut()[coord..]
     }
     pub fn print(&self, key: char) {
-        self.bank.print(key);
+        self.regs.print(key);
         for y in 0..BLOCK_SIDE {
             for x in 0..BLOCK_SIDE {
                 Self::move_cell(x, y);
@@ -138,7 +142,7 @@ impl State {
     fn print_cell(&self, x: u8, y: u8) {
         let index = x + y * BLOCK_SIDE;
         let val = self.page()[usize::from(index)];
-        Screen::print_display(util::as_hex(val), self.bank.coord == index);
+        Screen::print_display(util::as_hex(val), self.regs.coord == index);
     }
     fn move_cell(x: u8, y: u8) {
         const CELL_WIDTH: u16 = 3;
