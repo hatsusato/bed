@@ -128,7 +128,7 @@ impl Registers {
     pub fn save(&self, buf: &mut [u8; 4]) {
         (buf[0], buf[1], buf[2], buf[3]) = (self.data, self.acc, self.block, self.coord);
     }
-    pub fn restore(&mut self, buf: &[u8; 4]) {
+    pub fn restore(&mut self, buf: [u8; 4]) {
         (self.data, self.acc, self.block, self.coord) = (buf[0], buf[1], buf[2], buf[3]);
     }
     pub fn print(&self, key: char) {

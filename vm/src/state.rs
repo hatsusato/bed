@@ -1,5 +1,6 @@
+use crate::inst::Inst;
 use crate::page::Page;
-use crate::{Inst, Registers};
+use crate::reg::Registers;
 use screen::Screen;
 use util::{Block, BLOCK_SIDE};
 

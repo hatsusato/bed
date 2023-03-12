@@ -1,4 +1,4 @@
-use crate::Registers;
+use crate::reg::Registers;
 use std::io;
 use util::Block;
 
@@ -40,7 +40,7 @@ impl<'a> Page<'a> {
     pub fn restore(&mut self) {
         let buf = &mut [0; 4];
         Self::copy(buf, self.cur());
-        self.regs.restore(buf);
+        self.regs.restore(*buf);
     }
     pub fn quote(&mut self, input: &str) {
         Self::copy(self.cur_mut(), input.as_bytes());

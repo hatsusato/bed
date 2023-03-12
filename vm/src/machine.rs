@@ -1,6 +1,6 @@
+use crate::inst::Inst;
 use crate::lexer::Lexer;
 use crate::state::State;
-use crate::Inst;
 
 #[derive(Default)]
 pub struct Machine {
