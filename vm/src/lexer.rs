@@ -11,6 +11,7 @@ enum Mode {
     Quote,
     Direct,
     Exec,
+    Repeat,
     Register,
     Record,
 }
@@ -27,6 +28,7 @@ struct Next {
     quote: Mode,
     direct: Mode,
     exec: Mode,
+    repeat: Mode,
     record: Mode,
 }
 impl Next {
@@ -48,20 +50,22 @@ impl Next {
             Mode::Quote => self.quote = prev,
             Mode::Direct => self.direct = prev,
             Mode::Exec => self.exec = prev,
+            Mode::Repeat => self.repeat = prev,
             Mode::Register => self.record = prev,
             Mode::Record => assert!(matches!(prev, Mode::Register)),
         }
     }
     fn take(&mut self, mode: Mode) -> Mode {
         match mode {
+            Mode::Normal | Mode::Func => unreachable!(),
             Mode::Ignore => mem::take(&mut self.ignore),
             Mode::Call => mem::take(&mut self.call),
             Mode::Body => Mode::Normal,
             Mode::Quote => mem::take(&mut self.quote),
             Mode::Direct => mem::take(&mut self.direct),
             Mode::Exec => mem::take(&mut self.exec),
+            Mode::Repeat => mem::take(&mut self.repeat),
             Mode::Register | Mode::Record => mem::take(&mut self.record),
-            _ => unreachable!(),
         }
     }
 }
@@ -69,6 +73,7 @@ impl Next {
 const NEWLINE: char = '\n';
 const QUOTE: char = '"';
 const HASH: char = '#';
+const PERCENT: char = '%';
 const APOSTROPHE: char = '\'';
 const COLON: char = ':';
 const SEMICOLON: char = ';';
@@ -92,6 +97,7 @@ impl Lexer {
             NEWLINE => self.consume_newline(),
             QUOTE => self.consume_quote(),
             HASH => self.consume_hash(),
+            PERCENT => self.consume_percent(),
             APOSTROPHE => self.consume_apostrophe(),
             COLON => self.consume_colon(),
             SEMICOLON => self.consume_semicolon(),
@@ -123,6 +129,12 @@ impl Lexer {
             _ => self.consume_other(HASH),
         }
     }
+    fn consume_percent(&mut self) -> Inst {
+        match self.mode {
+            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Repeat),
+            _ => self.consume_other(PERCENT),
+        }
+    }
     fn consume_apostrophe(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Direct),
@@ -139,6 +151,7 @@ impl Lexer {
         match self.mode {
             Mode::Normal => self.transit(Mode::Func),
             Mode::Body => self.finish_body(),
+            Mode::Record => Inst::Nop,
             _ => self.consume_other(SEMICOLON),
         }
     }
@@ -162,6 +175,7 @@ impl Lexer {
             Mode::Call | Mode::Func | Mode::Quote => self.push(input),
             Mode::Direct => self.finish_direct(input),
             Mode::Exec => self.finish_exec(input),
+            Mode::Repeat => self.finish_repeat(input),
             Mode::Register => self.finish_register(input),
         }
     }
@@ -233,12 +247,21 @@ impl Lexer {
     }
     fn finish_exec(&mut self, input: char) -> Inst {
         assert!(matches!(self.mode, Mode::Exec));
-        if input.is_ascii_graphic() {
-            self.rewind();
-            self.add(Inst::Exec(input))
+        self.rewind();
+        self.add(if input.is_ascii_graphic() {
+            Inst::Exec(input)
         } else {
-            self.rewind()
-        }
+            Inst::Nop
+        })
+    }
+    fn finish_repeat(&mut self, input: char) -> Inst {
+        assert!(matches!(self.mode, Mode::Repeat));
+        self.rewind();
+        self.add(if input.is_ascii_graphic() {
+            Inst::Repeat(input)
+        } else {
+            Inst::Nop
+        })
     }
     fn finish_register(&mut self, input: char) -> Inst {
         assert!(matches!(self.mode, Mode::Register));

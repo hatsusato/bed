@@ -61,8 +61,8 @@ impl State {
             | Inst::Define(_, _)
             | Inst::Macro(_, _)
             | Inst::Exec(_)
+            | Inst::Repeat(_)
             | Inst::Eval
-            | Inst::Meta
             | Inst::Nop
             | Inst::Skip => (),
         }
