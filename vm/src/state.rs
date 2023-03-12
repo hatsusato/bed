@@ -1,4 +1,4 @@
-use crate::mem::Page;
+use crate::page::Page;
 use crate::{Inst, Registers};
 use screen::Screen;
 use util::{Block, BLOCK_SIDE};

@@ -2,7 +2,7 @@ mod exec;
 mod inst;
 mod lexer;
 mod machine;
-mod mem;
+mod page;
 mod reg;
 mod state;
 
