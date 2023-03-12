@@ -1,4 +1,3 @@
-mod ctrl;
 mod exec;
 mod inst;
 mod lexer;

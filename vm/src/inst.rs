@@ -116,13 +116,6 @@ impl Inst {
             _ => Inst::Nop,
         }
     }
-    pub fn immediate(input: char) -> Self {
-        if let Ok(input) = u8::try_from(input) {
-            Inst::Imm(input)
-        } else {
-            Inst::Nop
-        }
-    }
     fn translate_hex_digit(key: char) -> Inst {
         const ZERO: u8 = b'0';
         const A: u8 = b'a';
