@@ -9,7 +9,7 @@ pub struct Machine {
     last: char,
 }
 impl Machine {
-    pub fn execute(&mut self, input: char) {
+    pub fn execute(&mut self, input: u8) {
         let inst = self.lexer.consume(input);
         self.state.issue(inst);
     }

@@ -61,7 +61,7 @@ pub struct Screen {
 }
 impl Screen {
     #[must_use]
-    pub fn getch() -> Option<char> {
+    pub fn getch() -> Option<u8> {
         use event::{Event, KeyCode};
         use Event::Key;
         use KeyCode::{Char, Enter, Tab};
@@ -72,6 +72,7 @@ impl Screen {
                 Tab => Some('\t'),
                 _ => None,
             }
+            .and_then(|c| u8::try_from(c).ok())
         } else {
             None
         }

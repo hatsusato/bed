@@ -92,7 +92,8 @@ pub struct Lexer {
     record: Vec<Inst>,
 }
 impl Lexer {
-    pub fn consume(&mut self, input: char) -> Inst {
+    pub fn consume(&mut self, input: u8) -> Inst {
+        let input = input as char;
         match input {
             NEWLINE => self.consume_newline(),
             QUOTE => self.consume_quote(),
