@@ -106,7 +106,7 @@ impl State {
     fn define_func(&mut self, name: Name, body: Seq) {
         self.funcs.insert(name, body);
     }
-    pub fn print(&self, key: char) {
+    pub fn print(&self, key: u8) {
         self.regs.print(key);
         for y in 0..BLOCK_SIDE {
             for x in 0..BLOCK_SIDE {

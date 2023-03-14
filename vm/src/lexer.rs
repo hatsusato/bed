@@ -1,7 +1,7 @@
 use crate::inst::Inst;
 use std::mem;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 enum Mode {
     Normal,
     Ignore,
@@ -34,11 +34,15 @@ struct Next {
 impl Next {
     fn give(&mut self, next: Mode, prev: Mode) {
         assert!(match next {
+            Mode::Normal => false,
             Mode::Ignore => matches!(
                 prev,
                 Mode::Normal | Mode::Call | Mode::Func | Mode::Body | Mode::Record
             ),
+            Mode::Func => matches!(prev, Mode::Normal),
+            Mode::Body => matches!(prev, Mode::Func),
             Mode::Register => matches!(prev, Mode::Normal | Mode::Body),
+            Mode::Record => matches!(prev, Mode::Register),
             _ => matches!(prev, Mode::Normal | Mode::Body | Mode::Record),
         });
         match next {
@@ -57,10 +61,10 @@ impl Next {
     }
     fn take(&mut self, mode: Mode) -> Mode {
         match mode {
-            Mode::Normal | Mode::Func => unreachable!(),
+            Mode::Normal => unreachable!(),
             Mode::Ignore => mem::take(&mut self.ignore),
             Mode::Call => mem::take(&mut self.call),
-            Mode::Body => Mode::Normal,
+            Mode::Func | Mode::Body => Mode::Normal,
             Mode::Quote => mem::take(&mut self.quote),
             Mode::Direct => mem::take(&mut self.direct),
             Mode::Exec => mem::take(&mut self.exec),
@@ -80,6 +84,20 @@ const SEMICOLON: u8 = b';';
 const AT: u8 = b'@';
 const Q: u8 = b'q';
 
+struct Last {
+    pub last: u8,
+}
+impl Default for Last {
+    fn default() -> Self {
+        Self { last: NEWLINE }
+    }
+}
+impl Last {
+    fn is_newline(&self) -> bool {
+        self.last == NEWLINE
+    }
+}
+
 #[derive(Default)]
 pub struct Lexer {
     mode: Mode,
@@ -90,10 +108,11 @@ pub struct Lexer {
     quote: Vec<u8>,
     register: Option<u8>,
     record: Vec<Inst>,
+    last: Last,
 }
 impl Lexer {
     pub fn consume(&mut self, input: u8) -> Inst {
-        match input {
+        let inst = match input {
             NEWLINE => self.consume_newline(),
             QUOTE => self.consume_quote(),
             HASH => self.consume_hash(),
@@ -104,7 +123,12 @@ impl Lexer {
             AT => self.consume_at(),
             Q => self.consume_q(),
             _ => self.consume_other(input),
-        }
+        };
+        self.last.last = input;
+        inst
+    }
+    pub fn get_last(&self) -> u8 {
+        self.last.last
     }
     fn consume_newline(&mut self) -> Inst {
         match self.mode {
@@ -149,7 +173,14 @@ impl Lexer {
     }
     fn consume_semicolon(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal => self.transit(Mode::Func),
+            Mode::Normal => {
+                if self.last.is_newline() {
+                    self.transit(Mode::Func)
+                } else {
+                    Inst::Nop
+                }
+            }
+            Mode::Func => self.rewind(),
             Mode::Body => self.finish_body(),
             Mode::Record => Inst::Nop,
             _ => self.consume_other(SEMICOLON),
