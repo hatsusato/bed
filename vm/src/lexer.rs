@@ -49,14 +49,14 @@ impl Next {
             Mode::Normal => unreachable!(),
             Mode::Ignore => self.ignore = prev,
             Mode::Call => self.call = prev,
-            Mode::Func => assert!(matches!(prev, Mode::Normal)),
-            Mode::Body => assert!(matches!(prev, Mode::Func)),
+            Mode::Func => assert_eq!(prev, Mode::Normal),
+            Mode::Body => assert_eq!(prev, Mode::Func),
             Mode::Quote => self.quote = prev,
             Mode::Direct => self.direct = prev,
             Mode::Exec => self.exec = prev,
             Mode::Repeat => self.repeat = prev,
             Mode::Register => self.record = prev,
-            Mode::Record => assert!(matches!(prev, Mode::Register)),
+            Mode::Record => assert_eq!(prev, Mode::Register),
         }
     }
     fn take(&mut self, mode: Mode) -> Mode {
@@ -239,7 +239,7 @@ impl Lexer {
         Inst::Skip
     }
     fn finish_ignore(&mut self) -> Inst {
-        assert!(matches!(self.mode, Mode::Ignore));
+        assert_eq!(self.mode, Mode::Ignore);
         self.rewind();
         match self.mode {
             Mode::Normal | Mode::Body => Inst::Skip,
@@ -249,35 +249,35 @@ impl Lexer {
         }
     }
     fn finish_call(&mut self) -> Inst {
-        assert!(matches!(self.mode, Mode::Call));
+        assert_eq!(self.mode, Mode::Call);
         let call = mem::take(&mut self.call);
         self.rewind();
         self.add(Inst::Call(call))
     }
     fn finish_func(&mut self) -> Inst {
-        assert!(matches!(self.mode, Mode::Func));
+        assert_eq!(self.mode, Mode::Func);
         self.transit(Mode::Body)
     }
     fn finish_body(&mut self) -> Inst {
-        assert!(matches!(self.mode, Mode::Body));
+        assert_eq!(self.mode, Mode::Body);
         let func = mem::take(&mut self.func);
         let body = mem::take(&mut self.body);
         self.rewind();
         self.add(Inst::Define(func, body))
     }
     fn finish_quote(&mut self) -> Inst {
-        assert!(matches!(self.mode, Mode::Quote));
+        assert_eq!(self.mode, Mode::Quote);
         let quote = mem::take(&mut self.quote);
         self.rewind();
         self.add(Inst::Quote(quote))
     }
     fn finish_direct(&mut self, input: u8) -> Inst {
-        assert!(matches!(self.mode, Mode::Direct));
+        assert_eq!(self.mode, Mode::Direct);
         self.rewind();
         self.add(Inst::Imm(input))
     }
     fn finish_exec(&mut self, input: u8) -> Inst {
-        assert!(matches!(self.mode, Mode::Exec));
+        assert_eq!(self.mode, Mode::Exec);
         self.rewind();
         self.add(if input.is_ascii_graphic() {
             Inst::Exec(input)
@@ -286,7 +286,7 @@ impl Lexer {
         })
     }
     fn finish_repeat(&mut self, input: u8) -> Inst {
-        assert!(matches!(self.mode, Mode::Repeat));
+        assert_eq!(self.mode, Mode::Repeat);
         self.rewind();
         self.add(if input.is_ascii_graphic() {
             Inst::Repeat(input)
@@ -295,7 +295,7 @@ impl Lexer {
         })
     }
     fn finish_register(&mut self, input: u8) -> Inst {
-        assert!(matches!(self.mode, Mode::Register));
+        assert_eq!(self.mode, Mode::Register);
         if input.is_ascii_graphic() {
             self.push(input);
             self.transit(Mode::Record)
@@ -304,7 +304,7 @@ impl Lexer {
         }
     }
     fn finish_record(&mut self) -> Inst {
-        assert!(matches!(self.mode, Mode::Record));
+        assert_eq!(self.mode, Mode::Record);
         assert!(self.register.is_some());
         let register = mem::take(&mut self.register).unwrap();
         let record = mem::take(&mut self.record);
