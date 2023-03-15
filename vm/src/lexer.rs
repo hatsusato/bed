@@ -35,7 +35,7 @@ impl Default for Next {
         Self {
             ignore: Mode::Ignore,
             call: Mode::default(),
-            quote: Mode::default(),
+            quote: Mode::Quote,
             direct: Mode::default(),
             exec: Mode::default(),
             repeat: Mode::default(),
@@ -51,6 +51,14 @@ impl Next {
             _ => false,
         });
         mem::swap(&mut self.ignore, next);
+    }
+    fn toggle_quote(&mut self, next: &mut Mode) {
+        assert!(match self.quote {
+            Mode::Quote => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
+            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Quote),
+            _ => false,
+        });
+        mem::swap(&mut self.quote, next);
     }
     fn give(&mut self, next: Mode, prev: Mode) {
         assert!(match next {
@@ -160,8 +168,7 @@ impl Lexer {
     }
     fn consume_quote(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Quote),
-            Mode::Quote => self.finish_quote(),
+            Mode::Normal | Mode::Body | Mode::Record | Mode::Quote => self.toggle_quote(),
             _ => self.consume_other(QUOTE),
         }
     }
@@ -252,6 +259,7 @@ impl Lexer {
             Mode::Normal => return inst,
             Mode::Body => self.body.push(inst),
             Mode::Record => self.record.push(inst),
+            Mode::Quote => (),
             _ => unreachable!(),
         }
         Inst::Skip
@@ -259,6 +267,15 @@ impl Lexer {
     fn toggle_ignore(&mut self) -> Inst {
         self.next.toggle_ignore(&mut self.mode);
         Inst::Skip
+    }
+    fn toggle_quote(&mut self) -> Inst {
+        self.next.toggle_quote(&mut self.mode);
+        let inst = match self.mode {
+            Mode::Normal | Mode::Body | Mode::Record => Inst::Quote(mem::take(&mut self.quote)),
+            Mode::Quote => Inst::Skip,
+            _ => unimplemented!(),
+        };
+        self.add(inst)
     }
     fn finish_call(&mut self) -> Inst {
         assert_eq!(self.mode, Mode::Call);
@@ -276,12 +293,6 @@ impl Lexer {
         let body = mem::take(&mut self.body);
         self.rewind();
         self.add(Inst::Define(func, body))
-    }
-    fn finish_quote(&mut self) -> Inst {
-        assert_eq!(self.mode, Mode::Quote);
-        let quote = mem::take(&mut self.quote);
-        self.rewind();
-        self.add(Inst::Quote(quote))
     }
     fn finish_direct(&mut self, input: u8) -> Inst {
         assert_eq!(self.mode, Mode::Direct);
