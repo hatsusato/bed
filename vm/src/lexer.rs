@@ -74,12 +74,10 @@ impl Next {
             _ => matches!(prev, Mode::Normal | Mode::Body | Mode::Record),
         });
         match next {
-            Mode::Normal => unreachable!(),
-            Mode::Ignore => self.ignore = prev,
+            Mode::Normal | Mode::Ignore | Mode::Quote => unreachable!(),
             Mode::Call => self.call = prev,
             Mode::Func => assert_eq!(prev, Mode::Normal),
             Mode::Body => assert_eq!(prev, Mode::Func),
-            Mode::Quote => self.quote = prev,
             Mode::Direct => self.direct = prev,
             Mode::Exec => self.exec = prev,
             Mode::Repeat => self.repeat = prev,
@@ -89,11 +87,9 @@ impl Next {
     }
     fn take(&mut self, mode: Mode) -> Mode {
         match mode {
-            Mode::Normal => unreachable!(),
-            Mode::Ignore => mem::take(&mut self.ignore),
+            Mode::Normal | Mode::Ignore | Mode::Quote => unreachable!(),
             Mode::Call => mem::take(&mut self.call),
             Mode::Func | Mode::Body => Mode::Normal,
-            Mode::Quote => mem::take(&mut self.quote),
             Mode::Direct => mem::take(&mut self.direct),
             Mode::Exec => mem::take(&mut self.exec),
             Mode::Repeat => mem::take(&mut self.repeat),
@@ -350,6 +346,16 @@ mod tests {
             &[
                 Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore,
                 Normal,
+            ],
+        );
+    }
+    #[test]
+    fn quote_test() {
+        mode_test("\"\"", &[Quote, Normal]);
+        mode_test(
+            "\n\"#%':;@q\n\"",
+            &[
+                Normal, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Normal,
             ],
         );
     }
