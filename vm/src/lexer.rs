@@ -21,7 +21,6 @@ impl Default for Mode {
     }
 }
 
-#[derive(Default)]
 struct Next {
     ignore: Mode,
     call: Mode,
@@ -31,7 +30,28 @@ struct Next {
     repeat: Mode,
     record: Mode,
 }
+impl Default for Next {
+    fn default() -> Self {
+        Self {
+            ignore: Mode::Ignore,
+            call: Mode::default(),
+            quote: Mode::default(),
+            direct: Mode::default(),
+            exec: Mode::default(),
+            repeat: Mode::default(),
+            record: Mode::default(),
+        }
+    }
+}
 impl Next {
+    fn toggle_ignore(&mut self, next: &mut Mode) {
+        assert!(match self.ignore {
+            Mode::Ignore => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
+            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Ignore),
+            _ => false,
+        });
+        mem::swap(&mut self.ignore, next);
+    }
     fn give(&mut self, next: Mode, prev: Mode) {
         assert!(match next {
             Mode::Normal => false,
@@ -132,7 +152,7 @@ impl Lexer {
     }
     fn consume_newline(&mut self) -> Inst {
         match self.mode {
-            Mode::Ignore => self.finish_ignore(),
+            Mode::Ignore => self.toggle_ignore(),
             Mode::Call => self.finish_call(),
             Mode::Func => self.finish_func(),
             _ => self.consume_other(NEWLINE),
@@ -147,9 +167,7 @@ impl Lexer {
     }
     fn consume_hash(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Call | Mode::Func | Mode::Body | Mode::Record => {
-                self.transit(Mode::Ignore)
-            }
+            Mode::Normal | Mode::Body | Mode::Record => self.toggle_ignore(),
             _ => self.consume_other(HASH),
         }
     }
@@ -238,15 +256,9 @@ impl Lexer {
         }
         Inst::Skip
     }
-    fn finish_ignore(&mut self) -> Inst {
-        assert_eq!(self.mode, Mode::Ignore);
-        self.rewind();
-        match self.mode {
-            Mode::Normal | Mode::Body => Inst::Skip,
-            Mode::Call => self.finish_call(),
-            Mode::Func => self.finish_func(),
-            _ => unreachable!(),
-        }
+    fn toggle_ignore(&mut self) -> Inst {
+        self.next.toggle_ignore(&mut self.mode);
+        Inst::Skip
     }
     fn finish_call(&mut self) -> Inst {
         assert_eq!(self.mode, Mode::Call);
