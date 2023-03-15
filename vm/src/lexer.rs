@@ -324,3 +324,31 @@ impl Lexer {
         self.add(Inst::Macro(register, record))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Lexer, Mode};
+    #[allow(clippy::enum_glob_use)]
+    use Mode::*;
+    #[test]
+    fn ignore_test() {
+        mode_test("", &[]);
+        mode_test(" #\n", &[Normal, Ignore, Normal]);
+        mode_test(
+            "# \"#%':;@q\n",
+            &[
+                Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore,
+                Normal,
+            ],
+        );
+    }
+    fn mode_test(input: &str, modes: &[Mode]) {
+        assert_eq!(input.len(), modes.len());
+        let mut lexer = Lexer::default();
+        assert_eq!(lexer.mode, Mode::Normal);
+        for (&key, &mode) in input.as_bytes().iter().zip(modes.iter()) {
+            lexer.consume(key);
+            assert_eq!(lexer.mode, mode);
+        }
+    }
+}
