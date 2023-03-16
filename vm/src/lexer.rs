@@ -34,7 +34,7 @@ impl Default for Next {
     fn default() -> Self {
         Self {
             ignore: Mode::Ignore,
-            call: Mode::default(),
+            call: Mode::Call,
             quote: Mode::Quote,
             direct: Mode::default(),
             exec: Mode::default(),
@@ -358,6 +358,15 @@ mod tests {
                 Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore,
                 Normal,
             ],
+        );
+    }
+    #[test]
+    fn call_test() {
+        mode_test(":\n", &[Call, Normal]);
+        mode_test(": a\n", &[Call, Call, Call, Normal]);
+        mode_test(
+            ":\"#%':;@q\n",
+            &[Call, Call, Call, Call, Call, Call, Call, Call, Call, Normal],
         );
     }
     #[test]
