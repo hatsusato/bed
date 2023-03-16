@@ -60,6 +60,20 @@ impl Next {
         });
         mem::swap(&mut self.call, next);
     }
+    fn toggle_func(next: &mut Mode) {
+        match next {
+            Mode::Func => mem::replace(next, Mode::Body),
+            _ => unreachable!(),
+        };
+    }
+    fn toggle_body(next: &mut Mode) {
+        match next {
+            Mode::Normal => mem::replace(next, Mode::Func),
+            Mode::Body => mem::replace(next, Mode::Normal),
+            Mode::Record => unimplemented!(),
+            _ => unreachable!(),
+        };
+    }
     fn toggle_quote(&mut self, next: &mut Mode) {
         assert!(match self.quote {
             Mode::Quote => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
@@ -73,6 +87,8 @@ impl Next {
             Mode::Normal => unreachable!(),
             Mode::Ignore => self.toggle_ignore(next),
             Mode::Call => self.toggle_call(next),
+            Mode::Func => Self::toggle_func(next),
+            Mode::Body => Self::toggle_body(next),
             Mode::Quote => self.toggle_quote(next),
             _ => unimplemented!(),
         }
@@ -173,9 +189,7 @@ impl Lexer {
     }
     fn consume_newline(&mut self) -> Inst {
         match self.mode {
-            Mode::Ignore => self.toggle(Mode::Ignore),
-            Mode::Call => self.toggle(Mode::Call),
-            Mode::Func => self.finish_func(),
+            Mode::Ignore | Mode::Call | Mode::Func => self.toggle(self.mode),
             _ => self.consume_other(NEWLINE),
         }
     }
@@ -211,16 +225,13 @@ impl Lexer {
     }
     fn consume_semicolon(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal => {
+            Mode::Normal | Mode::Body | Mode::Record => {
                 if self.last.is_newline() {
-                    self.transit(Mode::Func)
+                    self.toggle(Mode::Body)
                 } else {
-                    Inst::Nop
+                    self.add(Inst::Nop)
                 }
             }
-            Mode::Func => self.rewind(),
-            Mode::Body => self.finish_body(),
-            Mode::Record => Inst::Nop,
             _ => self.consume_other(SEMICOLON),
         }
     }
@@ -280,8 +291,9 @@ impl Lexer {
     }
     fn take(&mut self, select: Mode) -> Inst {
         match select {
-            Mode::Ignore | Mode::Normal | Mode::Body | Mode::Record => Inst::Skip,
+            Mode::Ignore | Mode::Normal | Mode::Func | Mode::Record => Inst::Skip,
             Mode::Call => Inst::Call(mem::take(&mut self.call)),
+            Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
             Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
             _ => unimplemented!(),
         }
@@ -290,17 +302,6 @@ impl Lexer {
         let inst = self.take(self.mode);
         self.next.toggle(select, &mut self.mode);
         self.add(inst)
-    }
-    fn finish_func(&mut self) -> Inst {
-        assert_eq!(self.mode, Mode::Func);
-        self.transit(Mode::Body)
-    }
-    fn finish_body(&mut self) -> Inst {
-        assert_eq!(self.mode, Mode::Body);
-        let func = mem::take(&mut self.func);
-        let body = mem::take(&mut self.body);
-        self.rewind();
-        self.add(Inst::Define(func, body))
     }
     fn finish_direct(&mut self, input: u8) -> Inst {
         assert_eq!(self.mode, Mode::Direct);
