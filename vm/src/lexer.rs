@@ -52,6 +52,14 @@ impl Next {
         });
         mem::swap(&mut self.ignore, next);
     }
+    fn toggle_call(&mut self, next: &mut Mode) {
+        assert!(match self.call {
+            Mode::Call => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
+            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Call),
+            _ => false,
+        });
+        mem::swap(&mut self.call, next);
+    }
     fn toggle_quote(&mut self, next: &mut Mode) {
         assert!(match self.quote {
             Mode::Quote => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
@@ -157,7 +165,7 @@ impl Lexer {
     fn consume_newline(&mut self) -> Inst {
         match self.mode {
             Mode::Ignore => self.toggle_ignore(),
-            Mode::Call => self.finish_call(),
+            Mode::Call => self.toggle_call(),
             Mode::Func => self.finish_func(),
             _ => self.consume_other(NEWLINE),
         }
@@ -188,7 +196,7 @@ impl Lexer {
     }
     fn consume_colon(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Call),
+            Mode::Normal | Mode::Body | Mode::Record => self.toggle_call(),
             _ => self.consume_other(COLON),
         }
     }
@@ -255,29 +263,32 @@ impl Lexer {
             Mode::Normal => return inst,
             Mode::Body => self.body.push(inst),
             Mode::Record => self.record.push(inst),
-            Mode::Quote => (),
+            Mode::Call | Mode::Quote => assert_eq!(inst, Inst::Skip),
             _ => unreachable!(),
         }
         Inst::Skip
+    }
+    fn take(&mut self, select: Mode) -> Inst {
+        match select {
+            Mode::Normal | Mode::Body | Mode::Record => Inst::Skip,
+            Mode::Call => Inst::Call(mem::take(&mut self.call)),
+            Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
+            _ => unimplemented!(),
+        }
     }
     fn toggle_ignore(&mut self) -> Inst {
         self.next.toggle_ignore(&mut self.mode);
         Inst::Skip
     }
-    fn toggle_quote(&mut self) -> Inst {
-        self.next.toggle_quote(&mut self.mode);
-        let inst = match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => Inst::Quote(mem::take(&mut self.quote)),
-            Mode::Quote => Inst::Skip,
-            _ => unimplemented!(),
-        };
+    fn toggle_call(&mut self) -> Inst {
+        let inst = self.take(self.mode);
+        self.next.toggle_call(&mut self.mode);
         self.add(inst)
     }
-    fn finish_call(&mut self) -> Inst {
-        assert_eq!(self.mode, Mode::Call);
-        let call = mem::take(&mut self.call);
-        self.rewind();
-        self.add(Inst::Call(call))
+    fn toggle_quote(&mut self) -> Inst {
+        let inst = self.take(self.mode);
+        self.next.toggle_quote(&mut self.mode);
+        self.add(inst)
     }
     fn finish_func(&mut self) -> Inst {
         assert_eq!(self.mode, Mode::Func);

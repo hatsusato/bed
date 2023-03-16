@@ -1,7 +1,7 @@
 pub type Name = Vec<u8>;
 pub type Seq = Vec<Inst>;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Inst {
     Imm(u8),
     Ins(u8),
