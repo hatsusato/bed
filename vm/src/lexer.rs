@@ -68,6 +68,15 @@ impl Next {
         });
         mem::swap(&mut self.quote, next);
     }
+    fn toggle(&mut self, select: Mode, next: &mut Mode) {
+        match select {
+            Mode::Normal => unreachable!(),
+            Mode::Ignore => self.toggle_ignore(next),
+            Mode::Call => self.toggle_call(next),
+            Mode::Quote => self.toggle_quote(next),
+            _ => unimplemented!(),
+        }
+    }
     fn give(&mut self, next: Mode, prev: Mode) {
         assert!(match next {
             Mode::Normal => false,
@@ -164,21 +173,21 @@ impl Lexer {
     }
     fn consume_newline(&mut self) -> Inst {
         match self.mode {
-            Mode::Ignore => self.toggle_ignore(),
-            Mode::Call => self.toggle_call(),
+            Mode::Ignore => self.toggle(Mode::Ignore),
+            Mode::Call => self.toggle(Mode::Call),
             Mode::Func => self.finish_func(),
             _ => self.consume_other(NEWLINE),
         }
     }
     fn consume_quote(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record | Mode::Quote => self.toggle_quote(),
+            Mode::Normal | Mode::Body | Mode::Record | Mode::Quote => self.toggle(Mode::Quote),
             _ => self.consume_other(QUOTE),
         }
     }
     fn consume_hash(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.toggle_ignore(),
+            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Ignore),
             _ => self.consume_other(HASH),
         }
     }
@@ -196,7 +205,7 @@ impl Lexer {
     }
     fn consume_colon(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.toggle_call(),
+            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Call),
             _ => self.consume_other(COLON),
         }
     }
@@ -259,35 +268,27 @@ impl Lexer {
         Inst::Skip
     }
     fn add(&mut self, inst: Inst) -> Inst {
-        match self.mode {
-            Mode::Normal => return inst,
-            Mode::Body => self.body.push(inst),
-            Mode::Record => self.record.push(inst),
-            Mode::Call | Mode::Quote => assert_eq!(inst, Inst::Skip),
-            _ => unreachable!(),
+        if inst != Inst::Skip {
+            match self.mode {
+                Mode::Normal => return inst,
+                Mode::Body => self.body.push(inst),
+                Mode::Record => self.record.push(inst),
+                _ => unreachable!(),
+            }
         }
         Inst::Skip
     }
     fn take(&mut self, select: Mode) -> Inst {
         match select {
-            Mode::Normal | Mode::Body | Mode::Record => Inst::Skip,
+            Mode::Ignore | Mode::Normal | Mode::Body | Mode::Record => Inst::Skip,
             Mode::Call => Inst::Call(mem::take(&mut self.call)),
             Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
             _ => unimplemented!(),
         }
     }
-    fn toggle_ignore(&mut self) -> Inst {
-        self.next.toggle_ignore(&mut self.mode);
-        Inst::Skip
-    }
-    fn toggle_call(&mut self) -> Inst {
+    fn toggle(&mut self, select: Mode) -> Inst {
         let inst = self.take(self.mode);
-        self.next.toggle_call(&mut self.mode);
-        self.add(inst)
-    }
-    fn toggle_quote(&mut self) -> Inst {
-        let inst = self.take(self.mode);
-        self.next.toggle_quote(&mut self.mode);
+        self.next.toggle(select, &mut self.mode);
         self.add(inst)
     }
     fn finish_func(&mut self) -> Inst {
