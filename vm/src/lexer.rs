@@ -31,17 +31,16 @@ impl Default for Mode {
     }
 }
 impl Mode {
-    fn into_char(self) -> u8 {
-        match self {
-            Mode::Normal => NEWLINE,
-            Mode::Ignore => HASH,
-            Mode::Call => COLON,
-            Mode::Func | Mode::Body => SEMICOLON,
-            Mode::Quote => QUOTE,
-            Mode::Direct => APOSTROPHE,
-            Mode::Exec => AT,
-            Mode::Repeat => PERCENT,
-            Mode::Register | Mode::Record => Q,
+    fn new(input: u8) -> Self {
+        match input {
+            HASH => Mode::Ignore,
+            COLON => Mode::Call,
+            QUOTE => Mode::Quote,
+            APOSTROPHE => Mode::Direct,
+            AT => Mode::Exec,
+            PERCENT => Mode::Repeat,
+            Q => Mode::Register,
+            _ => unreachable!(),
         }
     }
 }
@@ -165,6 +164,12 @@ impl Last {
     fn is_newline(&self) -> bool {
         self.last == NEWLINE
     }
+    fn set(&mut self, last: u8) {
+        self.last = last;
+    }
+    fn get(&self) -> u8 {
+        self.last
+    }
 }
 
 #[derive(Default)]
@@ -180,104 +185,100 @@ pub struct Lexer {
     last: Last,
 }
 impl Lexer {
-    pub fn consume(&mut self, input: u8) -> Inst {
-        let inst = match (self.mode, input) {
-            (Mode::Normal | Mode::Body | Mode::Record, HASH) | (Mode::Ignore, NEWLINE) => {
-                self.toggle(Mode::Ignore)
-            }
-            (Mode::Normal | Mode::Body | Mode::Record, COLON) => self.toggle(Mode::Call),
-            (Mode::Call, NEWLINE) => self.finish(Mode::Call, 0),
-            (Mode::Func, NEWLINE) => self.toggle(Mode::Func),
-            (Mode::Normal | Mode::Body | Mode::Record, QUOTE) => self.toggle(Mode::Quote),
-            (Mode::Quote, QUOTE) => self.finish(Mode::Quote, 0),
-            (Mode::Normal | Mode::Body | Mode::Record, APOSTROPHE) => self.toggle(Mode::Direct),
-            (Mode::Normal | Mode::Body | Mode::Record, AT) => self.toggle(Mode::Exec),
-            (Mode::Normal | Mode::Body | Mode::Record, PERCENT) => self.toggle(Mode::Repeat),
-            (Mode::Normal | Mode::Body, Q) => self.toggle(Mode::Record),
-            (Mode::Record, Q) => self.finish(Mode::Record, 0),
-            (_, SEMICOLON) => self.consume_semicolon(),
-            _ => self.consume_other(input),
-        };
-        self.last.last = input;
+    pub fn get_last(&self) -> u8 {
+        self.last.get()
+    }
+    pub fn translate(&mut self, input: u8) -> Inst {
+        let inst = self.consume(input);
+        self.last.set(input);
         inst
     }
-    pub fn get_last(&self) -> u8 {
-        self.last.last
+    fn consume(&mut self, input: u8) -> Inst {
+        match (self.mode, input) {
+            (Mode::Normal | Mode::Body, Q)
+            | (
+                Mode::Normal | Mode::Body | Mode::Record,
+                HASH | COLON | QUOTE | APOSTROPHE | AT | PERCENT,
+            ) => self.toggle(Mode::new(input)),
+            (Mode::Ignore | Mode::Call | Mode::Func, NEWLINE)
+            | (Mode::Quote, QUOTE)
+            | (Mode::Record, Q)
+            | (Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register, _) => {
+                self.finish(self.mode, input)
+            }
+            (Mode::Normal | Mode::Body | Mode::Record, SEMICOLON) => self.consume_define(),
+            (
+                Mode::Normal
+                | Mode::Ignore
+                | Mode::Call
+                | Mode::Func
+                | Mode::Body
+                | Mode::Quote
+                | Mode::Record,
+                _,
+            ) => self.push(input),
+        }
     }
-    fn consume_semicolon(&mut self) -> Inst {
+    fn consume_define(&mut self) -> Inst {
         if self.last.is_newline() {
             match self.mode {
                 Mode::Normal => self.toggle(Mode::Body),
                 Mode::Body => self.finish(Mode::Body, 0),
                 Mode::Record => {
                     self.finish(Mode::Record, 0);
-                    match self.mode {
-                        Mode::Normal => self.toggle(Mode::Body),
-                        Mode::Body => self.finish(Mode::Body, 0),
-                        _ => unreachable!(),
-                    }
+                    self.consume(SEMICOLON)
                 }
-                Mode::Quote => self.push_char(SEMICOLON),
                 _ => unreachable!(),
             }
         } else {
-            match self.mode {
-                Mode::Normal | Mode::Body | Mode::Record => self.push_inst(Inst::Nop),
-                _ => self.consume_other(Mode::Func.into_char()),
-            }
+            self.add(Inst::Nop)
         }
     }
-    fn consume_other(&mut self, input: u8) -> Inst {
+    fn push(&mut self, input: u8) -> Inst {
         match self.mode {
-            Mode::Ignore => Inst::Skip,
-            Mode::Normal | Mode::Body | Mode::Record => self.push_inst(Inst::new(input)),
-            Mode::Call | Mode::Func | Mode::Quote => self.push_char(input),
-            Mode::Direct => self.finish(Mode::Direct, input),
-            Mode::Exec => self.finish(Mode::Exec, input),
-            Mode::Repeat => self.finish(Mode::Repeat, input),
-            Mode::Register => {
-                self.register = Some(input);
-                self.toggle(Mode::Record)
-            }
-        }
-    }
-    fn push_char(&mut self, input: u8) -> Inst {
-        match self.mode {
+            Mode::Normal => return Inst::new(input),
+            Mode::Ignore => (),
             Mode::Call => self.call.push(input),
             Mode::Func => self.func.push(input),
+            Mode::Body => self.body.push(Inst::new(input)),
             Mode::Quote => self.quote.push(input),
-            Mode::Record => self.register = Some(input),
+            Mode::Record => self.record.push(Inst::new(input)),
             _ => unreachable!(),
         }
         Inst::Skip
     }
-    fn push_inst(&mut self, inst: Inst) -> Inst {
-        match self.mode {
-            Mode::Normal => return inst,
-            Mode::Body => self.body.push(inst),
-            Mode::Record => self.record.push(inst),
-            _ => unreachable!(),
+    fn add(&mut self, inst: Inst) -> Inst {
+        if inst != Inst::Skip {
+            match self.mode {
+                Mode::Normal => return inst,
+                Mode::Body => self.body.push(inst),
+                Mode::Record => self.record.push(inst),
+                _ => unreachable!(),
+            }
         }
         Inst::Skip
     }
     fn finish(&mut self, select: Mode, input: u8) -> Inst {
         let inst = match select {
+            Mode::Ignore | Mode::Func => Inst::Skip,
             Mode::Call => Inst::Call(mem::take(&mut self.call)),
-            Mode::Func | Mode::Body => {
-                Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body))
-            }
+            Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
             Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
             Mode::Direct => Inst::Imm(input),
             Mode::Exec => Inst::Exec(input),
             Mode::Repeat => Inst::Repeat(input),
-            Mode::Register | Mode::Record => Inst::Macro(
+            Mode::Register => {
+                self.register = Some(input);
+                Inst::Skip
+            }
+            Mode::Record => Inst::Macro(
                 mem::take(&mut self.register).unwrap(),
                 mem::take(&mut self.record),
             ),
-            Mode::Normal | Mode::Ignore => unreachable!(),
+            Mode::Normal => unreachable!(),
         };
         self.toggle(select);
-        self.push_inst(inst)
+        self.add(inst)
     }
     fn toggle(&mut self, select: Mode) -> Inst {
         self.next.toggle(select, &mut self.mode);
@@ -408,7 +409,7 @@ mod tests {
         let mut lexer = Lexer::default();
         assert_eq!(lexer.mode, Mode::Normal);
         for (&key, &mode) in input.as_bytes().iter().zip(modes.iter()) {
-            lexer.consume(key);
+            lexer.translate(key);
             assert_eq!(lexer.mode, mode);
         }
     }
