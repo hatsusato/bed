@@ -62,15 +62,9 @@ impl Next {
     }
     fn toggle_func(next: &mut Mode) {
         match next {
-            Mode::Func => mem::replace(next, Mode::Body),
-            _ => unreachable!(),
-        };
-    }
-    fn toggle_body(next: &mut Mode) {
-        match next {
             Mode::Normal => mem::replace(next, Mode::Func),
+            Mode::Func => mem::replace(next, Mode::Body),
             Mode::Body => mem::replace(next, Mode::Normal),
-            Mode::Record => unimplemented!(),
             _ => unreachable!(),
         };
     }
@@ -87,10 +81,12 @@ impl Next {
             Mode::Normal => unreachable!(),
             Mode::Ignore => self.toggle_ignore(next),
             Mode::Call => self.toggle_call(next),
-            Mode::Func => Self::toggle_func(next),
-            Mode::Body => Self::toggle_body(next),
+            Mode::Func | Mode::Body => Self::toggle_func(next),
             Mode::Quote => self.toggle_quote(next),
-            _ => unimplemented!(),
+            _ => {
+                dbg!(select, next);
+                unimplemented!()
+            }
         }
     }
     fn give(&mut self, next: Mode, prev: Mode) {
@@ -189,13 +185,24 @@ impl Lexer {
     }
     fn consume_newline(&mut self) -> Inst {
         match self.mode {
-            Mode::Ignore | Mode::Call | Mode::Func => self.toggle(self.mode),
+            Mode::Ignore => self.toggle(Mode::Ignore),
+            Mode::Call => {
+                self.toggle(Mode::Call);
+                let inst = self.take(Mode::Call);
+                self.add(inst)
+            }
+            Mode::Func => self.toggle(Mode::Func),
             _ => self.consume_other(NEWLINE),
         }
     }
     fn consume_quote(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record | Mode::Quote => self.toggle(Mode::Quote),
+            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Quote),
+            Mode::Quote => {
+                self.toggle(Mode::Quote);
+                let inst = self.take(Mode::Quote);
+                self.add(inst)
+            }
             _ => self.consume_other(QUOTE),
         }
     }
@@ -224,15 +231,31 @@ impl Lexer {
         }
     }
     fn consume_semicolon(&mut self) -> Inst {
-        match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => {
-                if self.last.is_newline() {
-                    self.toggle(Mode::Body)
-                } else {
-                    self.add(Inst::Nop)
+        if self.last.is_newline() {
+            match self.mode {
+                Mode::Normal => self.toggle(Mode::Body),
+                Mode::Body => {
+                    self.toggle(Mode::Body);
+                    self.take(Mode::Body)
                 }
+                Mode::Record => {
+                    self.toggle(Mode::Record);
+                    self.take(Mode::Record);
+                    self.toggle(Mode::Func);
+                    match self.mode {
+                        Mode::Normal => Inst::Skip,
+                        Mode::Func => self.take(Mode::Func),
+                        _ => unreachable!(),
+                    }
+                }
+                Mode::Quote => self.consume_other(SEMICOLON),
+                _ => unreachable!(),
             }
-            _ => self.consume_other(SEMICOLON),
+        } else {
+            match self.mode {
+                Mode::Normal | Mode::Body | Mode::Record => self.add(Inst::Nop),
+                _ => self.consume_other(SEMICOLON),
+            }
         }
     }
     fn consume_at(&mut self) -> Inst {
@@ -290,18 +313,23 @@ impl Lexer {
         Inst::Skip
     }
     fn take(&mut self, select: Mode) -> Inst {
-        match select {
-            Mode::Ignore | Mode::Normal | Mode::Func | Mode::Record => Inst::Skip,
+        let inst = match select {
             Mode::Call => Inst::Call(mem::take(&mut self.call)),
-            Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
+            Mode::Func | Mode::Body => {
+                Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body))
+            }
             Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
+            Mode::Record => Inst::Macro(
+                mem::take(&mut self.register).unwrap(),
+                mem::take(&mut self.record),
+            ),
             _ => unimplemented!(),
-        }
+        };
+        self.add(inst)
     }
     fn toggle(&mut self, select: Mode) -> Inst {
-        let inst = self.take(self.mode);
         self.next.toggle(select, &mut self.mode);
-        self.add(inst)
+        Inst::Skip
     }
     fn finish_direct(&mut self, input: u8) -> Inst {
         assert_eq!(self.mode, Mode::Direct);
@@ -369,6 +397,23 @@ mod tests {
         mode_test(
             ":\"#%':;@q\n",
             &[Call, Call, Call, Call, Call, Call, Call, Call, Call, Normal],
+        );
+    }
+    #[test]
+    fn func_test() {
+        mode_test(";\n;", &[Func, Body, Normal]);
+        mode_test(
+            "; \"#%':;@q\nabc\n;",
+            &[
+                Func, Func, Func, Func, Func, Func, Func, Func, Func, Func, Body, Body, Body, Body,
+                Body, Normal,
+            ],
+        );
+        mode_test(";\n#;\n;", &[Func, Body, Ignore, Ignore, Body, Normal]);
+        mode_test(";\n:;\n;", &[Func, Body, Call, Call, Body, Normal]);
+        mode_test(
+            ";\n\";\n;\"\n;",
+            &[Func, Body, Quote, Quote, Quote, Quote, Body, Body, Normal],
         );
     }
     #[test]
