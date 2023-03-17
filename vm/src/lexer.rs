@@ -1,6 +1,16 @@
 use crate::inst::Inst;
 use std::mem;
 
+const NEWLINE: u8 = b'\n';
+const QUOTE: u8 = b'"';
+const HASH: u8 = b'#';
+const PERCENT: u8 = b'%';
+const APOSTROPHE: u8 = b'\'';
+const COLON: u8 = b':';
+const SEMICOLON: u8 = b';';
+const AT: u8 = b'@';
+const Q: u8 = b'q';
+
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Mode {
     Normal,
@@ -18,6 +28,21 @@ enum Mode {
 impl Default for Mode {
     fn default() -> Self {
         Mode::Normal
+    }
+}
+impl Mode {
+    fn into_char(self) -> u8 {
+        match self {
+            Mode::Normal => NEWLINE,
+            Mode::Ignore => HASH,
+            Mode::Call => COLON,
+            Mode::Func | Mode::Body => SEMICOLON,
+            Mode::Quote => QUOTE,
+            Mode::Direct => APOSTROPHE,
+            Mode::Exec => AT,
+            Mode::Repeat => PERCENT,
+            Mode::Register | Mode::Record => Q,
+        }
     }
 }
 
@@ -128,16 +153,6 @@ impl Next {
     }
 }
 
-const NEWLINE: u8 = b'\n';
-const QUOTE: u8 = b'"';
-const HASH: u8 = b'#';
-const PERCENT: u8 = b'%';
-const APOSTROPHE: u8 = b'\'';
-const COLON: u8 = b':';
-const SEMICOLON: u8 = b';';
-const AT: u8 = b'@';
-const Q: u8 = b'q';
-
 struct Last {
     pub last: u8,
 }
@@ -166,16 +181,21 @@ pub struct Lexer {
 }
 impl Lexer {
     pub fn consume(&mut self, input: u8) -> Inst {
-        let inst = match input {
-            NEWLINE => self.consume_newline(),
-            QUOTE => self.consume_quote(),
-            HASH => self.consume_hash(),
-            PERCENT => self.consume_percent(),
-            APOSTROPHE => self.consume_apostrophe(),
-            COLON => self.consume_colon(),
-            SEMICOLON => self.consume_semicolon(),
-            AT => self.consume_at(),
-            Q => self.consume_q(),
+        let inst = match (self.mode, input) {
+            (Mode::Normal | Mode::Body | Mode::Record, HASH) | (Mode::Ignore, NEWLINE) => {
+                self.toggle(Mode::Ignore)
+            }
+            (Mode::Normal | Mode::Body | Mode::Record, COLON) => self.toggle(Mode::Call),
+            (Mode::Call, NEWLINE) => self.finish(Mode::Call, 0),
+            (Mode::Func, NEWLINE) => self.toggle(Mode::Func),
+            (Mode::Normal | Mode::Body | Mode::Record, QUOTE) => self.toggle(Mode::Quote),
+            (Mode::Quote, QUOTE) => self.finish(Mode::Quote, 0),
+            (Mode::Normal | Mode::Body | Mode::Record, APOSTROPHE) => self.toggle(Mode::Direct),
+            (Mode::Normal | Mode::Body | Mode::Record, AT) => self.toggle(Mode::Exec),
+            (Mode::Normal | Mode::Body | Mode::Record, PERCENT) => self.toggle(Mode::Repeat),
+            (Mode::Normal | Mode::Body, Q) => self.toggle(Mode::Record),
+            (Mode::Record, Q) => self.finish(Mode::Record, 0),
+            (_, SEMICOLON) => self.consume_semicolon(),
             _ => self.consume_other(input),
         };
         self.last.last = input;
@@ -183,45 +203,6 @@ impl Lexer {
     }
     pub fn get_last(&self) -> u8 {
         self.last.last
-    }
-    fn consume_newline(&mut self) -> Inst {
-        match self.mode {
-            Mode::Ignore => self.toggle(Mode::Ignore),
-            Mode::Call => self.finish(Mode::Call, 0),
-            Mode::Func => self.toggle(Mode::Func),
-            _ => self.consume_other(NEWLINE),
-        }
-    }
-    fn consume_quote(&mut self) -> Inst {
-        match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Quote),
-            Mode::Quote => self.finish(Mode::Quote, 0),
-            _ => self.consume_other(QUOTE),
-        }
-    }
-    fn consume_hash(&mut self) -> Inst {
-        match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Ignore),
-            _ => self.consume_other(HASH),
-        }
-    }
-    fn consume_percent(&mut self) -> Inst {
-        match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Repeat),
-            _ => self.consume_other(PERCENT),
-        }
-    }
-    fn consume_apostrophe(&mut self) -> Inst {
-        match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Direct),
-            _ => self.consume_other(APOSTROPHE),
-        }
-    }
-    fn consume_colon(&mut self) -> Inst {
-        match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Call),
-            _ => self.consume_other(COLON),
-        }
     }
     fn consume_semicolon(&mut self) -> Inst {
         if self.last.is_newline() {
@@ -236,27 +217,14 @@ impl Lexer {
                         _ => unreachable!(),
                     }
                 }
-                Mode::Quote => self.consume_other(SEMICOLON),
+                Mode::Quote => self.push_char(SEMICOLON),
                 _ => unreachable!(),
             }
         } else {
             match self.mode {
                 Mode::Normal | Mode::Body | Mode::Record => self.push_inst(Inst::Nop),
-                _ => self.consume_other(SEMICOLON),
+                _ => self.consume_other(Mode::Func.into_char()),
             }
-        }
-    }
-    fn consume_at(&mut self) -> Inst {
-        match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Exec),
-            _ => self.consume_other(AT),
-        }
-    }
-    fn consume_q(&mut self) -> Inst {
-        match self.mode {
-            Mode::Normal | Mode::Body => self.toggle(Mode::Register),
-            Mode::Record => self.finish(Mode::Record, 0),
-            _ => self.consume_other(Q),
         }
     }
     fn consume_other(&mut self, input: u8) -> Inst {
