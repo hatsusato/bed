@@ -36,7 +36,7 @@ impl Default for Next {
             ignore: Mode::Ignore,
             call: Mode::Call,
             quote: Mode::Quote,
-            direct: Mode::default(),
+            direct: Mode::Direct,
             exec: Mode::default(),
             repeat: Mode::default(),
             record: Mode::default(),
@@ -76,6 +76,14 @@ impl Next {
         });
         mem::swap(&mut self.quote, next);
     }
+    fn toggle_direct(&mut self, next: &mut Mode) {
+        assert!(match self.direct {
+            Mode::Direct => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
+            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Direct),
+            _ => false,
+        });
+        mem::swap(&mut self.direct, next);
+    }
     fn toggle(&mut self, select: Mode, next: &mut Mode) {
         match select {
             Mode::Normal => unreachable!(),
@@ -83,10 +91,8 @@ impl Next {
             Mode::Call => self.toggle_call(next),
             Mode::Func | Mode::Body => Self::toggle_func(next),
             Mode::Quote => self.toggle_quote(next),
-            _ => {
-                dbg!(select, next);
-                unimplemented!()
-            }
+            Mode::Direct => self.toggle_direct(next),
+            _ => unimplemented!(),
         }
     }
     fn give(&mut self, next: Mode, prev: Mode) {
@@ -220,7 +226,7 @@ impl Lexer {
     }
     fn consume_apostrophe(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Direct),
+            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Direct),
             _ => self.consume_other(APOSTROPHE),
         }
     }
@@ -276,7 +282,10 @@ impl Lexer {
             Mode::Ignore => Inst::Skip,
             Mode::Normal | Mode::Body | Mode::Record => self.add(Inst::new(input)),
             Mode::Call | Mode::Func | Mode::Quote => self.push(input),
-            Mode::Direct => self.finish_direct(input),
+            Mode::Direct => {
+                self.toggle(Mode::Direct);
+                self.add(Inst::Imm(input))
+            }
             Mode::Exec => self.finish_exec(input),
             Mode::Repeat => self.finish_repeat(input),
             Mode::Register => self.finish_register(input),
@@ -330,11 +339,6 @@ impl Lexer {
     fn toggle(&mut self, select: Mode) -> Inst {
         self.next.toggle(select, &mut self.mode);
         Inst::Skip
-    }
-    fn finish_direct(&mut self, input: u8) -> Inst {
-        assert_eq!(self.mode, Mode::Direct);
-        self.rewind();
-        self.add(Inst::Imm(input))
     }
     fn finish_exec(&mut self, input: u8) -> Inst {
         assert_eq!(self.mode, Mode::Exec);
@@ -415,14 +419,25 @@ mod tests {
             ";\n\";\n;\"\n;",
             &[Func, Body, Quote, Quote, Quote, Quote, Body, Body, Normal],
         );
+        mode_test(";\n';\n;", &[Func, Body, Direct, Body, Body, Normal]);
     }
     #[test]
     fn quote_test() {
         mode_test("\"\"", &[Quote, Normal]);
         mode_test(
-            "\n\"#%':;@q\n\"",
+            "\"#%':;@q\n;\"",
             &[
-                Normal, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Normal,
+                Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Normal,
+            ],
+        );
+    }
+    #[test]
+    fn direct_test() {
+        mode_test(
+            "' '\"'#'%''':';'@'q'\n",
+            &[
+                Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal,
+                Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal,
             ],
         );
     }
