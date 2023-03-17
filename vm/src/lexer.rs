@@ -37,7 +37,7 @@ impl Default for Next {
             call: Mode::Call,
             quote: Mode::Quote,
             direct: Mode::Direct,
-            exec: Mode::default(),
+            exec: Mode::Exec,
             repeat: Mode::default(),
             record: Mode::default(),
         }
@@ -84,6 +84,14 @@ impl Next {
         });
         mem::swap(&mut self.direct, next);
     }
+    fn toggle_exec(&mut self, next: &mut Mode) {
+        assert!(match self.exec {
+            Mode::Exec => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
+            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Exec),
+            _ => false,
+        });
+        mem::swap(&mut self.exec, next);
+    }
     fn toggle(&mut self, select: Mode, next: &mut Mode) {
         match select {
             Mode::Normal => unreachable!(),
@@ -92,6 +100,7 @@ impl Next {
             Mode::Func | Mode::Body => Self::toggle_func(next),
             Mode::Quote => self.toggle_quote(next),
             Mode::Direct => self.toggle_direct(next),
+            Mode::Exec => self.toggle_exec(next),
             _ => unimplemented!(),
         }
     }
@@ -266,7 +275,7 @@ impl Lexer {
     }
     fn consume_at(&mut self) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Body | Mode::Record => self.transit(Mode::Exec),
+            Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Exec),
             _ => self.consume_other(AT),
         }
     }
@@ -286,7 +295,10 @@ impl Lexer {
                 self.toggle(Mode::Direct);
                 self.add(Inst::Imm(input))
             }
-            Mode::Exec => self.finish_exec(input),
+            Mode::Exec => {
+                self.toggle(Mode::Exec);
+                self.add(Inst::Exec(input))
+            }
             Mode::Repeat => self.finish_repeat(input),
             Mode::Register => self.finish_register(input),
         }
@@ -339,15 +351,6 @@ impl Lexer {
     fn toggle(&mut self, select: Mode) -> Inst {
         self.next.toggle(select, &mut self.mode);
         Inst::Skip
-    }
-    fn finish_exec(&mut self, input: u8) -> Inst {
-        assert_eq!(self.mode, Mode::Exec);
-        self.rewind();
-        self.add(if input.is_ascii_graphic() {
-            Inst::Exec(input)
-        } else {
-            Inst::Nop
-        })
     }
     fn finish_repeat(&mut self, input: u8) -> Inst {
         assert_eq!(self.mode, Mode::Repeat);
@@ -420,6 +423,7 @@ mod tests {
             &[Func, Body, Quote, Quote, Quote, Quote, Body, Body, Normal],
         );
         mode_test(";\n';\n;", &[Func, Body, Direct, Body, Body, Normal]);
+        mode_test(";\n@;\n;", &[Func, Body, Exec, Body, Body, Normal]);
     }
     #[test]
     fn quote_test() {
@@ -438,6 +442,16 @@ mod tests {
             &[
                 Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal,
                 Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal,
+            ],
+        );
+    }
+    #[test]
+    fn exec_test() {
+        mode_test(
+            "@ @\"@#@%@'@:@;@@@q@\n",
+            &[
+                Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal,
+                Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal,
             ],
         );
     }
