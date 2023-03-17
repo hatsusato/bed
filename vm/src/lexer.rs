@@ -187,11 +187,7 @@ impl Lexer {
     fn consume_newline(&mut self) -> Inst {
         match self.mode {
             Mode::Ignore => self.toggle(Mode::Ignore),
-            Mode::Call => {
-                self.toggle(Mode::Call);
-                let inst = self.take(Mode::Call);
-                self.add(inst)
-            }
+            Mode::Call => self.take(Mode::Call),
             Mode::Func => self.toggle(Mode::Func),
             _ => self.consume_other(NEWLINE),
         }
@@ -199,11 +195,7 @@ impl Lexer {
     fn consume_quote(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Body | Mode::Record => self.toggle(Mode::Quote),
-            Mode::Quote => {
-                self.toggle(Mode::Quote);
-                let inst = self.take(Mode::Quote);
-                self.add(inst)
-            }
+            Mode::Quote => self.take(Mode::Quote),
             _ => self.consume_other(QUOTE),
         }
     }
@@ -235,19 +227,14 @@ impl Lexer {
         if self.last.is_newline() {
             match self.mode {
                 Mode::Normal => self.toggle(Mode::Body),
-                Mode::Body => {
-                    self.toggle(Mode::Body);
-                    self.take(Mode::Body)
-                }
+                Mode::Body => self.take(Mode::Body),
                 Mode::Record => {
-                    self.toggle(Mode::Record);
                     self.take(Mode::Record);
                     match self.mode {
-                        Mode::Normal => Inst::Skip,
+                        Mode::Normal => self.toggle(Mode::Body),
                         Mode::Body => self.take(Mode::Body),
                         _ => unreachable!(),
-                    };
-                    self.toggle(Mode::Body)
+                    }
                 }
                 Mode::Quote => self.consume_other(SEMICOLON),
                 _ => unreachable!(),
@@ -268,10 +255,7 @@ impl Lexer {
     fn consume_q(&mut self) -> Inst {
         match self.mode {
             Mode::Normal | Mode::Body => self.toggle(Mode::Register),
-            Mode::Record => {
-                self.toggle(Mode::Record);
-                self.take(Mode::Record)
-            }
+            Mode::Record => self.take(Mode::Record),
             _ => self.consume_other(Q),
         }
     }
@@ -309,17 +293,16 @@ impl Lexer {
         Inst::Skip
     }
     fn add(&mut self, inst: Inst) -> Inst {
-        if inst != Inst::Skip {
-            match self.mode {
-                Mode::Normal => return inst,
-                Mode::Body => self.body.push(inst),
-                Mode::Record => self.record.push(inst),
-                _ => unreachable!(),
-            }
+        match self.mode {
+            Mode::Normal => return inst,
+            Mode::Body => self.body.push(inst),
+            Mode::Record => self.record.push(inst),
+            _ => unreachable!(),
         }
         Inst::Skip
     }
     fn take(&mut self, select: Mode) -> Inst {
+        self.toggle(select);
         let inst = match select {
             Mode::Call => Inst::Call(mem::take(&mut self.call)),
             Mode::Func | Mode::Body => {
