@@ -134,7 +134,7 @@ impl Registers {
     pub fn print(&self, key: u8) {
         Screen::move_cursor(0, 0);
         let msg = format!(
-            "D: {}, A: {}, B: {}, C: {}, E: {}, KEY: {}",
+            "D: {}, A: {}, B: {}, C: {}, E: {}, KEY: {:<4}",
             util::as_hex(self.data),
             util::as_hex(self.acc),
             util::as_hex(self.block),
@@ -199,20 +199,19 @@ fn translate_ascii(key: u8) -> String {
     const CR: u8 = 0x0d;
     const SPACE: u8 = 0x20;
     if key.is_ascii_graphic() {
-        key.to_string()
-    } else {
-        match key {
-            NUL => "\\0",
-            BEL => "\\a",
-            BS => "\\b",
-            HT => "\\t",
-            LF => "\\n",
-            VT => "\\v",
-            FF => "\\f",
-            CR => "\\r",
-            SPACE => "SPC",
-            _ => return format!("{}", util::as_hex(key)),
-        }
-        .to_string()
+        return char::from(key).to_string();
     }
+    match key {
+        NUL => "\\0",
+        BEL => "\\a",
+        BS => "\\b",
+        HT => "\\t",
+        LF => "\\n",
+        VT => "\\v",
+        FF => "\\f",
+        CR => "\\r",
+        SPACE => "SPC",
+        _ => return format!("\\x{}", util::as_hex(key)),
+    }
+    .to_string()
 }
