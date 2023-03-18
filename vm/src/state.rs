@@ -1,9 +1,8 @@
 use crate::inst::{Inst, Name, Seq};
 use crate::page::Page;
 use crate::reg::Registers;
-use screen::Screen;
 use std::collections::HashMap;
-use util::{Block, BLOCK_SIDE};
+use util::Block;
 
 #[derive(Default)]
 pub struct State {
@@ -13,9 +12,11 @@ pub struct State {
     funcs: HashMap<Name, Seq>,
 }
 impl State {
+    #[must_use]
     pub fn get_regs(&self) -> &Registers {
         &self.regs
     }
+    #[must_use]
     pub fn get_memory(&self) -> &Block<Block<u8>> {
         &self.memory
     }
@@ -111,26 +112,5 @@ impl State {
     }
     fn define_func(&mut self, name: Name, body: Seq) {
         self.funcs.insert(name, body);
-    }
-    pub fn print(&self, key: u8) {
-        self.regs.print(key);
-        for y in 0..BLOCK_SIDE {
-            for x in 0..BLOCK_SIDE {
-                Self::move_cell(x, y);
-                self.print_cell(x, y);
-            }
-        }
-    }
-    fn print_cell(&self, x: u8, y: u8) {
-        let index = x + y * BLOCK_SIDE;
-        let val = self.memory[self.regs.block][index];
-        Screen::print_display(util::as_hex(val), self.regs.coord == index);
-    }
-    fn move_cell(x: u8, y: u8) {
-        const CELL_WIDTH: u16 = 3;
-        const LINE_OFFSET: u16 = 1;
-        let x = u16::from(x) * CELL_WIDTH;
-        let y = u16::from(y) + LINE_OFFSET;
-        Screen::move_cursor(x, y);
     }
 }

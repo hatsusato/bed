@@ -1,4 +1,3 @@
-use screen::Screen;
 use util::BLOCK_SIDE;
 
 #[derive(Default, Clone)]
@@ -131,19 +130,6 @@ impl Registers {
     pub fn restore(&mut self, buf: [u8; 4]) {
         (self.data, self.acc, self.block, self.coord) = (buf[0], buf[1], buf[2], buf[3]);
     }
-    pub fn print(&self, key: u8) {
-        Screen::move_cursor(0, 0);
-        let msg = format!(
-            "D: {}, A: {}, B: {}, C: {}, E: {}, KEY: {:<4}",
-            util::as_hex(self.data),
-            util::as_hex(self.acc),
-            util::as_hex(self.block),
-            util::as_hex(self.coord),
-            util::as_hex(self.error),
-            translate_ascii(key)
-        );
-        Screen::print_display(msg, false);
-    }
     pub fn set_error(&mut self, flag: bool) {
         if flag {
             self.error = true;
@@ -187,31 +173,4 @@ fn overflow_sub(lhs: u8, rhs: u8) -> u8 {
 fn overflow_sub16(lhs: u16, rhs: u16) -> u16 {
     let (val, _) = lhs.overflowing_sub(rhs);
     val
-}
-fn translate_ascii(key: u8) -> String {
-    const NUL: u8 = 0x00;
-    const BEL: u8 = 0x07;
-    const BS: u8 = 0x08;
-    const HT: u8 = 0x09;
-    const LF: u8 = 0x0a;
-    const VT: u8 = 0x0b;
-    const FF: u8 = 0x0c;
-    const CR: u8 = 0x0d;
-    const SPACE: u8 = 0x20;
-    if key.is_ascii_graphic() {
-        return char::from(key).to_string();
-    }
-    match key {
-        NUL => "\\0",
-        BEL => "\\a",
-        BS => "\\b",
-        HT => "\\t",
-        LF => "\\n",
-        VT => "\\v",
-        FF => "\\f",
-        CR => "\\r",
-        SPACE => "SPC",
-        _ => return format!("\\x{}", util::as_hex(key)),
-    }
-    .to_string()
 }
