@@ -35,6 +35,7 @@ impl Mode {
         match input {
             HASH => Mode::Ignore,
             COLON => Mode::Call,
+            SEMICOLON => Mode::Func,
             QUOTE => Mode::Quote,
             APOSTROPHE => Mode::Direct,
             AT => Mode::Exec,
@@ -185,11 +186,11 @@ impl Lexer {
         }
         match (self.mode, input) {
             (Mode::Normal | Mode::Body, Q)
+            | (Mode::Normal, SEMICOLON)
             | (
                 Mode::Normal | Mode::Body | Mode::Record,
                 HASH | COLON | QUOTE | APOSTROPHE | AT | PERCENT,
             ) => self.toggle(Mode::new(input)),
-            (Mode::Normal, SEMICOLON) => self.toggle(Mode::Func),
             (Mode::Record, SEMICOLON) => {
                 self.finish(input);
                 self.consume(input)
@@ -199,33 +200,43 @@ impl Lexer {
             | (Mode::Quote, QUOTE)
             | (Mode::Record, Q)
             | (Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register, _) => self.finish(input),
-            (
-                Mode::Normal
-                | Mode::Ignore
-                | Mode::Call
-                | Mode::Func
-                | Mode::Body
-                | Mode::Quote
-                | Mode::Record,
-                _,
-            ) => self.push(input),
+            (Mode::Call | Mode::Func | Mode::Body | Mode::Quote | Mode::Record, _) => {
+                self.push(input)
+            }
+            (Mode::Ignore, _) => Inst::Skip,
+            (Mode::Normal, _) => Inst::new(input),
         }
     }
     fn push(&mut self, input: u8) -> Inst {
         match self.mode {
-            Mode::Normal => return Inst::new(input),
-            Mode::Ignore => (),
+            Mode::Normal | Mode::Ignore | Mode::Direct | Mode::Exec | Mode::Repeat => {
+                unreachable!()
+            }
             Mode::Call => self.call.push(input),
             Mode::Func => self.func.push(input),
             Mode::Body => self.body.push(Inst::new(input)),
             Mode::Quote => self.quote.push(input),
             Mode::Record => self.record.push(Inst::new(input)),
-            Mode::Direct => return Inst::Imm(input),
-            Mode::Exec => return Inst::Exec(input),
-            Mode::Repeat => return Inst::Repeat(input),
             Mode::Register => self.register = Some(input),
         }
         Inst::Skip
+    }
+    fn take(&mut self, input: u8) -> Inst {
+        match self.mode {
+            Mode::Ignore | Mode::Func => Inst::Skip,
+            Mode::Call => Inst::Call(mem::take(&mut self.call)),
+            Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
+            Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
+            Mode::Direct => Inst::Imm(input),
+            Mode::Exec => Inst::Exec(input),
+            Mode::Repeat => Inst::Repeat(input),
+            Mode::Register => self.push(input),
+            Mode::Record => Inst::Macro(
+                mem::take(&mut self.register).unwrap(),
+                mem::take(&mut self.record),
+            ),
+            Mode::Normal => unreachable!(),
+        }
     }
     fn add(&mut self, inst: Inst) -> Inst {
         if inst != Inst::Skip {
@@ -237,20 +248,6 @@ impl Lexer {
             }
         }
         Inst::Skip
-    }
-    fn take(&mut self, input: u8) -> Inst {
-        match self.mode {
-            Mode::Ignore | Mode::Func => Inst::Skip,
-            Mode::Call => Inst::Call(mem::take(&mut self.call)),
-            Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
-            Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
-            Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register => self.push(input),
-            Mode::Record => Inst::Macro(
-                mem::take(&mut self.register).unwrap(),
-                mem::take(&mut self.record),
-            ),
-            Mode::Normal => unreachable!(),
-        }
     }
     fn finish(&mut self, input: u8) -> Inst {
         let inst = self.take(input);
@@ -348,8 +345,14 @@ mod tests {
                 Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal,
             ],
         );
-        mode_test(";\n';\n;", &[Func, Body, Direct, Body, Body, Normal]);
-        mode_test("q''qq", &[Register, Record, Direct, Record, Normal]);
+        mode_test(
+            ";\n';'\n;",
+            &[Func, Body, Direct, Body, Direct, Body, Normal],
+        );
+        mode_test(
+            "q''q'\nq",
+            &[Register, Record, Direct, Record, Direct, Record, Normal],
+        );
     }
     #[test]
     fn exec_test() {
@@ -360,8 +363,11 @@ mod tests {
                 Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal,
             ],
         );
-        mode_test(";\n@;\n;", &[Func, Body, Exec, Body, Body, Normal]);
-        mode_test("q@@qq", &[Register, Record, Exec, Record, Normal]);
+        mode_test(";\n@;@\n;", &[Func, Body, Exec, Body, Exec, Body, Normal]);
+        mode_test(
+            "q@@q@\nq",
+            &[Register, Record, Exec, Record, Exec, Record, Normal],
+        );
     }
     #[test]
     fn repeat_test() {
@@ -372,13 +378,19 @@ mod tests {
                 Repeat, Normal, Repeat, Normal, Repeat, Normal, Repeat, Normal, Repeat, Normal,
             ],
         );
-        mode_test(";\n%;\n;", &[Func, Body, Repeat, Body, Body, Normal]);
-        mode_test("q%%qq", &[Register, Record, Repeat, Record, Normal]);
+        mode_test(
+            ";\n%;%\n;",
+            &[Func, Body, Repeat, Body, Repeat, Body, Normal],
+        );
+        mode_test(
+            "q%%q%\nq",
+            &[Register, Record, Repeat, Record, Repeat, Record, Normal],
+        );
     }
     #[test]
     fn record_test() {
         mode_test("q q", &[Register, Record, Normal]);
-        mode_test("q\n\nq", &[Register, Record, Record, Normal]);
+        mode_test("q\nq", &[Register, Record, Normal]);
         mode_test("qqq", &[Register, Record, Normal]);
     }
     fn mode_test(input: &str, modes: &[Mode]) {
