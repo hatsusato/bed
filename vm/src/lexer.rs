@@ -190,16 +190,15 @@ impl Lexer {
             | (
                 Mode::Normal | Mode::Body | Mode::Record,
                 HASH | COLON | QUOTE | APOSTROPHE | AT | PERCENT,
-            ) => self.toggle(Mode::new(input)),
-            (Mode::Record, SEMICOLON) => {
-                self.finish(input);
-                self.consume(input)
-            }
+            ) => self.toggle(Mode::new(input), None),
+            (Mode::Record, SEMICOLON) => self.finish(input, true),
             (Mode::Ignore | Mode::Call | Mode::Func, NEWLINE)
             | (Mode::Body, SEMICOLON)
             | (Mode::Quote, QUOTE)
             | (Mode::Record, Q)
-            | (Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register, _) => self.finish(input),
+            | (Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register, _) => {
+                self.finish(input, false)
+            }
             (Mode::Call | Mode::Func | Mode::Body | Mode::Quote | Mode::Record, _) => {
                 self.push(input)
             }
@@ -249,14 +248,18 @@ impl Lexer {
         }
         Inst::Skip
     }
-    fn finish(&mut self, input: u8) -> Inst {
+    fn finish(&mut self, input: u8, aborted: bool) -> Inst {
         let inst = self.take(input);
-        self.toggle(self.mode);
-        self.add(inst)
+        let inst = self.toggle(self.mode, Some(inst));
+        if aborted {
+            self.consume(input)
+        } else {
+            inst
+        }
     }
-    fn toggle(&mut self, select: Mode) -> Inst {
+    fn toggle(&mut self, select: Mode, inst: Option<Inst>) -> Inst {
         self.next.toggle(select, &mut self.mode);
-        Inst::Skip
+        self.add(inst.unwrap_or(Inst::Skip))
     }
 }
 
