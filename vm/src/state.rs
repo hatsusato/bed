@@ -13,6 +13,12 @@ pub struct State {
     funcs: HashMap<Name, Seq>,
 }
 impl State {
+    pub fn get_regs(&self) -> &Registers {
+        &self.regs
+    }
+    pub fn get_memory(&self) -> &Block<Block<u8>> {
+        &self.memory
+    }
     pub fn issue(&mut self, inst: &Inst) {
         let regs = &mut self.regs;
         let mut page = Page::new(regs, &mut self.memory);
