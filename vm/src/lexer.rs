@@ -152,26 +152,6 @@ impl Next {
     }
 }
 
-struct Last {
-    pub last: u8,
-}
-impl Default for Last {
-    fn default() -> Self {
-        Self { last: NEWLINE }
-    }
-}
-impl Last {
-    fn is_newline(&self) -> bool {
-        self.last == NEWLINE
-    }
-    fn set(&mut self, last: u8) {
-        self.last = last;
-    }
-    fn get(&self) -> u8 {
-        self.last
-    }
-}
-
 #[derive(Default)]
 pub struct Lexer {
     mode: Mode,
@@ -182,16 +162,19 @@ pub struct Lexer {
     quote: Vec<u8>,
     register: Option<u8>,
     record: Vec<Inst>,
-    last: Last,
+    last: Option<u8>,
 }
 impl Lexer {
     pub fn get_last(&self) -> u8 {
-        self.last.get()
+        self.last.unwrap_or(NEWLINE)
     }
     pub fn translate(&mut self, input: u8) -> Inst {
         let inst = self.consume(input);
-        self.last.set(input);
+        self.last = if input == NEWLINE { None } else { Some(input) };
         inst
+    }
+    fn is_head(&self) -> bool {
+        self.last.is_none()
     }
     fn consume(&mut self, input: u8) -> Inst {
         match (self.mode, input) {
@@ -204,7 +187,7 @@ impl Lexer {
             (Mode::Ignore | Mode::Call | Mode::Func, NEWLINE)
             | (Mode::Quote, QUOTE)
             | (Mode::Record, Q)
-            | (Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register, _) => self.finish(input),
+            | (Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register, _) => self.transit(input),
             (
                 Mode::Normal
                 | Mode::Ignore
@@ -218,14 +201,10 @@ impl Lexer {
         }
     }
     fn consume_define(&mut self) -> Inst {
-        if self.last.is_newline() {
+        if self.is_head() {
             match self.mode {
                 Mode::Normal => self.toggle(Mode::Func),
-                Mode::Body => self.finish(SEMICOLON),
-                Mode::Record => {
-                    self.finish(SEMICOLON);
-                    self.consume(SEMICOLON)
-                }
+                Mode::Body | Mode::Record => self.transit(SEMICOLON),
                 _ => unreachable!(),
             }
         } else {
@@ -260,7 +239,7 @@ impl Lexer {
         Inst::Skip
     }
     fn finish(&mut self, input: u8) -> Inst {
-        let inst = match self.mode {
+        match self.mode {
             Mode::Ignore | Mode::Func => Inst::Skip,
             Mode::Call => Inst::Call(mem::take(&mut self.call)),
             Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
@@ -271,9 +250,18 @@ impl Lexer {
                 mem::take(&mut self.record),
             ),
             Mode::Normal => unreachable!(),
-        };
+        }
+    }
+    fn transit(&mut self, input: u8) -> Inst {
+        let inst = self.finish(input);
+        let record_aborted = self.is_head() && input == SEMICOLON && self.mode == Mode::Record;
         self.toggle(self.mode);
-        self.add(inst)
+        let inst = self.add(inst);
+        if record_aborted {
+            self.consume(input)
+        } else {
+            inst
+        }
     }
     fn toggle(&mut self, select: Mode) -> Inst {
         self.next.toggle(select, &mut self.mode);
