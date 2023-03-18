@@ -9,22 +9,35 @@ pub struct Editor {
 }
 impl Editor {
     pub fn run(&mut self) {
+        self.print_init();
         loop {
-            self.print();
             match Screen::getch() {
                 Some(input) => self.vm.execute(input),
                 None => return,
             }
+            self.print();
         }
     }
     pub fn print(&self) {
         self.print_header();
         self.print_body();
     }
+    fn print_init(&self) {
+        const ORIGIN: u16 = 0;
+        const REG_WIDTH: u16 = 7;
+        const REG_COUNT: u16 = 5;
+        const KEY_OFFSET: u16 = 4;
+        let offset = REG_WIDTH * REG_COUNT + KEY_OFFSET;
+        self.print();
+        Screen::move_cursor(offset, ORIGIN);
+        Screen::print_display("    ", false);
+        Screen::move_cursor(ORIGIN, ORIGIN);
+    }
     fn print_header(&self) {
+        const ORIGIN: u16 = 0;
         let state = self.vm.get_state();
         let last = self.vm.get_last();
-        Screen::move_cursor(0, 0);
+        Screen::move_cursor(ORIGIN, ORIGIN);
         print_register(state, last);
     }
     fn print_body(&self) {
