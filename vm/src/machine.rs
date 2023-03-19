@@ -17,6 +17,6 @@ impl Machine {
     }
     pub fn execute(&mut self, input: u8) {
         let inst = self.lexer.translate(input);
-        self.state.issue(&inst);
+        self.state.issue(inst);
     }
 }

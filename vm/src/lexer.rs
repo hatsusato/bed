@@ -224,9 +224,9 @@ impl Lexer {
         match self.mode {
             Mode::Ignore | Mode::Func => Inst::Skip,
             Mode::Call => Inst::Call(mem::take(&mut self.call)),
-            Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
+            Mode::Body => Inst::Func(mem::take(&mut self.func), mem::take(&mut self.body)),
             Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
-            Mode::Direct => Inst::Imm(input),
+            Mode::Direct => Inst::Direct(input),
             Mode::Exec => Inst::Exec(input),
             Mode::Repeat => Inst::Repeat(input),
             Mode::Register => self.push(input),

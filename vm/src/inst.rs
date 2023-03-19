@@ -3,8 +3,8 @@ pub type Seq = Vec<Inst>;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Inst {
-    Imm(u8),
-    Ins(u8),
+    Direct(u8),
+    Insert(u8),
     Swap,
     High,
     Low,
@@ -50,7 +50,7 @@ pub enum Inst {
     Eval,
     Quote(Name),
     Call(Name),
-    Define(Name, Seq),
+    Func(Name, Seq),
     Macro(u8, Seq),
     Exec(u8),
     Repeat(u8),
@@ -129,7 +129,7 @@ impl Inst {
             A..=F => key - A + 0xA,
             _ => unreachable!(),
         };
-        Inst::Ins(digit)
+        Inst::Insert(digit)
     }
     fn translate_lowercase(key: u8) -> Inst {
         Inst::new(key.to_ascii_lowercase())

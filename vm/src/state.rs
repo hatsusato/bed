@@ -20,12 +20,12 @@ impl State {
     pub fn get_memory(&self) -> &Block<Block<u8>> {
         &self.memory
     }
-    pub fn issue(&mut self, inst: &Inst) {
+    pub fn issue(&mut self, inst: Inst) {
         let regs = &mut self.regs;
         let mut page = Page::new(regs, &mut self.memory);
-        match inst.clone() {
-            Inst::Imm(data) => regs.imm(data),
-            Inst::Ins(digit) => regs.ins(digit),
+        match inst {
+            Inst::Direct(data) => regs.direct(data),
+            Inst::Insert(digit) => regs.insert(digit),
             Inst::Swap => regs.swap(),
             Inst::High => regs.high(),
             Inst::Low => regs.low(),
@@ -69,8 +69,8 @@ impl State {
             Inst::Save => page.save(),
             Inst::Restore => page.restore(),
             Inst::Quote(input) => page.quote(input.as_slice()),
+            Inst::Func(name, body) => self.define_func(name, body),
             Inst::Call(name) => self.call_func(&name),
-            Inst::Define(name, body) => self.define_func(name, body),
             Inst::Macro(key, val) => self.register_macro(key, val),
             Inst::Exec(key) => self.exec_macro(key),
             Inst::Repeat(key) => self.repeat_macro(key),
@@ -79,7 +79,7 @@ impl State {
         }
     }
     fn run(&mut self, seq: &[Inst]) {
-        seq.iter().for_each(|i| self.issue(i));
+        seq.iter().for_each(|i| self.issue(i.clone()));
     }
     fn repeat(&mut self, seq: &[Inst]) {
         let count = self.regs.acc;
