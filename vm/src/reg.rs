@@ -124,11 +124,14 @@ impl Registers {
     pub fn rotr(&mut self) {
         self.acc = rot(self.acc, false);
     }
-    pub fn save(&self, buf: &mut [u8; 4]) {
-        (buf[0], buf[1], buf[2], buf[3]) = (self.data, self.acc, self.block, self.coord);
-    }
-    pub fn restore(&mut self, buf: [u8; 4]) {
-        (self.data, self.acc, self.block, self.coord) = (buf[0], buf[1], buf[2], buf[3]);
+    pub fn at(&mut self, index: u8) -> &mut u8 {
+        match index {
+            0 => &mut self.data,
+            1 => &mut self.acc,
+            2 => &mut self.block,
+            3 => &mut self.coord,
+            _ => unreachable!(),
+        }
     }
     pub fn set_error(&mut self, flag: bool) {
         if flag {

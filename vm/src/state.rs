@@ -147,9 +147,9 @@ mod state_tests {
         assert_eq!(state.get_regs().acc, 3);
         assert_eq!(state.get_regs().block, 2);
         assert_eq!(state.get_regs().coord, 1);
-        state.issue(Inst::Save);
-        for i in 1..5 {
-            assert_eq!(state.get_memory()[2][i], 5 - i);
+        state.run(&[Inst::Save, Inst::Origin]);
+        for i in 0..4 {
+            assert_eq!(state.get_memory()[2][i], 4 - i);
             state.run(&[Inst::Delete, Inst::Right]);
         }
         state.run(&[Inst::Origin, Inst::Start, Inst::Zero, Inst::Direct(0)]);
