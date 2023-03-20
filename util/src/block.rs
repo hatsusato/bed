@@ -4,7 +4,7 @@ use std::slice::{Iter, IterMut};
 const BLOCK_SIZE: usize = 1 << u8::BITS;
 pub const BLOCK_SIDE: u8 = 1 << (u8::BITS / 2);
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Block<T> {
     block: [T; BLOCK_SIZE],
 }

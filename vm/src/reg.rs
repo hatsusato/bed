@@ -1,6 +1,6 @@
 use util::BLOCK_SIDE;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Registers {
     pub acc: u8,
     pub block: u8,
