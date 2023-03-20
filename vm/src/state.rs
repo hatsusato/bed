@@ -141,8 +141,8 @@ mod state_tests {
     #[test]
     fn save_test() {
         let mut state = make();
-        state.run(&[Inst::Inc, Inst::Goto, Inst::Inc, Inst::High, Inst::Jump]);
-        state.run(&[Inst::Inc, Inst::High, Inst::Inc, Inst::Swap]);
+        state.run(&[Inst::Direct(1), Inst::Goto, Inst::Direct(2), Inst::Jump]);
+        state.run(&[Inst::Direct(4), Inst::Low, Inst::Dec]);
         assert_eq!(state.get_regs().data, 4);
         assert_eq!(state.get_regs().acc, 3);
         assert_eq!(state.get_regs().block, 2);
@@ -152,7 +152,7 @@ mod state_tests {
             assert_eq!(state.get_memory()[2][i], 4 - i);
             state.run(&[Inst::Delete, Inst::Right]);
         }
-        state.run(&[Inst::Origin, Inst::Start, Inst::Zero, Inst::Direct(0)]);
+        state.run(&[Inst::Origin, Inst::Start, Inst::Zero, Inst::High]);
         default_test(&state);
     }
     #[test]
@@ -191,13 +191,11 @@ mod state_tests {
         let mut state = make();
         let to_vec = |name: &str| name.as_bytes().to_vec();
         let test = [
-            Inst::Inc,
+            Inst::Direct(4),
             Inst::Goto,
-            Inst::Inc,
-            Inst::High,
+            Inst::Direct(3),
             Inst::Jump,
-            Inst::Inc,
-            Inst::High,
+            Inst::Direct(2),
             Inst::Inc,
             Inst::Swap,
         ]
@@ -207,10 +205,10 @@ mod state_tests {
         state.issue(Inst::Func(to_vec("clear"), clear));
         default_test(&state);
         state.issue(Inst::Call(to_vec("test")));
-        assert_eq!(state.get_regs().data, 4);
-        assert_eq!(state.get_regs().acc, 3);
-        assert_eq!(state.get_regs().block, 2);
-        assert_eq!(state.get_regs().coord, 1);
+        assert_eq!(state.get_regs().data, 1);
+        assert_eq!(state.get_regs().acc, 2);
+        assert_eq!(state.get_regs().block, 3);
+        assert_eq!(state.get_regs().coord, 4);
         state.issue(Inst::Call(to_vec("clear")));
         default_test(&state);
     }
@@ -218,13 +216,11 @@ mod state_tests {
     fn macro_exec_test() {
         let mut state = make();
         let record = [
-            Inst::Inc,
+            Inst::Direct(4),
             Inst::Goto,
-            Inst::Inc,
-            Inst::High,
+            Inst::Direct(3),
             Inst::Jump,
-            Inst::Inc,
-            Inst::High,
+            Inst::Direct(2),
             Inst::Inc,
             Inst::Swap,
         ]
@@ -233,10 +229,10 @@ mod state_tests {
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
         default_test(&state);
         state.issue(Inst::Exec(b'a'));
-        assert_eq!(state.get_regs().data, 4);
-        assert_eq!(state.get_regs().acc, 3);
-        assert_eq!(state.get_regs().block, 2);
-        assert_eq!(state.get_regs().coord, 1);
+        assert_eq!(state.get_regs().data, 1);
+        assert_eq!(state.get_regs().acc, 2);
+        assert_eq!(state.get_regs().block, 3);
+        assert_eq!(state.get_regs().coord, 4);
         state.issue(Inst::Exec(b'c'));
         default_test(&state);
     }
@@ -261,13 +257,11 @@ mod state_tests {
         let mut state = make();
         let record = [
             Inst::Exec(b'c'),
-            Inst::Inc,
+            Inst::Direct(4),
             Inst::Goto,
-            Inst::Inc,
-            Inst::High,
+            Inst::Direct(3),
             Inst::Jump,
-            Inst::Inc,
-            Inst::High,
+            Inst::Direct(2),
             Inst::Inc,
             Inst::Swap,
         ]
@@ -275,10 +269,10 @@ mod state_tests {
         let clear = [Inst::Origin, Inst::Start, Inst::Zero, Inst::Direct(0)].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
         state.run(&[Inst::Direct(b'a'), Inst::Eval]);
-        assert_eq!(state.get_regs().data, 4);
-        assert_eq!(state.get_regs().acc, 3);
-        assert_eq!(state.get_regs().block, 2);
-        assert_eq!(state.get_regs().coord, 1);
+        assert_eq!(state.get_regs().data, 1);
+        assert_eq!(state.get_regs().acc, 2);
+        assert_eq!(state.get_regs().block, 3);
+        assert_eq!(state.get_regs().coord, 4);
         state.run(&[Inst::Direct(b'c'), Inst::Eval]);
         default_test(&state);
     }

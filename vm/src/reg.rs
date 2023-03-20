@@ -28,7 +28,7 @@ impl Registers {
         self.acc = self.data;
     }
     pub fn goto(&mut self) {
-        self.coord = self.acc;
+        self.coord = self.data;
     }
     pub fn jump(&mut self) {
         self.block = self.data;
@@ -46,7 +46,7 @@ impl Registers {
         self.coord = overflow_add(self.coord, BLOCK_SIDE);
     }
     pub fn pos(&mut self) {
-        self.acc = self.coord;
+        self.data = self.coord;
     }
     pub fn page(&mut self) {
         self.data = self.block;
@@ -64,13 +64,16 @@ impl Registers {
         self.acc = overflow_sub(self.acc, 1);
     }
     pub fn add(&mut self) {
-        self.set_reg(u16::from(self.acc) + u16::from(self.data));
+        let val = u16::from(self.acc) + u16::from(self.data);
+        [self.data, self.acc] = val.to_be_bytes();
     }
     pub fn sub(&mut self) {
-        self.set_reg(overflow_sub16(u16::from(self.acc), self.data.into()));
+        let (val, _) = u16::from(self.acc).overflowing_sub(self.data.into());
+        [self.data, self.acc] = val.to_be_bytes();
     }
     pub fn mul(&mut self) {
-        self.set_reg(u16::from(self.acc) * u16::from(self.data));
+        let val = u16::from(self.acc) * u16::from(self.data);
+        [self.data, self.acc] = val.to_be_bytes();
     }
     pub fn div(&mut self) {
         if self.data == 0 {
@@ -133,24 +136,12 @@ impl Registers {
             _ => unreachable!(),
         }
     }
-    pub fn set_error(&mut self, flag: bool) {
-        if flag {
-            self.error = true;
-        }
-    }
-    fn set_reg(&mut self, reg: u16) {
-        let [data, acc] = reg.to_be_bytes();
-        (self.data, self.acc) = (data, acc);
-    }
 }
 
-const NIBBLE_SHIFT: u32 = u8::BITS / 2;
-fn nibble_cast(bits: u8) -> u8 {
-    const MASK: u8 = (1 << NIBBLE_SHIFT) - 1;
-    bits & MASK
-}
 fn nibble_combine(hi: u8, lo: u8) -> u8 {
-    (nibble_cast(hi) << NIBBLE_SHIFT) | (nibble_cast(lo))
+    const NIBBLE_SHIFT: u32 = u8::BITS / 2;
+    const MASK: u8 = (1 << NIBBLE_SHIFT) - 1;
+    ((hi & MASK) << NIBBLE_SHIFT) | (lo & MASK)
 }
 fn shift(val: u8, forward: bool) -> u8 {
     let (val, _) = if forward {
@@ -170,10 +161,6 @@ fn overflow_add(lhs: u8, rhs: u8) -> u8 {
     val
 }
 fn overflow_sub(lhs: u8, rhs: u8) -> u8 {
-    let (val, _) = lhs.overflowing_sub(rhs);
-    val
-}
-fn overflow_sub16(lhs: u16, rhs: u16) -> u16 {
     let (val, _) = lhs.overflowing_sub(rhs);
     val
 }
@@ -222,15 +209,17 @@ mod register_tests {
     fn goto_jump_test() {
         let mut reg = make();
         reg.direct(0x42);
-        reg.low();
+        assert_eq!((reg.data, reg.block, reg.coord), (0x42, 0, 0));
+        reg.goto();
+        assert_eq!((reg.data, reg.block, reg.coord), (0x42, 0, 0x42));
         reg.direct(42);
-        assert_eq!((reg.data, reg.acc), (42, 0x42));
-        reg.goto();
+        assert_eq!((reg.data, reg.block, reg.coord), (42, 0, 0x42));
         reg.jump();
-        assert_eq!((reg.block, reg.coord), (42, 0x42));
-        reg.zero();
-        reg.high();
+        assert_eq!((reg.data, reg.block, reg.coord), (42, 42, 0x42));
+        reg.direct(0);
+        assert_eq!((reg.data, reg.block, reg.coord), (0, 42, 0x42));
         reg.goto();
+        assert_eq!((reg.data, reg.block, reg.coord), (0, 42, 0));
         reg.jump();
         default_test(&reg);
     }
@@ -250,13 +239,13 @@ mod register_tests {
     fn pos_origin_test() {
         let mut reg = make();
         reg.right();
-        assert_eq!((reg.acc, reg.coord), (0x00, 0x01));
+        assert_eq!((reg.data, reg.coord), (0x00, 0x01));
         reg.down();
-        assert_eq!((reg.acc, reg.coord), (0x00, 0x11));
+        assert_eq!((reg.data, reg.coord), (0x00, 0x11));
         reg.pos();
-        assert_eq!((reg.acc, reg.coord), (0x11, 0x11));
+        assert_eq!((reg.data, reg.coord), (0x11, 0x11));
         reg.origin();
-        assert_eq!((reg.acc, reg.coord), (0x11, 0x00));
+        assert_eq!((reg.data, reg.coord), (0x11, 0x00));
         reg.pos();
         default_test(&reg);
     }

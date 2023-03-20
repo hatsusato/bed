@@ -24,14 +24,19 @@ impl<'a> Page<'a> {
         use io::Write;
         let buf = &[self.cur()];
         let result = io::stdout().write(buf);
-        self.regs.set_error(result.is_err());
+        self.set_error(result.is_err());
     }
     pub fn get(&mut self) {
         use io::Read;
         let buf = &mut [0];
         let result = io::stdin().read(buf);
         self.cur_mut(buf[0]);
-        self.regs.set_error(result.is_err());
+        self.set_error(result.is_err());
+    }
+    fn set_error(&mut self, flag: bool) {
+        if flag {
+            self.regs.error = true;
+        }
     }
     pub fn save(&mut self) {
         let index = floor(self.regs.coord, 4);
