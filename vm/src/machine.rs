@@ -19,4 +19,7 @@ impl Machine {
         let inst = self.lexer.translate(input);
         self.state.issue(inst);
     }
+    pub fn run(&mut self, code: &[u8]) {
+        code.iter().for_each(|input| self.execute(*input));
+    }
 }
