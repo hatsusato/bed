@@ -12,31 +12,28 @@ impl<'a> Page<'a> {
         Self { regs, page }
     }
     pub fn load(&mut self) {
-        self.regs.data = self.cur();
+        self.regs.data = self.page[self.regs.coord];
     }
     pub fn store(&mut self) {
-        self.cur_mut(self.regs.data);
+        self.page[self.regs.coord] = self.regs.data;
     }
     pub fn delete(&mut self) {
-        self.cur_mut(0);
+        self.page[self.regs.coord] = 0;
     }
     pub fn put(&mut self) {
         use io::Write;
-        let buf = &[self.cur()];
-        let result = io::stdout().write(buf);
-        self.set_error(result.is_err());
+        let buf = &[self.regs.data];
+        if io::stdout().write(buf).is_err() {
+            self.regs.error = true;
+        }
     }
     pub fn get(&mut self) {
         use io::Read;
-        let buf = &mut [0];
-        let result = io::stdin().read(buf);
-        self.cur_mut(buf[0]);
-        self.set_error(result.is_err());
-    }
-    fn set_error(&mut self, flag: bool) {
-        if flag {
+        let buf = &mut [self.regs.data];
+        if io::stdin().read(buf).is_err() {
             self.regs.error = true;
         }
+        self.regs.data = buf[0];
     }
     pub fn save(&mut self) {
         let index = floor(self.regs.coord, 4);
@@ -54,12 +51,6 @@ impl<'a> Page<'a> {
         for (dst, src) in self.page.iter_mut().zip(input) {
             *dst = *src;
         }
-    }
-    fn cur(&mut self) -> u8 {
-        self.page[self.regs.coord]
-    }
-    fn cur_mut(&mut self, src: u8) {
-        self.page[self.regs.coord] = src;
     }
 }
 
