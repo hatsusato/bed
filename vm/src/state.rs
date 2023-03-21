@@ -30,6 +30,7 @@ impl State {
             Inst::High => regs.high(),
             Inst::Low => regs.low(),
             Inst::Zero => regs.zero(),
+            Inst::Delete => regs.delete(),
             Inst::Origin => regs.origin(),
             Inst::Start => regs.start(),
             Inst::Goto => regs.goto(),
@@ -63,7 +64,6 @@ impl State {
             Inst::Rotr => regs.rotr(),
             Inst::Load => page.load(),
             Inst::Store => page.store(),
-            Inst::Delete => page.delete(),
             Inst::Put => page.put(),
             Inst::Get => page.get(),
             Inst::Save => page.save(),
@@ -120,7 +120,7 @@ mod state_tests {
     use super::{Inst, Registers, State};
 
     #[test]
-    fn load_store_delete_test() {
+    fn load_store_test() {
         let mut state = make();
         default_test(&state);
         for i in 0..=u8::MAX {
@@ -133,7 +133,7 @@ mod state_tests {
             state.run(&[Inst::Load]);
             assert_eq!(state.get_regs().data, i);
             assert_eq!(state.get_regs().coord, i);
-            state.run(&[Inst::Delete, Inst::Right]);
+            state.run(&[Inst::Zero, Inst::Store, Inst::Right]);
         }
         state.run(&[Inst::Load]);
         default_test(&state);
@@ -150,9 +150,9 @@ mod state_tests {
         state.run(&[Inst::Save, Inst::Origin]);
         for i in 0..4 {
             assert_eq!(state.get_memory()[2][i], 4 - i);
-            state.run(&[Inst::Delete, Inst::Right]);
+            state.run(&[Inst::Zero, Inst::Store, Inst::Right]);
         }
-        state.run(&[Inst::Origin, Inst::Start, Inst::Zero, Inst::High]);
+        state.run(&[Inst::Origin, Inst::Start, Inst::Delete, Inst::Zero]);
         default_test(&state);
     }
     #[test]
@@ -169,8 +169,8 @@ mod state_tests {
         state.run(&[
             Inst::Origin,
             Inst::Start,
+            Inst::Delete,
             Inst::Zero,
-            Inst::Direct(0),
             Inst::Save,
         ]);
         default_test(&state);
@@ -181,7 +181,7 @@ mod state_tests {
         state.issue(Inst::Quote(vec![1, 2, 3, 4]));
         for i in 0..4 {
             assert_eq!(state.get_memory()[0][i], i + 1);
-            state.run(&[Inst::Delete, Inst::Right]);
+            state.run(&[Inst::Zero, Inst::Store, Inst::Right]);
         }
         state.issue(Inst::Origin);
         default_test(&state);
@@ -200,7 +200,7 @@ mod state_tests {
             Inst::Swap,
         ]
         .to_vec();
-        let clear = [Inst::Origin, Inst::Start, Inst::Zero, Inst::Direct(0)].to_vec();
+        let clear = [Inst::Origin, Inst::Start, Inst::Delete, Inst::Zero].to_vec();
         state.issue(Inst::Func(to_vec("test"), test));
         state.issue(Inst::Func(to_vec("clear"), clear));
         default_test(&state);
@@ -225,7 +225,7 @@ mod state_tests {
             Inst::Swap,
         ]
         .to_vec();
-        let clear = [Inst::Origin, Inst::Start, Inst::Zero, Inst::Direct(0)].to_vec();
+        let clear = [Inst::Origin, Inst::Start, Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
         default_test(&state);
         state.issue(Inst::Exec(b'a'));
@@ -240,7 +240,7 @@ mod state_tests {
     fn macro_repeat_test() {
         let mut state = make();
         let record = [Inst::Add, Inst::High].to_vec();
-        let clear = [Inst::Zero, Inst::Direct(0)].to_vec();
+        let clear = [Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
         default_test(&state);
         state.run(&[Inst::Direct(10), Inst::Swap]);
@@ -266,7 +266,7 @@ mod state_tests {
             Inst::Swap,
         ]
         .to_vec();
-        let clear = [Inst::Origin, Inst::Start, Inst::Zero, Inst::Direct(0)].to_vec();
+        let clear = [Inst::Origin, Inst::Start, Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
         state.run(&[Inst::Direct(b'a'), Inst::Eval]);
         assert_eq!(state.get_regs().data, 1);

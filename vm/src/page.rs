@@ -17,9 +17,6 @@ impl<'a> Page<'a> {
     pub fn store(&mut self) {
         self.page[self.regs.coord] = self.regs.data;
     }
-    pub fn delete(&mut self) {
-        self.page[self.regs.coord] = 0;
-    }
     pub fn put(&mut self) {
         use io::Write;
         let buf = &[self.regs.data];

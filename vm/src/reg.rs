@@ -19,13 +19,28 @@ impl Registers {
         (self.data, self.acc) = (self.acc, self.data);
     }
     pub fn zero(&mut self) {
+        self.data = 0;
+    }
+    pub fn delete(&mut self) {
         self.acc = 0;
+    }
+    pub fn start(&mut self) {
+        self.block = 0;
+    }
+    pub fn origin(&mut self) {
+        self.coord = 0;
     }
     pub fn high(&mut self) {
         self.data = self.acc;
     }
     pub fn low(&mut self) {
         self.acc = self.data;
+    }
+    pub fn pos(&mut self) {
+        self.data = self.coord;
+    }
+    pub fn page(&mut self) {
+        self.data = self.block;
     }
     pub fn goto(&mut self) {
         self.coord = self.data;
@@ -44,18 +59,6 @@ impl Registers {
     }
     pub fn down(&mut self) {
         self.coord = overflow_add(self.coord, BLOCK_SIDE);
-    }
-    pub fn pos(&mut self) {
-        self.data = self.coord;
-    }
-    pub fn page(&mut self) {
-        self.data = self.block;
-    }
-    pub fn origin(&mut self) {
-        self.coord = 0;
-    }
-    pub fn start(&mut self) {
-        self.block = 0;
     }
     pub fn inc(&mut self) {
         self.acc = overflow_add(self.acc, 1);
@@ -178,16 +181,20 @@ mod register_tests {
         assert_eq!(reg.data, 0x21);
         reg.insert(0);
         assert_eq!(reg.data, 0x10);
-        reg.direct(0);
+        reg.zero();
         default_test(&reg);
     }
     #[test]
-    fn swap_zero_test() {
+    fn swap_zero_delete_test() {
         let mut reg = make();
         reg.direct(42);
         assert_eq!((reg.data, reg.acc), (42, 0));
         reg.swap();
         assert_eq!((reg.data, reg.acc), (0, 42));
+        reg.direct(42);
+        assert_eq!((reg.data, reg.acc), (42, 42));
+        reg.delete();
+        assert_eq!((reg.data, reg.acc), (42, 0));
         reg.zero();
         default_test(&reg);
     }
@@ -198,7 +205,7 @@ mod register_tests {
         assert_eq!((reg.data, reg.acc), (42, 0));
         reg.low();
         assert_eq!((reg.data, reg.acc), (42, 42));
-        reg.direct(0);
+        reg.zero();
         assert_eq!((reg.data, reg.acc), (0, 42));
         reg.swap();
         assert_eq!((reg.data, reg.acc), (42, 0));
@@ -216,7 +223,7 @@ mod register_tests {
         assert_eq!((reg.data, reg.block, reg.coord), (42, 0, 0x42));
         reg.jump();
         assert_eq!((reg.data, reg.block, reg.coord), (42, 42, 0x42));
-        reg.direct(0);
+        reg.zero();
         assert_eq!((reg.data, reg.block, reg.coord), (0, 42, 0x42));
         reg.goto();
         assert_eq!((reg.data, reg.block, reg.coord), (0, 42, 0));
@@ -258,7 +265,7 @@ mod register_tests {
         assert_eq!((reg.data, reg.block), (42, 42));
         reg.start();
         assert_eq!((reg.data, reg.block), (42, 0));
-        reg.direct(0);
+        reg.zero();
         default_test(&reg);
     }
     #[test]
@@ -269,7 +276,7 @@ mod register_tests {
         reg.inc();
         reg.inc();
         assert_eq!(reg.acc, 0x01);
-        reg.zero();
+        reg.delete();
         default_test(&reg);
     }
     #[test]
@@ -285,7 +292,7 @@ mod register_tests {
         assert_eq!((reg.data, reg.acc), (0x01, 0x0e));
         reg.add();
         assert_eq!((reg.data, reg.acc), (0x00, 0x0f));
-        reg.zero();
+        reg.delete();
         default_test(&reg);
     }
     #[test]
@@ -373,7 +380,7 @@ mod register_tests {
         assert_eq!((reg.data, reg.acc), (0x42, 0xff));
         reg.and();
         assert_eq!((reg.data, reg.acc), (0x42, 0x42));
-        reg.direct(0);
+        reg.zero();
         assert_eq!((reg.data, reg.acc), (0x00, 0x42));
         reg.not();
         assert_eq!((reg.data, reg.acc), (0x00, 0xbd));
@@ -456,7 +463,7 @@ mod register_tests {
         assert_eq!(reg.acc, 0x2d);
         reg.rotl();
         assert_eq!(reg.acc, 0x5a);
-        reg.zero();
+        reg.delete();
         default_test(&reg);
     }
     #[test]
@@ -481,7 +488,7 @@ mod register_tests {
         assert_eq!(reg.acc, 0xb4);
         reg.rotr();
         assert_eq!(reg.acc, 0x5a);
-        reg.zero();
+        reg.delete();
         default_test(&reg);
     }
     fn make() -> Registers {
