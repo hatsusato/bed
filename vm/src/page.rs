@@ -45,9 +45,8 @@ impl<'a> Page<'a> {
         }
     }
     pub fn quote(&mut self, input: &[u8]) {
-        for (dst, src) in self.page.iter_mut().zip(input) {
-            *dst = *src;
-        }
+        let pos = self.page.iter_mut().skip(self.regs.coord.into());
+        pos.zip(input).for_each(|(dst, src)| *dst = *src);
     }
 }
 
