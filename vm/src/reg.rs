@@ -86,10 +86,10 @@ impl Registers {
         }
     }
     pub fn clear(&mut self) {
-        (self.acc, self.error) = (u8::from(self.error), false);
+        self.error = false;
     }
-    pub fn raise(&mut self) {
-        self.error = true;
+    pub fn check(&mut self) {
+        self.acc = u8::from(self.error);
     }
     pub fn neg(&mut self) {
         self.acc = u8::from(self.acc == 0);
@@ -328,10 +328,7 @@ mod register_tests {
     #[test]
     fn div_clear_raise_test() {
         let mut reg = make();
-        reg.raise();
-        assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x00, true));
-        reg.clear();
-        assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x01, false));
+        reg.inc();
         reg.inc();
         reg.inc();
         reg.direct(0x42);
@@ -342,9 +339,11 @@ mod register_tests {
         assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x16, false));
         reg.div();
         assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x16, true));
+        reg.check();
+        assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x01, true));
         reg.clear();
         assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x01, false));
-        reg.clear();
+        reg.delete();
         default_test(&reg);
     }
     #[test]

@@ -48,7 +48,7 @@ impl State {
             Inst::Mul => regs.mul(),
             Inst::Div => regs.div(),
             Inst::Clear => regs.clear(),
-            Inst::Raise => regs.raise(),
+            Inst::Check => regs.check(),
             Inst::Neg => regs.neg(),
             Inst::Bool => regs.bool(),
             Inst::Eq => regs.eq(),
