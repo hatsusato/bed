@@ -4,7 +4,7 @@ use std::mem;
 const NEWLINE: u8 = b'\n';
 const QUOTE: u8 = b'"';
 const HASH: u8 = b'#';
-const PERCENT: u8 = b'%';
+const DOLLAR: u8 = b'$';
 const APOSTROPHE: u8 = b'\'';
 const COLON: u8 = b':';
 const SEMICOLON: u8 = b';';
@@ -39,7 +39,7 @@ impl Mode {
             QUOTE => Mode::Quote,
             APOSTROPHE => Mode::Direct,
             AT => Mode::Exec,
-            PERCENT => Mode::Repeat,
+            DOLLAR => Mode::Repeat,
             Q => Mode::Register,
             _ => unreachable!(),
         }
@@ -189,7 +189,7 @@ impl Lexer {
             | (Mode::Normal, SEMICOLON)
             | (
                 Mode::Normal | Mode::Body | Mode::Record,
-                HASH | COLON | QUOTE | APOSTROPHE | AT | PERCENT,
+                HASH | COLON | QUOTE | APOSTROPHE | AT | DOLLAR,
             ) => self.toggle(Mode::new(input), None),
             (Mode::Record, SEMICOLON) => self.finish(input, true),
             (Mode::Ignore | Mode::Call | Mode::Func, NEWLINE)
@@ -273,7 +273,7 @@ mod lexer_tests {
         mode_test("", &[]);
         mode_test(" #\n", &[Normal, Ignore, Normal]);
         mode_test(
-            "# \"#%':;@q\n",
+            "# \"#$':;@q\n",
             &[
                 Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore,
                 Normal,
@@ -290,7 +290,7 @@ mod lexer_tests {
         mode_test(":\n", &[Call, Normal]);
         mode_test(": a\n", &[Call, Call, Call, Normal]);
         mode_test(
-            ":\"#%':;@q\n",
+            ":\"#$':;@q\n",
             &[Call, Call, Call, Call, Call, Call, Call, Call, Call, Normal],
         );
         mode_test(";\n:;\n;", &[Func, Body, Call, Call, Body, Normal]);
@@ -300,7 +300,7 @@ mod lexer_tests {
     fn func_test() {
         mode_test(";;\n;", &[Func, Func, Body, Normal]);
         mode_test(
-            "; \"#%':;@q\nabc\n;",
+            "; \"#$':;@q\nabc\n;",
             &[
                 Func, Func, Func, Func, Func, Func, Func, Func, Func, Func, Body, Body, Body, Body,
                 Body, Normal,
@@ -325,7 +325,7 @@ mod lexer_tests {
     fn quote_test() {
         mode_test("\"\"", &[Quote, Normal]);
         mode_test(
-            "\"#%':;@q\n;\"",
+            "\"#$':;@q\n;\"",
             &[
                 Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Quote, Normal,
             ],
@@ -342,7 +342,7 @@ mod lexer_tests {
     #[test]
     fn direct_test() {
         mode_test(
-            "' '\"'#'%''':';'@'q'\n",
+            "' '\"'#'$''':';'@'q'\n",
             &[
                 Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal,
                 Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal, Direct, Normal,
@@ -360,7 +360,7 @@ mod lexer_tests {
     #[test]
     fn exec_test() {
         mode_test(
-            "@ @\"@#@%@'@:@;@@@q@\n",
+            "@ @\"@#@$@'@:@;@@@q@\n",
             &[
                 Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal,
                 Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal,
@@ -375,18 +375,18 @@ mod lexer_tests {
     #[test]
     fn repeat_test() {
         mode_test(
-            "% %\"%#%%%'%:%;%@%q%\n",
+            "$ $\"$#$$$'$:$;$@$q$\n",
             &[
                 Repeat, Normal, Repeat, Normal, Repeat, Normal, Repeat, Normal, Repeat, Normal,
                 Repeat, Normal, Repeat, Normal, Repeat, Normal, Repeat, Normal, Repeat, Normal,
             ],
         );
         mode_test(
-            ";\n%;%\n;",
+            ";\n$;$\n;",
             &[Func, Body, Repeat, Body, Repeat, Body, Normal],
         );
         mode_test(
-            "q%%q%\nq",
+            "q$$q$\nq",
             &[Register, Record, Repeat, Record, Repeat, Record, Normal],
         );
     }
