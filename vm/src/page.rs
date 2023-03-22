@@ -20,17 +20,18 @@ impl<'a> Page<'a> {
     pub fn put(&mut self) {
         use io::Write;
         let buf = &[self.regs.data];
-        if io::stdout().write(buf).is_err() {
-            self.regs.error = true;
+        match io::stdout().write(buf) {
+            Ok(1) => (),
+            _ => self.regs.error = true,
         }
     }
     pub fn get(&mut self) {
         use io::Read;
         let buf = &mut [self.regs.data];
-        if io::stdin().read(buf).is_err() {
-            self.regs.error = true;
+        match io::stdin().read(buf) {
+            Ok(1) => self.regs.data = buf[0],
+            _ => self.regs.error = true,
         }
-        self.regs.data = buf[0];
     }
     pub fn save(&mut self) {
         let index = floor(self.regs.coord, 4);
