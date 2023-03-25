@@ -111,7 +111,7 @@ impl State {
         }
     }
     fn define_func(&mut self, name: Name, body: Seq) {
-        self.funcs.insert(name, body);
+        self.funcs.entry(name).or_insert(body);
     }
 }
 
