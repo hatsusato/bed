@@ -1,4 +1,4 @@
-use util::{Block, BLOCK_SIDE};
+use util::BLOCK_SIDE;
 
 #[derive(Default, Clone, Debug)]
 pub struct Registers {
@@ -129,47 +129,6 @@ impl Registers {
     }
     pub fn rotr(&mut self) {
         self.acc = rot(self.acc, false);
-    }
-    pub fn load(&mut self, page: &Block<u8>) {
-        self.data = page[self.coord];
-    }
-    pub fn store(&mut self, page: &mut Block<u8>) {
-        page[self.coord] = self.data;
-    }
-    pub fn save(&mut self, page: &mut Block<u8>) {
-        let base = self.get_base();
-        for coord in base..(base + 4) {
-            page[coord] = *self.at(coord);
-        }
-    }
-    pub fn restore(&mut self, page: &Block<u8>) {
-        let base = self.get_base();
-        for coord in base..(base + 4) {
-            *self.at(coord) = page[coord];
-        }
-    }
-    pub fn quote(&mut self, page: &mut Block<u8>, input: &[u8]) {
-        if let Some(src) = input.iter().next() {
-            page[self.coord] = *src;
-        }
-        for src in &input[1..] {
-            if let Some(coord) = self.coord.checked_add(1) {
-                self.coord = coord;
-                page[self.coord] = *src;
-            }
-        }
-    }
-    fn get_base(&self) -> u8 {
-        (self.coord / 4) * 4
-    }
-    fn at(&mut self, index: u8) -> &mut u8 {
-        match index % 4 {
-            0 => &mut self.data,
-            1 => &mut self.acc,
-            2 => &mut self.block,
-            3 => &mut self.coord,
-            _ => unreachable!(),
-        }
     }
 }
 

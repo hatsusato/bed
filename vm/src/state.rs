@@ -6,6 +6,7 @@ use util::Block;
 
 #[derive(Default, Debug)]
 pub struct State {
+    regs: Registers,
     memory: Memory,
     macros: HashMap<u8, Seq>,
     funcs: HashMap<Name, Seq>,
@@ -13,15 +14,14 @@ pub struct State {
 impl State {
     #[must_use]
     pub fn get_regs(&self) -> &Registers {
-        &self.memory.regs
+        &self.regs
     }
     #[must_use]
     pub fn get_memory(&self) -> &Block<Block<u8>> {
         &self.memory.blocks
     }
     pub fn issue(&mut self, inst: Inst) {
-        let regs = &mut self.memory.regs;
-        let page = &mut self.memory.blocks[regs.block];
+        let regs = &mut self.regs;
         match inst {
             Inst::Direct(data) => regs.direct(data),
             Inst::Insert(digit) => regs.insert(digit),
@@ -61,13 +61,13 @@ impl State {
             Inst::Shr => regs.shr(),
             Inst::Rotl => regs.rotl(),
             Inst::Rotr => regs.rotr(),
-            Inst::Load => regs.load(page),
-            Inst::Store => regs.store(page),
-            Inst::Save => regs.save(page),
-            Inst::Restore => regs.restore(page),
+            Inst::Load => self.memory.load(regs),
+            Inst::Store => self.memory.store(regs),
+            Inst::Save => self.memory.save(regs),
+            Inst::Restore => self.memory.restore(regs),
             Inst::Put => self.put(),
             Inst::Get => self.get(),
-            Inst::Quote(input) => regs.quote(page, input.as_slice()),
+            Inst::Quote(input) => self.memory.quote(regs, input.as_slice()),
             Inst::Func(name, body) => self.define_func(name, body),
             Inst::Call(name) => self.call_func(&name),
             Inst::Macro(key, val) => self.register_macro(key, val),
@@ -82,30 +82,30 @@ impl State {
     }
     fn put(&mut self) {
         use io::Write;
-        let buf = &[self.memory.regs.data];
+        let buf = &[self.regs.data];
         match io::stdout().write(buf) {
             Ok(1) => (),
-            _ => self.memory.regs.error = true,
+            _ => self.regs.error = true,
         }
     }
     fn get(&mut self) {
         use io::Read;
-        let buf = &mut [self.memory.regs.data];
+        let buf = &mut [self.regs.data];
         match io::stdin().read(buf) {
-            Ok(1) => self.memory.regs.data = buf[0],
-            _ => self.memory.regs.error = true,
+            Ok(1) => self.regs.data = buf[0],
+            _ => self.regs.error = true,
         }
     }
     fn repeat(&mut self, seq: &[Inst]) {
-        let count = self.memory.regs.acc;
+        let count = self.regs.acc;
         for i in 0..count {
-            self.memory.regs.acc = i;
+            self.regs.acc = i;
             self.run(seq);
         }
-        self.memory.regs.acc = count;
+        self.regs.acc = count;
     }
     fn eval(&mut self) {
-        self.exec_macro(self.memory.regs.data);
+        self.exec_macro(self.regs.data);
     }
     fn register_macro(&mut self, key: u8, val: Seq) {
         self.macros.insert(key, val);
@@ -194,15 +194,15 @@ mod state_tests {
     fn quote_test() {
         let mut state = make();
         state.run(&[Inst::Quote(vec![1, 2, 3, 4])]);
-        assert_eq!(state.memory.regs.coord, 3);
+        assert_eq!(state.regs.coord, 3);
         state.run(&[Inst::Origin]);
-        assert_eq!(state.memory.regs.coord, 0);
+        assert_eq!(state.regs.coord, 0);
         for i in 0..4 {
             assert_eq!(state.get_memory()[0][i], i + 1);
             state.run(&[Inst::Store, Inst::Right]);
             assert_eq!(state.get_memory()[0][i], 0);
         }
-        assert_eq!(state.memory.regs.coord, 4);
+        assert_eq!(state.regs.coord, 4);
         state.run(&[Inst::Origin]);
         default_test(&state);
     }
