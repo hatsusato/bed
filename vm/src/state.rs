@@ -1,7 +1,7 @@
 use crate::inst::{Inst, Name, Seq};
 use crate::page::Page;
 use crate::reg::Registers;
-use std::collections::HashMap;
+use std::{collections::HashMap, io};
 use util::Block;
 
 #[derive(Default, Debug)]
@@ -62,12 +62,12 @@ impl State {
             Inst::Shr => regs.shr(),
             Inst::Rotl => regs.rotl(),
             Inst::Rotr => regs.rotr(),
-            Inst::Load => page.load(),
-            Inst::Store => page.store(),
-            Inst::Put => page.put(),
-            Inst::Get => page.get(),
-            Inst::Save => page.save(),
-            Inst::Restore => page.restore(),
+            Inst::Load => page.regs.load(page.page),
+            Inst::Store => page.regs.store(page.page),
+            Inst::Put => self.put(),
+            Inst::Get => self.get(),
+            Inst::Save => page.regs.save(page.page),
+            Inst::Restore => page.regs.restore(page.page),
             Inst::Quote(input) => page.quote(input.as_slice()),
             Inst::Func(name, body) => self.define_func(name, body),
             Inst::Call(name) => self.call_func(&name),
@@ -80,6 +80,22 @@ impl State {
     }
     fn run(&mut self, seq: &[Inst]) {
         seq.iter().for_each(|i| self.issue(i.clone()));
+    }
+    pub fn put(&mut self) {
+        use io::Write;
+        let buf = &[self.regs.data];
+        match io::stdout().write(buf) {
+            Ok(1) => (),
+            _ => self.regs.error = true,
+        }
+    }
+    pub fn get(&mut self) {
+        use io::Read;
+        let buf = &mut [self.regs.data];
+        match io::stdin().read(buf) {
+            Ok(1) => self.regs.data = buf[0],
+            _ => self.regs.error = true,
+        }
     }
     fn repeat(&mut self, seq: &[Inst]) {
         let count = self.regs.acc;
