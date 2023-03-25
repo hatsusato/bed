@@ -68,7 +68,7 @@ impl State {
             Inst::Get => self.get(),
             Inst::Save => page.regs.save(page.page),
             Inst::Restore => page.regs.restore(page.page),
-            Inst::Quote(input) => page.quote(input.as_slice()),
+            Inst::Quote(input) => self.quote(input.as_slice()),
             Inst::Func(name, body) => self.define_func(name, body),
             Inst::Call(name) => self.call_func(&name),
             Inst::Macro(key, val) => self.register_macro(key, val),
@@ -81,7 +81,7 @@ impl State {
     fn run(&mut self, seq: &[Inst]) {
         seq.iter().for_each(|i| self.issue(i.clone()));
     }
-    pub fn put(&mut self) {
+    fn put(&mut self) {
         use io::Write;
         let buf = &[self.regs.data];
         match io::stdout().write(buf) {
@@ -89,13 +89,20 @@ impl State {
             _ => self.regs.error = true,
         }
     }
-    pub fn get(&mut self) {
+    fn get(&mut self) {
         use io::Read;
         let buf = &mut [self.regs.data];
         match io::stdin().read(buf) {
             Ok(1) => self.regs.data = buf[0],
             _ => self.regs.error = true,
         }
+    }
+    fn quote(&mut self, input: &[u8]) {
+        let page = &mut self.memory[self.regs.block];
+        if let Some(src) = input.iter().next() {
+            page[self.regs.coord] = *src;
+        }
+        self.regs.quote(page, &input[1..]);
     }
     fn repeat(&mut self, seq: &[Inst]) {
         let count = self.regs.acc;

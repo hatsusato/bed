@@ -10,9 +10,4 @@ impl<'a> Page<'a> {
         let page = &mut memory[regs.block];
         Self { regs, page }
     }
-    pub fn quote(&mut self, input: &[u8]) {
-        let pairs = self.page.iter_mut().skip(self.regs.coord.into()).zip(input);
-        self.regs.coord += u8::try_from(pairs.len().max(1) - 1).unwrap();
-        pairs.for_each(|(dst, src)| *dst = *src);
-    }
 }

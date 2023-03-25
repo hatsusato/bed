@@ -148,6 +148,13 @@ impl Registers {
             *self.at(coord) = page[coord];
         }
     }
+    pub fn quote(&mut self, page: &mut Block<u8>, input: &[u8]) {
+        for src in input {
+            if let Some(coord) = self.coord.checked_add(1) {
+                (self.coord, page[coord]) = (coord, *src);
+            }
+        }
+    }
     fn get_base(&self) -> u8 {
         (self.coord / 4) * 4
     }
