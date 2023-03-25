@@ -34,24 +34,14 @@ impl<'a> Page<'a> {
         }
     }
     pub fn save(&mut self) {
-        let index = floor(self.regs.coord, 4);
-        for offset in 0..4 {
-            self.page[index + offset] = *self.regs.at(offset);
-        }
+        self.regs.save(self.page);
     }
     pub fn restore(&mut self) {
-        let index = floor(self.regs.coord, 4);
-        for offset in 0..4 {
-            *self.regs.at(offset) = self.page[index + offset];
-        }
+        self.regs.restore(self.page);
     }
     pub fn quote(&mut self, input: &[u8]) {
         let pairs = self.page.iter_mut().skip(self.regs.coord.into()).zip(input);
         self.regs.coord += u8::try_from(pairs.len().max(1) - 1).unwrap();
         pairs.for_each(|(dst, src)| *dst = *src);
     }
-}
-
-fn floor(lhs: u8, rhs: u8) -> u8 {
-    (lhs / rhs) * rhs
 }

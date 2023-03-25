@@ -136,8 +136,23 @@ impl Registers {
     pub fn store(&mut self, page: &mut Block<u8>) {
         page[self.coord] = self.data;
     }
-    pub fn at(&mut self, index: u8) -> &mut u8 {
-        match index {
+    pub fn save(&mut self, page: &mut Block<u8>) {
+        let base = self.get_base();
+        for coord in base..(base + 4) {
+            page[coord] = *self.at(coord);
+        }
+    }
+    pub fn restore(&mut self, page: &Block<u8>) {
+        let base = self.get_base();
+        for coord in base..(base + 4) {
+            *self.at(coord) = page[coord];
+        }
+    }
+    fn get_base(&self) -> u8 {
+        (self.coord / 4) * 4
+    }
+    fn at(&mut self, index: u8) -> &mut u8 {
+        match index % 4 {
             0 => &mut self.data,
             1 => &mut self.acc,
             2 => &mut self.block,
