@@ -1,5 +1,4 @@
 use crate::inst::{Inst, Name, Seq};
-use crate::page::Page;
 use crate::reg::Registers;
 use std::{collections::HashMap, io};
 use util::Block;
@@ -22,7 +21,7 @@ impl State {
     }
     pub fn issue(&mut self, inst: Inst) {
         let regs = &mut self.regs;
-        let mut page = Page::new(regs, &mut self.memory);
+        let page = &mut self.memory[regs.block];
         match inst {
             Inst::Direct(data) => regs.direct(data),
             Inst::Insert(digit) => regs.insert(digit),
@@ -62,13 +61,13 @@ impl State {
             Inst::Shr => regs.shr(),
             Inst::Rotl => regs.rotl(),
             Inst::Rotr => regs.rotr(),
-            Inst::Load => page.regs.load(page.page),
-            Inst::Store => page.regs.store(page.page),
+            Inst::Load => regs.load(page),
+            Inst::Store => regs.store(page),
+            Inst::Save => regs.save(page),
+            Inst::Restore => regs.restore(page),
             Inst::Put => self.put(),
             Inst::Get => self.get(),
-            Inst::Save => page.regs.save(page.page),
-            Inst::Restore => page.regs.restore(page.page),
-            Inst::Quote(input) => self.quote(input.as_slice()),
+            Inst::Quote(input) => regs.quote(page, input.as_slice()),
             Inst::Func(name, body) => self.define_func(name, body),
             Inst::Call(name) => self.call_func(&name),
             Inst::Macro(key, val) => self.register_macro(key, val),
@@ -96,13 +95,6 @@ impl State {
             Ok(1) => self.regs.data = buf[0],
             _ => self.regs.error = true,
         }
-    }
-    fn quote(&mut self, input: &[u8]) {
-        let page = &mut self.memory[self.regs.block];
-        if let Some(src) = input.iter().next() {
-            page[self.regs.coord] = *src;
-        }
-        self.regs.quote(page, &input[1..]);
     }
     fn repeat(&mut self, seq: &[Inst]) {
         let count = self.regs.acc;

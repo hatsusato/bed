@@ -149,9 +149,13 @@ impl Registers {
         }
     }
     pub fn quote(&mut self, page: &mut Block<u8>, input: &[u8]) {
-        for src in input {
+        if let Some(src) = input.iter().next() {
+            page[self.coord] = *src;
+        }
+        for src in &input[1..] {
             if let Some(coord) = self.coord.checked_add(1) {
-                (self.coord, page[coord]) = (coord, *src);
+                self.coord = coord;
+                page[self.coord] = *src;
             }
         }
     }
