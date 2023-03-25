@@ -12,10 +12,10 @@ impl<'a> Page<'a> {
         Self { regs, page }
     }
     pub fn load(&mut self) {
-        self.regs.data = self.page[self.regs.coord];
+        self.regs.load(self.page);
     }
     pub fn store(&mut self) {
-        self.page[self.regs.coord] = self.regs.data;
+        self.regs.store(self.page);
     }
     pub fn put(&mut self) {
         use io::Write;

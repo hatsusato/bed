@@ -1,4 +1,4 @@
-use util::BLOCK_SIDE;
+use util::{Block, BLOCK_SIDE};
 
 #[derive(Default, Clone, Debug)]
 pub struct Registers {
@@ -129,6 +129,12 @@ impl Registers {
     }
     pub fn rotr(&mut self) {
         self.acc = rot(self.acc, false);
+    }
+    pub fn load(&mut self, page: &Block<u8>) {
+        self.data = page[self.coord];
+    }
+    pub fn store(&mut self, page: &mut Block<u8>) {
+        page[self.coord] = self.data;
     }
     pub fn at(&mut self, index: u8) -> &mut u8 {
         match index {
