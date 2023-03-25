@@ -1,6 +1,7 @@
 mod inst;
 mod lexer;
 mod machine;
+mod memory;
 mod reg;
 mod state;
 
