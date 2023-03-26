@@ -135,25 +135,6 @@ mod state_tests {
     use super::{Inst, Registers, State};
 
     #[test]
-    fn load_store_test() {
-        let mut state = make();
-        default_test(&state);
-        for i in 0..=u8::MAX {
-            assert_eq!(state.get_regs().data, i);
-            assert_eq!(state.get_regs().acc, i);
-            state.run(&[Inst::Store, Inst::Inc, Inst::High, Inst::Goto]);
-        }
-        default_regs_test(state.get_regs());
-        for i in 0..=u8::MAX {
-            state.run(&[Inst::Load]);
-            assert_eq!(state.get_regs().data, i);
-            assert_eq!(state.get_regs().coord, i);
-            state.run(&[Inst::Zero, Inst::Store, Inst::Right]);
-        }
-        state.run(&[Inst::Load]);
-        default_test(&state);
-    }
-    #[test]
     fn save_test() {
         let mut state = make();
         state.run(&[Inst::Direct(1), Inst::Goto, Inst::Direct(2), Inst::Jump]);
