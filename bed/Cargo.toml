@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.1.11", features = ["derive"] }
+util = { version = "0.1.0", path = "../util" }
 view = { version = "0.1.0", path = "../view" }
 vm = { version = "0.1.0", path = "../vm" }
 

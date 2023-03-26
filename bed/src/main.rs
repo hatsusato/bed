@@ -2,6 +2,7 @@ use clap::Parser;
 use std::fs::File;
 use std::io::{BufReader, Read, Result};
 use std::path::PathBuf;
+use util::Stream;
 use view::Editor;
 use vm::Machine;
 
@@ -15,27 +16,57 @@ struct Args {
     #[arg(short = 'o', long, help = "stdout destination file")]
     output: Option<PathBuf>,
 }
+impl Args {
+    fn is_interactive(&self) -> bool {
+        self.source.is_none()
+    }
+    fn open_input(&self) -> Stream {
+        let stdin = || {
+            if self.is_interactive() {
+                Stream::default()
+            } else {
+                Stream::stdin()
+            }
+        };
+        self.input.as_ref().map_or_else(stdin, Stream::open)
+    }
+    fn open_output(&self) -> Stream {
+        let stdout = || {
+            if self.is_interactive() {
+                Stream::default()
+            } else {
+                Stream::stdout()
+            }
+        };
+        self.output.as_ref().map_or_else(stdout, Stream::open)
+    }
+}
 
 fn main() -> Result<()> {
     let args = Args::parse();
     if args.source.is_some() {
-        interpreter(&args)?;
+        interpreter(&args)
     } else {
         interactive(&args);
+        Ok(())
     }
-    Ok(())
 }
 
 fn interpreter(args: &Args) -> Result<()> {
-    let f = File::open(args.source.as_ref().unwrap())?;
-    let mut r = BufReader::new(f);
-    let buf = &mut String::new();
-    r.read_to_string(buf)?;
-    let mut vm = Machine::default();
-    vm.run(buf.as_bytes());
+    let code = get_source(args)?;
+    let mut vm = Machine::new(args.open_input(), args.open_output());
+    vm.run(&code);
     Ok(())
 }
-fn interactive(_args: &Args) {
-    let mut editor = Editor::default();
+fn interactive(args: &Args) {
+    let mut editor = Editor::new(args.open_input(), args.open_output());
     editor.run();
+}
+fn get_source(args: &Args) -> Result<Vec<u8>> {
+    let path = args.source.as_ref().unwrap();
+    let file = File::open(path)?;
+    let mut reader = BufReader::new(file);
+    let mut buf = String::new();
+    reader.read_to_string(&mut buf)?;
+    Ok(buf.into_bytes())
 }
