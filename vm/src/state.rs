@@ -1,9 +1,8 @@
 use crate::inst::{Inst, Name, Seq};
 use crate::memory::Memory;
 use crate::reg::Registers;
-use crate::stream::Map as StreamMap;
 use std::collections::HashMap;
-use util::Block;
+use util::{Block, Stream};
 
 #[derive(Default, Debug)]
 struct MacroMap {
@@ -28,6 +27,33 @@ impl FuncMap {
     }
     fn get(&self, key: &Name) -> Seq {
         self.map.get(key).cloned().unwrap_or_default()
+    }
+}
+
+#[derive(Debug)]
+pub struct StreamMap {
+    map: HashMap<u8, Stream>,
+    input: u8,
+    output: u8,
+}
+impl Default for StreamMap {
+    fn default() -> Self {
+        let (input, output, error) = (0, 1, 2);
+        let mut map = HashMap::new();
+        map.insert(input, Stream::stdin());
+        map.insert(output, Stream::stdout());
+        map.insert(error, Stream::stderr());
+        Self { map, input, output }
+    }
+}
+impl StreamMap {
+    pub fn get(&mut self) -> Option<u8> {
+        let get = Stream::get;
+        self.map.get_mut(&self.input).and_then(get)
+    }
+    pub fn put(&mut self, data: u8) -> Option<()> {
+        let put = |stream| Stream::put(stream, data);
+        self.map.get_mut(&self.output).and_then(put)
     }
 }
 
