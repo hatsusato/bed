@@ -120,6 +120,18 @@ mod memory_tests {
         }
         zero_test(&mem);
     }
+    #[test]
+    fn quote_test() {
+        let (mut mem, mut regs) = make();
+        mem.quote(&mut regs, &[1, 2, 3, 4]);
+        assert_eq!(regs.coord, 3);
+        for i in 0..4 {
+            assert_eq!(mem.blocks[0][i], i + 1);
+            regs.coord = i;
+            mem.store(&regs);
+        }
+        zero_test(&mem);
+    }
     fn make() -> (Memory, Registers) {
         let mem = Memory::default();
         zero_test(&mem);

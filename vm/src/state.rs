@@ -135,22 +135,6 @@ mod state_tests {
     use super::{Inst, Registers, State};
 
     #[test]
-    fn quote_test() {
-        let mut state = make();
-        state.run(&[Inst::Quote(vec![1, 2, 3, 4])]);
-        assert_eq!(state.regs.coord, 3);
-        state.run(&[Inst::Origin]);
-        assert_eq!(state.regs.coord, 0);
-        for i in 0..4 {
-            assert_eq!(state.get_memory()[0][i], i + 1);
-            state.run(&[Inst::Store, Inst::Right]);
-            assert_eq!(state.get_memory()[0][i], 0);
-        }
-        assert_eq!(state.regs.coord, 4);
-        state.run(&[Inst::Origin]);
-        default_test(&state);
-    }
-    #[test]
     fn func_call_test() {
         let mut state = make();
         let to_vec = |name: &str| name.as_bytes().to_vec();
