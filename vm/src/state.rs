@@ -5,10 +5,23 @@ use std::{collections::HashMap, io};
 use util::Block;
 
 #[derive(Default, Debug)]
+pub struct MacroMap {
+    map: HashMap<u8, Seq>,
+}
+impl MacroMap {
+    pub fn insert(&mut self, key: u8, val: Seq) {
+        self.map.insert(key, val);
+    }
+    pub fn get(&self, key: u8) -> Seq {
+        self.map.get(&key).cloned().unwrap_or_default()
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct State {
     regs: Registers,
     memory: Memory,
-    macros: HashMap<u8, Seq>,
+    macros: MacroMap,
     funcs: HashMap<Name, Seq>,
 }
 impl State {
@@ -70,9 +83,9 @@ impl State {
             Inst::Quote(input) => self.memory.quote(regs, input.as_slice()),
             Inst::Func(name, body) => self.define_func(name, body),
             Inst::Call(name) => self.call_func(&name),
-            Inst::Macro(key, val) => self.register_macro(key, val),
-            Inst::Exec(key) => self.exec_macro(key),
-            Inst::Repeat(key) => self.repeat_macro(key),
+            Inst::Macro(key, val) => self.register(key, val),
+            Inst::Exec(key) => self.exec(key),
+            Inst::Repeat(key) => self.repeat(key),
             Inst::Eval => self.eval(),
             Inst::Nop | Inst::Skip => (),
         }
@@ -96,29 +109,22 @@ impl State {
             _ => self.regs.error = true,
         }
     }
-    fn repeat(&mut self, seq: &[Inst]) {
+    fn register(&mut self, key: u8, val: Seq) {
+        self.macros.insert(key, val);
+    }
+    fn eval(&mut self) {
+        self.exec(self.regs.data);
+    }
+    fn exec(&mut self, key: u8) {
+        self.run(&self.macros.get(key));
+    }
+    fn repeat(&mut self, key: u8) {
         let count = self.regs.acc;
         for i in 0..count {
             self.regs.acc = i;
-            self.run(seq);
+            self.exec(key);
         }
         self.regs.acc = count;
-    }
-    fn eval(&mut self) {
-        self.exec_macro(self.regs.data);
-    }
-    fn register_macro(&mut self, key: u8, val: Seq) {
-        self.macros.insert(key, val);
-    }
-    fn exec_macro(&mut self, key: u8) {
-        if let Some(record) = self.macros.get(&key).cloned() {
-            self.run(record.as_slice());
-        }
-    }
-    fn repeat_macro(&mut self, key: u8) {
-        if let Some(record) = self.macros.get(&key).cloned() {
-            self.repeat(record.as_slice());
-        }
     }
     fn call_func(&mut self, name: &Name) {
         if let Some(body) = self.funcs.get(name).cloned() {

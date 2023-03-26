@@ -16,10 +16,11 @@ impl Machine {
         self.lexer.get_last()
     }
     pub fn execute(&mut self, input: u8) {
-        let inst = self.lexer.translate(input);
-        self.state.issue(inst);
+        self.state.issue(self.lexer.translate(input));
     }
     pub fn run(&mut self, code: &[u8]) {
-        code.iter().for_each(|input| self.execute(*input));
+        for input in code {
+            self.execute(*input);
+        }
     }
 }
