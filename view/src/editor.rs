@@ -70,7 +70,7 @@ fn print_register(state: &State, last: u8) {
     let disp = format!(
         "D: {}, A: {}, B: {}, C: {}, E: {}, KEY: {:<4}",
         util::as_hex(regs.data),
-        util::as_hex(regs.acc),
+        util::as_hex(regs.accum),
         util::as_hex(regs.block),
         util::as_hex(regs.coord),
         util::as_hex(regs.error),

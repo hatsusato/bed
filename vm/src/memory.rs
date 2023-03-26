@@ -51,7 +51,7 @@ fn get_base(regs: &Registers) -> u8 {
 fn at(regs: &Registers, index: u8) -> &u8 {
     match index % 4 {
         0 => &regs.data,
-        1 => &regs.acc,
+        1 => &regs.accum,
         2 => &regs.block,
         3 => &regs.coord,
         _ => unreachable!(),
@@ -60,7 +60,7 @@ fn at(regs: &Registers, index: u8) -> &u8 {
 fn at_mut(regs: &mut Registers, index: u8) -> &mut u8 {
     match index % 4 {
         0 => &mut regs.data,
-        1 => &mut regs.acc,
+        1 => &mut regs.accum,
         2 => &mut regs.block,
         3 => &mut regs.coord,
         _ => unreachable!(),
@@ -91,7 +91,7 @@ mod memory_tests {
     #[test]
     fn save_test() {
         let (mut mem, mut regs) = make();
-        (regs.data, regs.acc, regs.block, regs.coord) = (4, 3, 2, 1);
+        (regs.data, regs.accum, regs.block, regs.coord) = (4, 3, 2, 1);
         mem.save(&regs);
         regs.data = 0;
         for i in 0..4 {
@@ -110,7 +110,7 @@ mod memory_tests {
         }
         mem.restore(&mut regs);
         assert_eq!(regs.data, 1);
-        assert_eq!(regs.acc, 2);
+        assert_eq!(regs.accum, 2);
         assert_eq!(regs.block, 3);
         assert_eq!(regs.coord, 4);
         (regs.data, regs.block) = (0, 0);

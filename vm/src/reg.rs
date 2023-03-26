@@ -2,7 +2,7 @@ use util::BLOCK_SIDE;
 
 #[derive(Default, Clone, Debug)]
 pub struct Registers {
-    pub acc: u8,
+    pub accum: u8,
     pub block: u8,
     pub coord: u8,
     pub data: u8,
@@ -16,13 +16,13 @@ impl Registers {
         self.data = nibble_combine(self.data, digit);
     }
     pub fn swap(&mut self) {
-        (self.data, self.acc) = (self.acc, self.data);
+        (self.data, self.accum) = (self.accum, self.data);
     }
     pub fn zero(&mut self) {
         self.data = 0;
     }
     pub fn delete(&mut self) {
-        self.acc = 0;
+        self.accum = 0;
     }
     pub fn start(&mut self) {
         self.block = 0;
@@ -31,10 +31,10 @@ impl Registers {
         self.coord = 0;
     }
     pub fn high(&mut self) {
-        self.data = self.acc;
+        self.data = self.accum;
     }
     pub fn low(&mut self) {
-        self.acc = self.data;
+        self.accum = self.data;
     }
     pub fn pos(&mut self) {
         self.data = self.coord;
@@ -61,74 +61,74 @@ impl Registers {
         self.coord = overflow_add(self.coord, BLOCK_SIDE);
     }
     pub fn inc(&mut self) {
-        self.acc = overflow_add(self.acc, 1);
+        self.accum = overflow_add(self.accum, 1);
     }
     pub fn dec(&mut self) {
-        self.acc = overflow_sub(self.acc, 1);
+        self.accum = overflow_sub(self.accum, 1);
     }
     pub fn add(&mut self) {
-        let val = u16::from(self.acc) + u16::from(self.data);
-        [self.data, self.acc] = val.to_be_bytes();
+        let val = u16::from(self.accum) + u16::from(self.data);
+        [self.data, self.accum] = val.to_be_bytes();
     }
     pub fn sub(&mut self) {
-        let (val, _) = u16::from(self.acc).overflowing_sub(self.data.into());
-        [self.data, self.acc] = val.to_be_bytes();
+        let (val, _) = u16::from(self.accum).overflowing_sub(self.data.into());
+        [self.data, self.accum] = val.to_be_bytes();
     }
     pub fn mul(&mut self) {
-        let val = u16::from(self.acc) * u16::from(self.data);
-        [self.data, self.acc] = val.to_be_bytes();
+        let val = u16::from(self.accum) * u16::from(self.data);
+        [self.data, self.accum] = val.to_be_bytes();
     }
     pub fn div(&mut self) {
         if self.data == 0 {
             self.error = true;
         } else {
-            (self.data, self.acc) = (self.acc % self.data, self.acc / self.data);
+            (self.data, self.accum) = (self.accum % self.data, self.accum / self.data);
         }
     }
     pub fn clear(&mut self) {
         self.error = false;
     }
     pub fn check(&mut self) {
-        self.acc = u8::from(self.error);
+        self.accum = u8::from(self.error);
     }
     pub fn neg(&mut self) {
-        self.acc = u8::from(self.acc == 0);
+        self.accum = u8::from(self.accum == 0);
     }
     pub fn bool(&mut self) {
-        self.acc = u8::from(self.acc != 0);
+        self.accum = u8::from(self.accum != 0);
     }
     pub fn eq(&mut self) {
-        self.acc = u8::from(self.data == self.acc);
+        self.accum = u8::from(self.data == self.accum);
     }
     pub fn lt(&mut self) {
-        self.acc = u8::from(self.data < self.acc);
+        self.accum = u8::from(self.data < self.accum);
     }
     pub fn gt(&mut self) {
-        self.acc = u8::from(self.data > self.acc);
+        self.accum = u8::from(self.data > self.accum);
     }
     pub fn not(&mut self) {
-        self.acc = !self.acc;
+        self.accum = !self.accum;
     }
     pub fn and(&mut self) {
-        self.acc &= self.data;
+        self.accum &= self.data;
     }
     pub fn or(&mut self) {
-        self.acc |= self.data;
+        self.accum |= self.data;
     }
     pub fn xor(&mut self) {
-        self.acc ^= self.data;
+        self.accum ^= self.data;
     }
     pub fn shl(&mut self) {
-        self.acc = shift(self.acc, true);
+        self.accum = shift(self.accum, true);
     }
     pub fn shr(&mut self) {
-        self.acc = shift(self.acc, false);
+        self.accum = shift(self.accum, false);
     }
     pub fn rotl(&mut self) {
-        self.acc = rot(self.acc, true);
+        self.accum = rot(self.accum, true);
     }
     pub fn rotr(&mut self) {
-        self.acc = rot(self.acc, false);
+        self.accum = rot(self.accum, false);
     }
 }
 
@@ -173,35 +173,35 @@ mod register_tests {
         reg.insert(0);
         assert_eq!(reg.data, 0x10);
         reg.zero();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn swap_zero_delete_test() {
         let mut reg = make();
         reg.direct(42);
-        assert_eq!((reg.data, reg.acc), (42, 0));
+        assert_eq!((reg.data, reg.accum), (42, 0));
         reg.swap();
-        assert_eq!((reg.data, reg.acc), (0, 42));
+        assert_eq!((reg.data, reg.accum), (0, 42));
         reg.direct(42);
-        assert_eq!((reg.data, reg.acc), (42, 42));
+        assert_eq!((reg.data, reg.accum), (42, 42));
         reg.delete();
-        assert_eq!((reg.data, reg.acc), (42, 0));
+        assert_eq!((reg.data, reg.accum), (42, 0));
         reg.zero();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn high_low_test() {
         let mut reg = make();
         reg.direct(42);
-        assert_eq!((reg.data, reg.acc), (42, 0));
+        assert_eq!((reg.data, reg.accum), (42, 0));
         reg.low();
-        assert_eq!((reg.data, reg.acc), (42, 42));
+        assert_eq!((reg.data, reg.accum), (42, 42));
         reg.zero();
-        assert_eq!((reg.data, reg.acc), (0, 42));
+        assert_eq!((reg.data, reg.accum), (0, 42));
         reg.swap();
-        assert_eq!((reg.data, reg.acc), (42, 0));
+        assert_eq!((reg.data, reg.accum), (42, 0));
         reg.high();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn goto_jump_test() {
@@ -219,7 +219,7 @@ mod register_tests {
         reg.goto();
         assert_eq!((reg.data, reg.block, reg.coord), (0, 42, 0));
         reg.jump();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn left_right_up_down_test() {
@@ -231,7 +231,7 @@ mod register_tests {
         reg.right();
         assert_eq!(reg.coord, 0x10);
         reg.up();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn pos_origin_test() {
@@ -245,7 +245,7 @@ mod register_tests {
         reg.origin();
         assert_eq!((reg.data, reg.coord), (0x11, 0x00));
         reg.pos();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn page_start() {
@@ -257,64 +257,64 @@ mod register_tests {
         reg.start();
         assert_eq!((reg.data, reg.block), (42, 0));
         reg.zero();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn page_inc_dec() {
         let mut reg = make();
         reg.dec();
-        assert_eq!(reg.acc, 0xff);
+        assert_eq!(reg.accum, 0xff);
         reg.inc();
         reg.inc();
-        assert_eq!(reg.acc, 0x01);
+        assert_eq!(reg.accum, 0x01);
         reg.delete();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn add_test() {
         let mut reg = make();
         reg.direct(0x42);
-        assert_eq!((reg.data, reg.acc), (0x42, 0x00));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.add();
-        assert_eq!((reg.data, reg.acc), (0x00, 0x42));
+        assert_eq!((reg.data, reg.accum), (0x00, 0x42));
         reg.direct(0xcc);
-        assert_eq!((reg.data, reg.acc), (0xcc, 0x42));
+        assert_eq!((reg.data, reg.accum), (0xcc, 0x42));
         reg.add();
-        assert_eq!((reg.data, reg.acc), (0x01, 0x0e));
+        assert_eq!((reg.data, reg.accum), (0x01, 0x0e));
         reg.add();
-        assert_eq!((reg.data, reg.acc), (0x00, 0x0f));
+        assert_eq!((reg.data, reg.accum), (0x00, 0x0f));
         reg.delete();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn sub_test() {
         let mut reg = make();
         reg.direct(0x42);
-        assert_eq!((reg.data, reg.acc), (0x42, 0x00));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.sub();
-        assert_eq!((reg.data, reg.acc), (0xff, 0xbe));
+        assert_eq!((reg.data, reg.accum), (0xff, 0xbe));
         reg.high();
-        assert_eq!((reg.data, reg.acc), (0xbe, 0xbe));
+        assert_eq!((reg.data, reg.accum), (0xbe, 0xbe));
         reg.sub();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn mul_test() {
         let mut reg = make();
         reg.direct(0x42);
-        assert_eq!((reg.data, reg.acc), (0x42, 0x00));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.inc();
-        assert_eq!((reg.data, reg.acc), (0x42, 0x01));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x01));
         reg.mul();
-        assert_eq!((reg.data, reg.acc), (0x00, 0x42));
+        assert_eq!((reg.data, reg.accum), (0x00, 0x42));
         reg.high();
-        assert_eq!((reg.data, reg.acc), (0x42, 0x42));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x42));
         reg.mul();
-        assert_eq!((reg.data, reg.acc), (0x11, 0x04));
+        assert_eq!((reg.data, reg.accum), (0x11, 0x04));
         reg.mul();
-        assert_eq!((reg.data, reg.acc), (0x00, 0x44));
+        assert_eq!((reg.data, reg.accum), (0x00, 0x44));
         reg.mul();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn div_clear_raise_test() {
@@ -323,172 +323,172 @@ mod register_tests {
         reg.inc();
         reg.inc();
         reg.direct(0x42);
-        assert_eq!((reg.data, reg.acc, reg.error), (0x42, 0x03, false));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x42, 0x03, false));
         reg.swap();
-        assert_eq!((reg.data, reg.acc, reg.error), (0x03, 0x42, false));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x03, 0x42, false));
         reg.div();
-        assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x16, false));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x00, 0x16, false));
         reg.div();
-        assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x16, true));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x00, 0x16, true));
         reg.check();
-        assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x01, true));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x00, 0x01, true));
         reg.clear();
-        assert_eq!((reg.data, reg.acc, reg.error), (0x00, 0x01, false));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x00, 0x01, false));
         reg.delete();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn neg_bool_test() {
         let mut reg = make();
         reg.neg();
-        assert_eq!((reg.data, reg.acc), (0, 1));
+        assert_eq!((reg.data, reg.accum), (0, 1));
         reg.inc();
-        assert_eq!((reg.data, reg.acc), (0, 2));
+        assert_eq!((reg.data, reg.accum), (0, 2));
         reg.bool();
-        assert_eq!((reg.data, reg.acc), (0, 1));
+        assert_eq!((reg.data, reg.accum), (0, 1));
         reg.neg();
-        assert_eq!((reg.data, reg.acc), (0, 0));
+        assert_eq!((reg.data, reg.accum), (0, 0));
         reg.bool();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn eq_lt_gt_test() {
         let mut reg = make();
         reg.eq();
-        assert_eq!((reg.data, reg.acc), (0, 1));
+        assert_eq!((reg.data, reg.accum), (0, 1));
         reg.lt();
-        assert_eq!((reg.data, reg.acc), (0, 1));
+        assert_eq!((reg.data, reg.accum), (0, 1));
         reg.gt();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn not_and_test() {
         let mut reg = make();
         reg.not();
-        assert_eq!((reg.data, reg.acc), (0x00, 0xff));
+        assert_eq!((reg.data, reg.accum), (0x00, 0xff));
         reg.direct(0x42);
-        assert_eq!((reg.data, reg.acc), (0x42, 0xff));
+        assert_eq!((reg.data, reg.accum), (0x42, 0xff));
         reg.and();
-        assert_eq!((reg.data, reg.acc), (0x42, 0x42));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x42));
         reg.zero();
-        assert_eq!((reg.data, reg.acc), (0x00, 0x42));
+        assert_eq!((reg.data, reg.accum), (0x00, 0x42));
         reg.not();
-        assert_eq!((reg.data, reg.acc), (0x00, 0xbd));
+        assert_eq!((reg.data, reg.accum), (0x00, 0xbd));
         reg.and();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn or_xor_test() {
         let mut reg = make();
         reg.direct(0x42);
-        assert_eq!((reg.data, reg.acc), (0x42, 0x00));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.or();
-        assert_eq!((reg.data, reg.acc), (0x42, 0x42));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x42));
         reg.xor();
-        assert_eq!((reg.data, reg.acc), (0x42, 0x00));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.direct(0x00);
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn shl_test() {
         let mut reg = make();
         reg.direct(0x5a);
         reg.swap();
-        assert_eq!(reg.acc, 0x5a);
+        assert_eq!(reg.accum, 0x5a);
         reg.shl();
-        assert_eq!(reg.acc, 0xb4);
+        assert_eq!(reg.accum, 0xb4);
         reg.shl();
-        assert_eq!(reg.acc, 0x68);
+        assert_eq!(reg.accum, 0x68);
         reg.shl();
-        assert_eq!(reg.acc, 0xd0);
+        assert_eq!(reg.accum, 0xd0);
         reg.shl();
-        assert_eq!(reg.acc, 0xa0);
+        assert_eq!(reg.accum, 0xa0);
         reg.shl();
-        assert_eq!(reg.acc, 0x40);
+        assert_eq!(reg.accum, 0x40);
         reg.shl();
-        assert_eq!(reg.acc, 0x80);
+        assert_eq!(reg.accum, 0x80);
         reg.shl();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn shr_test() {
         let mut reg = make();
         reg.direct(0x5a);
         reg.swap();
-        assert_eq!(reg.acc, 0x5a);
+        assert_eq!(reg.accum, 0x5a);
         reg.shr();
-        assert_eq!(reg.acc, 0x2d);
+        assert_eq!(reg.accum, 0x2d);
         reg.shr();
-        assert_eq!(reg.acc, 0x16);
+        assert_eq!(reg.accum, 0x16);
         reg.shr();
-        assert_eq!(reg.acc, 0x0b);
+        assert_eq!(reg.accum, 0x0b);
         reg.shr();
-        assert_eq!(reg.acc, 0x05);
+        assert_eq!(reg.accum, 0x05);
         reg.shr();
-        assert_eq!(reg.acc, 0x02);
+        assert_eq!(reg.accum, 0x02);
         reg.shr();
-        assert_eq!(reg.acc, 0x01);
+        assert_eq!(reg.accum, 0x01);
         reg.shr();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn rotl_test() {
         let mut reg = make();
         reg.direct(0x5a);
         reg.swap();
-        assert_eq!(reg.acc, 0x5a);
+        assert_eq!(reg.accum, 0x5a);
         reg.rotl();
-        assert_eq!(reg.acc, 0xb4);
+        assert_eq!(reg.accum, 0xb4);
         reg.rotl();
-        assert_eq!(reg.acc, 0x69);
+        assert_eq!(reg.accum, 0x69);
         reg.rotl();
-        assert_eq!(reg.acc, 0xd2);
+        assert_eq!(reg.accum, 0xd2);
         reg.rotl();
-        assert_eq!(reg.acc, 0xa5);
+        assert_eq!(reg.accum, 0xa5);
         reg.rotl();
-        assert_eq!(reg.acc, 0x4b);
+        assert_eq!(reg.accum, 0x4b);
         reg.rotl();
-        assert_eq!(reg.acc, 0x96);
+        assert_eq!(reg.accum, 0x96);
         reg.rotl();
-        assert_eq!(reg.acc, 0x2d);
+        assert_eq!(reg.accum, 0x2d);
         reg.rotl();
-        assert_eq!(reg.acc, 0x5a);
+        assert_eq!(reg.accum, 0x5a);
         reg.delete();
-        default_test(&reg);
+        zero_test(&reg);
     }
     #[test]
     fn rotr_test() {
         let mut reg = make();
         reg.direct(0x5a);
         reg.swap();
-        assert_eq!(reg.acc, 0x5a);
+        assert_eq!(reg.accum, 0x5a);
         reg.rotr();
-        assert_eq!(reg.acc, 0x2d);
+        assert_eq!(reg.accum, 0x2d);
         reg.rotr();
-        assert_eq!(reg.acc, 0x96);
+        assert_eq!(reg.accum, 0x96);
         reg.rotr();
-        assert_eq!(reg.acc, 0x4b);
+        assert_eq!(reg.accum, 0x4b);
         reg.rotr();
-        assert_eq!(reg.acc, 0xa5);
+        assert_eq!(reg.accum, 0xa5);
         reg.rotr();
-        assert_eq!(reg.acc, 0xd2);
+        assert_eq!(reg.accum, 0xd2);
         reg.rotr();
-        assert_eq!(reg.acc, 0x69);
+        assert_eq!(reg.accum, 0x69);
         reg.rotr();
-        assert_eq!(reg.acc, 0xb4);
+        assert_eq!(reg.accum, 0xb4);
         reg.rotr();
-        assert_eq!(reg.acc, 0x5a);
+        assert_eq!(reg.accum, 0x5a);
         reg.delete();
-        default_test(&reg);
+        zero_test(&reg);
     }
     fn make() -> Registers {
         let reg = Registers::default();
-        default_test(&reg);
+        zero_test(&reg);
         reg
     }
-    fn default_test(reg: &Registers) {
+    fn zero_test(reg: &Registers) {
         assert_eq!(reg.data, 0);
-        assert_eq!(reg.acc, 0);
+        assert_eq!(reg.accum, 0);
         assert_eq!(reg.block, 0);
         assert_eq!(reg.coord, 0);
         assert!(!reg.error);

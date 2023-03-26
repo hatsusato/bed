@@ -48,6 +48,7 @@ impl State {
     }
     pub fn issue(&mut self, inst: Inst) {
         let regs = &mut self.regs;
+        let mem = &mut self.memory;
         match inst {
             Inst::Direct(data) => regs.direct(data),
             Inst::Insert(digit) => regs.insert(digit),
@@ -87,13 +88,13 @@ impl State {
             Inst::Shr => regs.shr(),
             Inst::Rotl => regs.rotl(),
             Inst::Rotr => regs.rotr(),
-            Inst::Load => self.memory.load(regs),
-            Inst::Store => self.memory.store(regs),
-            Inst::Save => self.memory.save(regs),
-            Inst::Restore => self.memory.restore(regs),
+            Inst::Load => mem.load(regs),
+            Inst::Store => mem.store(regs),
+            Inst::Save => mem.save(regs),
+            Inst::Restore => mem.restore(regs),
             Inst::Put => self.put(),
             Inst::Get => self.get(),
-            Inst::Quote(input) => self.memory.quote(regs, input.as_slice()),
+            Inst::Quote(input) => self.quote(&input),
             Inst::Func(name, body) => self.define(name, body),
             Inst::Call(name) => self.call(&name),
             Inst::Macro(key, val) => self.register(key, val),
@@ -104,7 +105,9 @@ impl State {
         }
     }
     fn run(&mut self, seq: &[Inst]) {
-        seq.iter().for_each(|i| self.issue(i.clone()));
+        for inst in seq {
+            self.issue(inst.clone());
+        }
     }
     fn put(&mut self) {
         use io::Write;
@@ -122,6 +125,9 @@ impl State {
             _ => self.regs.error = true,
         }
     }
+    fn quote(&mut self, input: &[u8]) {
+        self.memory.quote(&mut self.regs, input);
+    }
     fn define(&mut self, name: Name, body: Seq) {
         self.funcs.insert(name, body);
     }
@@ -131,19 +137,19 @@ impl State {
     fn register(&mut self, key: u8, val: Seq) {
         self.macros.insert(key, val);
     }
-    fn eval(&mut self) {
-        self.exec(self.regs.data);
-    }
     fn exec(&mut self, key: u8) {
         self.run(&self.macros.get(key));
     }
     fn repeat(&mut self, key: u8) {
-        let count = self.regs.acc;
+        let count = self.regs.accum;
         for i in 0..count {
-            self.regs.acc = i;
+            self.regs.accum = i;
             self.exec(key);
         }
-        self.regs.acc = count;
+        self.regs.accum = count;
+    }
+    fn eval(&mut self) {
+        self.exec(self.regs.data);
     }
 }
 
@@ -168,14 +174,14 @@ mod state_tests {
         let clear = [Inst::Origin, Inst::Start, Inst::Delete, Inst::Zero].to_vec();
         state.issue(Inst::Func(to_vec("test"), test));
         state.issue(Inst::Func(to_vec("clear"), clear));
-        default_test(&state);
+        zero_test(&state);
         state.issue(Inst::Call(to_vec("test")));
         assert_eq!(state.get_regs().data, 1);
-        assert_eq!(state.get_regs().acc, 2);
+        assert_eq!(state.get_regs().accum, 2);
         assert_eq!(state.get_regs().block, 3);
         assert_eq!(state.get_regs().coord, 4);
         state.issue(Inst::Call(to_vec("clear")));
-        default_test(&state);
+        zero_test(&state);
     }
     #[test]
     fn macro_exec_test() {
@@ -192,14 +198,14 @@ mod state_tests {
         .to_vec();
         let clear = [Inst::Origin, Inst::Start, Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
-        default_test(&state);
+        zero_test(&state);
         state.issue(Inst::Exec(b'a'));
         assert_eq!(state.get_regs().data, 1);
-        assert_eq!(state.get_regs().acc, 2);
+        assert_eq!(state.get_regs().accum, 2);
         assert_eq!(state.get_regs().block, 3);
         assert_eq!(state.get_regs().coord, 4);
         state.issue(Inst::Exec(b'c'));
-        default_test(&state);
+        zero_test(&state);
     }
     #[test]
     fn macro_repeat_test() {
@@ -207,15 +213,15 @@ mod state_tests {
         let record = [Inst::Add, Inst::High].to_vec();
         let clear = [Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
-        default_test(&state);
+        zero_test(&state);
         state.run(&[Inst::Direct(10), Inst::Swap]);
         assert_eq!(state.get_regs().data, 0);
-        assert_eq!(state.get_regs().acc, 10);
+        assert_eq!(state.get_regs().accum, 10);
         state.issue(Inst::Repeat(b'a'));
         assert_eq!(state.get_regs().data, 45);
-        assert_eq!(state.get_regs().acc, 10);
+        assert_eq!(state.get_regs().accum, 10);
         state.issue(Inst::Exec(b'c'));
-        default_test(&state);
+        zero_test(&state);
     }
     #[test]
     fn macro_eval_test() {
@@ -235,31 +241,29 @@ mod state_tests {
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
         state.run(&[Inst::Direct(b'a'), Inst::Eval]);
         assert_eq!(state.get_regs().data, 1);
-        assert_eq!(state.get_regs().acc, 2);
+        assert_eq!(state.get_regs().accum, 2);
         assert_eq!(state.get_regs().block, 3);
         assert_eq!(state.get_regs().coord, 4);
         state.run(&[Inst::Direct(b'c'), Inst::Eval]);
-        default_test(&state);
+        zero_test(&state);
     }
     fn make() -> State {
         let state = State::default();
-        default_test(&state);
+        zero_test(&state);
         state
     }
-    fn default_regs_test(regs: &Registers) {
+    fn zero_regs_test(regs: &Registers) {
         assert_eq!(regs.data, 0);
-        assert_eq!(regs.acc, 0);
+        assert_eq!(regs.accum, 0);
         assert_eq!(regs.block, 0);
         assert_eq!(regs.coord, 0);
         assert!(!regs.error);
     }
-    fn default_test(state: &State) {
-        let regs = state.get_regs();
-        let mem = state.get_memory();
-        default_regs_test(regs);
-        for block in mem.iter() {
-            for cell in block.iter() {
-                assert_eq!(*cell, 0);
+    fn zero_test(state: &State) {
+        zero_regs_test(&state.regs);
+        for b in 0..u8::MAX {
+            for c in 0..u8::MAX {
+                assert_eq!(state.memory.blocks[b][c], 0);
             }
         }
     }
