@@ -47,15 +47,17 @@ impl Stream {
         }
     }
     pub fn get(&mut self) -> Option<u8> {
-        match self.kind {
+        match &mut self.kind {
             Kind::Stdin => read(&mut io::stdin()),
+            Kind::File(file) => read(file),
             _ => None,
         }
     }
     pub fn put(&mut self, data: u8) -> Option<()> {
-        match self.kind {
+        match &mut self.kind {
             Kind::Stdout => write(&mut io::stdout(), data),
             Kind::Stderr => write(&mut io::stderr(), data),
+            Kind::File(file) => write(file, data),
             _ => None,
         }
     }
