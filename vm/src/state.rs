@@ -33,27 +33,29 @@ impl FuncMap {
 #[derive(Debug)]
 pub struct StreamMap {
     map: HashMap<u8, Stream>,
-    input: u8,
-    output: u8,
+    in_id: u8,
+    out_id: u8,
 }
 impl Default for StreamMap {
     fn default() -> Self {
-        let (input, output, error) = (0, 1, 2);
-        let mut map = HashMap::new();
-        map.insert(input, Stream::stdin());
-        map.insert(output, Stream::stdout());
-        map.insert(error, Stream::stderr());
-        Self { map, input, output }
+        Self::new(Stream::stdin(), Stream::stdout())
     }
 }
 impl StreamMap {
+    pub fn new(input: Stream, output: Stream) -> Self {
+        let (in_id, out_id) = (0, 1);
+        let mut map = HashMap::new();
+        map.insert(in_id, input);
+        map.insert(out_id, output);
+        Self { map, in_id, out_id }
+    }
     pub fn get(&mut self) -> Option<u8> {
         let get = Stream::get;
-        self.map.get_mut(&self.input).and_then(get)
+        self.map.get_mut(&self.in_id).and_then(get)
     }
     pub fn put(&mut self, data: u8) -> Option<()> {
         let put = |stream| Stream::put(stream, data);
-        self.map.get_mut(&self.output).and_then(put)
+        self.map.get_mut(&self.out_id).and_then(put)
     }
 }
 
