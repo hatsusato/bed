@@ -135,26 +135,6 @@ mod state_tests {
     use super::{Inst, Registers, State};
 
     #[test]
-    fn restore_test() {
-        let mut state = make();
-        for _i in 0..4 {
-            state.run(&[Inst::Inc, Inst::High, Inst::Store, Inst::Goto]);
-        }
-        state.run(&[Inst::Origin, Inst::Restore]);
-        assert_eq!(state.get_regs().data, 1);
-        assert_eq!(state.get_regs().acc, 2);
-        assert_eq!(state.get_regs().block, 3);
-        assert_eq!(state.get_regs().coord, 4);
-        state.run(&[
-            Inst::Origin,
-            Inst::Start,
-            Inst::Delete,
-            Inst::Zero,
-            Inst::Save,
-        ]);
-        default_test(&state);
-    }
-    #[test]
     fn quote_test() {
         let mut state = make();
         state.run(&[Inst::Quote(vec![1, 2, 3, 4])]);
