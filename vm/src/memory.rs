@@ -88,6 +88,19 @@ mod memory_tests {
         }
         zero_test(&mem);
     }
+    #[test]
+    fn save_test() {
+        let (mut mem, mut regs) = make();
+        (regs.data, regs.acc, regs.block, regs.coord) = (4, 3, 2, 1);
+        mem.save(&regs);
+        regs.data = 0;
+        for i in 0..4 {
+            assert_eq!(mem.blocks[2][i], 4 - i);
+            regs.coord = i;
+            mem.store(&regs);
+        }
+        zero_test(&mem);
+    }
     fn make() -> (Memory, Registers) {
         let mem = Memory::default();
         zero_test(&mem);

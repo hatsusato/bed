@@ -135,23 +135,6 @@ mod state_tests {
     use super::{Inst, Registers, State};
 
     #[test]
-    fn save_test() {
-        let mut state = make();
-        state.run(&[Inst::Direct(1), Inst::Goto, Inst::Direct(2), Inst::Jump]);
-        state.run(&[Inst::Direct(4), Inst::Low, Inst::Dec]);
-        assert_eq!(state.get_regs().data, 4);
-        assert_eq!(state.get_regs().acc, 3);
-        assert_eq!(state.get_regs().block, 2);
-        assert_eq!(state.get_regs().coord, 1);
-        state.run(&[Inst::Save, Inst::Origin]);
-        for i in 0..4 {
-            assert_eq!(state.get_memory()[2][i], 4 - i);
-            state.run(&[Inst::Zero, Inst::Store, Inst::Right]);
-        }
-        state.run(&[Inst::Origin, Inst::Start, Inst::Delete, Inst::Zero]);
-        default_test(&state);
-    }
-    #[test]
     fn restore_test() {
         let mut state = make();
         for _i in 0..4 {
