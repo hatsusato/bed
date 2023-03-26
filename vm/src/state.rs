@@ -5,15 +5,28 @@ use std::{collections::HashMap, io};
 use util::Block;
 
 #[derive(Default, Debug)]
-pub struct MacroMap {
+struct MacroMap {
     map: HashMap<u8, Seq>,
 }
 impl MacroMap {
-    pub fn insert(&mut self, key: u8, val: Seq) {
+    fn insert(&mut self, key: u8, val: Seq) {
         self.map.insert(key, val);
     }
-    pub fn get(&self, key: u8) -> Seq {
+    fn get(&self, key: u8) -> Seq {
         self.map.get(&key).cloned().unwrap_or_default()
+    }
+}
+
+#[derive(Default, Debug)]
+struct FuncMap {
+    map: HashMap<Name, Seq>,
+}
+impl FuncMap {
+    fn insert(&mut self, key: Name, val: Seq) {
+        self.map.entry(key).or_insert(val);
+    }
+    fn get(&self, key: &Name) -> Seq {
+        self.map.get(key).cloned().unwrap_or_default()
     }
 }
 
@@ -22,7 +35,7 @@ pub struct State {
     regs: Registers,
     memory: Memory,
     macros: MacroMap,
-    funcs: HashMap<Name, Seq>,
+    funcs: FuncMap,
 }
 impl State {
     #[must_use]
@@ -81,8 +94,8 @@ impl State {
             Inst::Put => self.put(),
             Inst::Get => self.get(),
             Inst::Quote(input) => self.memory.quote(regs, input.as_slice()),
-            Inst::Func(name, body) => self.define_func(name, body),
-            Inst::Call(name) => self.call_func(&name),
+            Inst::Func(name, body) => self.define(name, body),
+            Inst::Call(name) => self.call(&name),
             Inst::Macro(key, val) => self.register(key, val),
             Inst::Exec(key) => self.exec(key),
             Inst::Repeat(key) => self.repeat(key),
@@ -109,6 +122,12 @@ impl State {
             _ => self.regs.error = true,
         }
     }
+    fn define(&mut self, name: Name, body: Seq) {
+        self.funcs.insert(name, body);
+    }
+    fn call(&mut self, name: &Name) {
+        self.run(&self.funcs.get(name));
+    }
     fn register(&mut self, key: u8, val: Seq) {
         self.macros.insert(key, val);
     }
@@ -125,14 +144,6 @@ impl State {
             self.exec(key);
         }
         self.regs.acc = count;
-    }
-    fn call_func(&mut self, name: &Name) {
-        if let Some(body) = self.funcs.get(name).cloned() {
-            self.run(body.as_slice());
-        }
-    }
-    fn define_func(&mut self, name: Name, body: Seq) {
-        self.funcs.entry(name).or_insert(body);
     }
 }
 
