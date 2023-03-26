@@ -1,5 +1,6 @@
 use crate::lexer::Lexer;
 use crate::state::State;
+use util::Stream;
 
 #[derive(Default)]
 pub struct Machine {
@@ -7,6 +8,12 @@ pub struct Machine {
     lexer: Lexer,
 }
 impl Machine {
+    #[must_use]
+    pub fn new(input: Stream, output: Stream) -> Self {
+        let state = State::new(input, output);
+        let lexer = Lexer::default();
+        Self { state, lexer }
+    }
     #[must_use]
     pub fn get_state(&self) -> &State {
         &self.state

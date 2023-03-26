@@ -69,6 +69,13 @@ pub struct State {
 }
 impl State {
     #[must_use]
+    pub fn new(input: Stream, output: Stream) -> Self {
+        Self {
+            streams: StreamMap::new(input, output),
+            ..Default::default()
+        }
+    }
+    #[must_use]
     pub fn get_regs(&self) -> &Registers {
         &self.regs
     }

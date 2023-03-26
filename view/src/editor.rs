@@ -1,5 +1,5 @@
 use screen::Screen;
-use util::BLOCK_SIDE;
+use util::{Stream, BLOCK_SIDE};
 use vm::{Machine, State};
 
 #[derive(Default)]
@@ -8,6 +8,13 @@ pub struct Editor {
     vm: Machine,
 }
 impl Editor {
+    #[must_use]
+    pub fn new(input: Stream, output: Stream) -> Self {
+        Self {
+            vm: Machine::new(input, output),
+            ..Default::default()
+        }
+    }
     pub fn run(&mut self) {
         self.print_init();
         loop {
