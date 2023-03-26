@@ -1,4 +1,5 @@
-use std::io;
+use std::path::Path;
+use std::{fs, io};
 
 #[derive(Debug)]
 enum Kind {
@@ -6,6 +7,7 @@ enum Kind {
     Stdin,
     Stdout,
     Stderr,
+    File(fs::File),
 }
 impl Default for Kind {
     fn default() -> Self {
@@ -32,6 +34,17 @@ impl Stream {
     pub fn stderr() -> Self {
         let kind = Kind::Stderr;
         Self { kind }
+    }
+    #[must_use]
+    pub fn open<P: AsRef<Path>>(path: P) -> Self {
+        let mut options = fs::File::options();
+        options.read(true).write(true).create_new(true);
+        match options.open(path) {
+            Ok(file) => Self {
+                kind: Kind::File(file),
+            },
+            _ => Self::default(),
+        }
     }
     pub fn get(&mut self) -> Option<u8> {
         match self.kind {
