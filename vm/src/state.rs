@@ -1,7 +1,8 @@
 use crate::inst::{Inst, Name, Seq};
 use crate::memory::Memory;
 use crate::reg::Registers;
-use std::{collections::HashMap, io};
+use crate::stream::Map as StreamMap;
+use std::collections::HashMap;
 use util::Block;
 
 #[derive(Default, Debug)]
@@ -36,6 +37,7 @@ pub struct State {
     memory: Memory,
     macros: MacroMap,
     funcs: FuncMap,
+    streams: StreamMap,
 }
 impl State {
     #[must_use]
@@ -92,8 +94,8 @@ impl State {
             Inst::Store => mem.store(regs),
             Inst::Save => mem.save(regs),
             Inst::Restore => mem.restore(regs),
-            Inst::Put => self.put(),
             Inst::Get => self.get(),
+            Inst::Put => self.put(),
             Inst::Quote(input) => self.quote(&input),
             Inst::Func(name, body) => self.define(name, body),
             Inst::Call(name) => self.call(&name),
@@ -109,20 +111,16 @@ impl State {
             self.issue(inst.clone());
         }
     }
-    fn put(&mut self) {
-        use io::Write;
-        let buf = &[self.regs.data];
-        match io::stdout().write(buf) {
-            Ok(1) => (),
-            _ => self.regs.error = true,
+    fn get(&mut self) {
+        match self.streams.get() {
+            Some(data) => self.regs.data = data,
+            None => self.regs.error = true,
         }
     }
-    fn get(&mut self) {
-        use io::Read;
-        let buf = &mut [self.regs.data];
-        match io::stdin().read(buf) {
-            Ok(1) => self.regs.data = buf[0],
-            _ => self.regs.error = true,
+    fn put(&mut self) {
+        match self.streams.put(self.regs.data) {
+            Some(_) => (),
+            None => self.regs.error = true,
         }
     }
     fn quote(&mut self, input: &[u8]) {
