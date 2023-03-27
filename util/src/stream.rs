@@ -1,3 +1,4 @@
+use std::io::{Read, Result, Write};
 use std::path::Path;
 use std::{fs, io};
 
@@ -35,16 +36,15 @@ impl Stream {
         let kind = Kind::Stderr;
         Self { kind }
     }
-    #[must_use]
-    pub fn open<P: AsRef<Path>>(path: P) -> Self {
+    fn as_file(file: fs::File) -> Self {
+        let kind = Kind::File(file);
+        Self { kind }
+    }
+    /// # Errors
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
         let mut options = fs::File::options();
-        options.read(true).write(true).create_new(true);
-        match options.open(path) {
-            Ok(file) => Self {
-                kind: Kind::File(file),
-            },
-            _ => Self::default(),
-        }
+        options.read(true).write(true);
+        options.open(path).map(Self::as_file)
     }
     pub fn get(&mut self) -> Option<u8> {
         match &mut self.kind {
@@ -62,14 +62,14 @@ impl Stream {
         }
     }
 }
-fn write(output: &mut dyn io::Write, data: u8) -> Option<()> {
+fn write(output: &mut dyn Write, data: u8) -> Option<()> {
     let buf = &mut [data];
     match output.write(buf) {
         Ok(1) => Some(()),
         _ => None,
     }
 }
-fn read(input: &mut dyn io::Read) -> Option<u8> {
+fn read(input: &mut dyn Read) -> Option<u8> {
     let buf = &mut [0];
     match input.read(buf) {
         Ok(1) => Some(buf[0]),

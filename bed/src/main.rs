@@ -33,7 +33,7 @@ impl Args {
     }
     fn open_input(&self) -> Result<Stream> {
         Ok(if let Some(path) = self.input.as_ref() {
-            Stream::open(path)
+            Stream::open(path)?
         } else if self.is_interactive() {
             Stream::default()
         } else {
@@ -42,7 +42,7 @@ impl Args {
     }
     fn open_output(&self) -> Result<Stream> {
         Ok(if let Some(path) = self.output.as_ref() {
-            Stream::open(path)
+            Stream::open(path)?
         } else if self.is_interactive() {
             Stream::default()
         } else {
