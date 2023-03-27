@@ -4,4 +4,4 @@ mod stream;
 
 pub use block::{Block, BLOCK_SIDE};
 pub use display::as_hex;
-pub use stream::Stream;
+pub use stream::{Flag, Stream};

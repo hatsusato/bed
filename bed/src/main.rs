@@ -2,7 +2,7 @@ use clap::Parser;
 use std::fs::File;
 use std::io::{BufReader, Read, Result};
 use std::path::PathBuf;
-use util::Stream;
+use util::{Flag, Stream};
 use view::Editor;
 use vm::Machine;
 
@@ -32,8 +32,8 @@ impl Args {
         })
     }
     fn open_input(&self) -> Result<Stream> {
-        Ok(if let Some(path) = self.input.as_ref() {
-            Stream::open(path)?
+        Ok(if let Some(path) = self.output.as_ref() {
+            Stream::open(path, &Flag::Read)?
         } else if self.is_interactive() {
             Stream::default()
         } else {
@@ -42,7 +42,7 @@ impl Args {
     }
     fn open_output(&self) -> Result<Stream> {
         Ok(if let Some(path) = self.output.as_ref() {
-            Stream::open(path)?
+            Stream::open(path, &Flag::Write)?
         } else if self.is_interactive() {
             Stream::default()
         } else {
@@ -51,16 +51,15 @@ impl Args {
     }
 }
 
-fn main() -> Result<()> {
+fn main() {
     let args = Args::parse();
-    if args.source.is_some() {
-        interpreter(&args)?;
+    let result = if args.is_interactive() {
+        interactive(&args)
     } else {
-        interactive(&args)?;
-    }
-    Ok(())
+        interpreter(&args)
+    };
+    result.map_err(|e| println!("{e}")).unwrap_or_default();
 }
-
 fn interpreter(args: &Args) -> Result<()> {
     let code = args.open_code()?;
     let input = args.open_input()?;

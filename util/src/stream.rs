@@ -16,6 +16,20 @@ impl Default for Kind {
     }
 }
 
+pub enum Flag {
+    Read,
+    Write,
+    Both,
+}
+impl Flag {
+    fn is_read(&self) -> bool {
+        matches!(self, Flag::Read | Flag::Both)
+    }
+    fn is_write(&self) -> bool {
+        matches!(self, Flag::Write | Flag::Both)
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Stream {
     kind: Kind,
@@ -41,9 +55,9 @@ impl Stream {
         Self { kind }
     }
     /// # Errors
-    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn open<P: AsRef<Path>>(path: P, flag: &Flag) -> Result<Self> {
         let mut options = fs::File::options();
-        options.read(true).write(true);
+        options.read(flag.is_read()).write(flag.is_write());
         options.open(path).map(Self::as_file)
     }
     pub fn get(&mut self) -> Option<u8> {
