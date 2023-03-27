@@ -31,45 +31,46 @@ impl Args {
             None => Vec::default(),
         })
     }
-    fn open_input(&self) -> Stream {
-        let stdin = || {
-            if self.is_interactive() {
-                Stream::default()
-            } else {
-                Stream::stdin()
-            }
-        };
-        self.input.as_ref().map_or_else(stdin, Stream::open)
+    fn open_input(&self) -> Result<Stream> {
+        Ok(if let Some(path) = self.input.as_ref() {
+            Stream::open(path)
+        } else if self.is_interactive() {
+            Stream::default()
+        } else {
+            Stream::stdin()
+        })
     }
-    fn open_output(&self) -> Stream {
-        let stdout = || {
-            if self.is_interactive() {
-                Stream::default()
-            } else {
-                Stream::stdout()
-            }
-        };
-        self.output.as_ref().map_or_else(stdout, Stream::open)
+    fn open_output(&self) -> Result<Stream> {
+        Ok(if let Some(path) = self.output.as_ref() {
+            Stream::open(path)
+        } else if self.is_interactive() {
+            Stream::default()
+        } else {
+            Stream::stdout()
+        })
     }
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
     if args.source.is_some() {
-        interpreter(&args)
+        interpreter(&args)?;
     } else {
-        interactive(&args);
-        Ok(())
+        interactive(&args)?;
     }
+    Ok(())
 }
 
 fn interpreter(args: &Args) -> Result<()> {
     let code = args.open_code()?;
-    let mut vm = Machine::new(args.open_input(), args.open_output());
-    vm.run(&code);
+    let input = args.open_input()?;
+    let output = args.open_output()?;
+    Machine::new(input, output).run(&code);
     Ok(())
 }
-fn interactive(args: &Args) {
-    let mut editor = Editor::new(args.open_input(), args.open_output());
-    editor.run();
+fn interactive(args: &Args) -> Result<()> {
+    let input = args.open_input()?;
+    let output = args.open_output()?;
+    Editor::new(input, output).run();
+    Ok(())
 }
