@@ -20,6 +20,17 @@ impl Args {
     fn is_interactive(&self) -> bool {
         self.source.is_none()
     }
+    fn open_code(&self) -> Result<Vec<u8>> {
+        Ok(match self.source.as_ref() {
+            Some(path) => {
+                let file = File::open(path)?;
+                let mut buf = String::new();
+                BufReader::new(file).read_to_string(&mut buf)?;
+                buf.into_bytes()
+            }
+            None => Vec::default(),
+        })
+    }
     fn open_input(&self) -> Stream {
         let stdin = || {
             if self.is_interactive() {
@@ -53,7 +64,7 @@ fn main() -> Result<()> {
 }
 
 fn interpreter(args: &Args) -> Result<()> {
-    let code = get_source(args)?;
+    let code = args.open_code()?;
     let mut vm = Machine::new(args.open_input(), args.open_output());
     vm.run(&code);
     Ok(())
@@ -61,12 +72,4 @@ fn interpreter(args: &Args) -> Result<()> {
 fn interactive(args: &Args) {
     let mut editor = Editor::new(args.open_input(), args.open_output());
     editor.run();
-}
-fn get_source(args: &Args) -> Result<Vec<u8>> {
-    let path = args.source.as_ref().unwrap();
-    let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
-    let mut buf = String::new();
-    reader.read_to_string(&mut buf)?;
-    Ok(buf.into_bytes())
 }
