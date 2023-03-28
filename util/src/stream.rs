@@ -64,6 +64,12 @@ impl Stream {
         let kind = Kind::Stack(Vec::new());
         Self { kind }
     }
+    pub fn make_argv(index: u8) -> Self {
+        let argv = std::env::args().nth(index.into());
+        let argv = argv.map(|argv| argv.as_bytes().iter().copied().collect());
+        let kind = argv.map(Kind::Queue).unwrap_or_default();
+        Self { kind }
+    }
     /// # Errors
     pub fn open<P: AsRef<Path>>(path: P, flag: &Flag) -> Result<Self> {
         let mut options = std::fs::File::options();
