@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::io::{Read, Result, Write};
 use std::path::Path;
 use std::{fs, io};
@@ -9,6 +10,7 @@ enum Kind {
     Stdout,
     Stderr,
     File(fs::File),
+    Queue(VecDeque<u8>),
 }
 impl Default for Kind {
     fn default() -> Self {
@@ -50,20 +52,25 @@ impl Stream {
         let kind = Kind::Stderr;
         Self { kind }
     }
-    fn as_file(file: fs::File) -> Self {
+    fn make_file(file: fs::File) -> Self {
         let kind = Kind::File(file);
+        Self { kind }
+    }
+    pub fn make_queue() -> Self {
+        let kind = Kind::Queue(VecDeque::new());
         Self { kind }
     }
     /// # Errors
     pub fn open<P: AsRef<Path>>(path: P, flag: &Flag) -> Result<Self> {
         let mut options = fs::File::options();
         options.read(flag.is_read()).write(flag.is_write());
-        options.open(path).map(Self::as_file)
+        options.open(path).map(Self::make_file)
     }
     pub fn get(&mut self) -> Option<u8> {
         match &mut self.kind {
             Kind::Stdin => read(&mut io::stdin()),
             Kind::File(file) => read(file),
+            Kind::Queue(queue) => queue.pop_front(),
             _ => None,
         }
     }
@@ -72,6 +79,10 @@ impl Stream {
             Kind::Stdout => write(&mut io::stdout(), data),
             Kind::Stderr => write(&mut io::stderr(), data),
             Kind::File(file) => write(file, data),
+            Kind::Queue(queue) => {
+                queue.push_back(data);
+                Some(())
+            }
             _ => None,
         }
     }
