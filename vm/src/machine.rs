@@ -2,7 +2,6 @@ use crate::lexer::Lexer;
 use crate::state::State;
 use util::Stream;
 
-#[derive(Default)]
 pub struct Machine {
     state: State,
     lexer: Lexer,

@@ -35,11 +35,6 @@ pub struct StreamMap {
     in_id: u8,
     out_id: u8,
 }
-impl Default for StreamMap {
-    fn default() -> Self {
-        Self::new(Stream::stdin(), Stream::stdout())
-    }
-}
 impl StreamMap {
     pub fn new(input: Stream, output: Stream) -> Self {
         let (in_id, out_id) = (0, 1);
@@ -58,7 +53,7 @@ impl StreamMap {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Maps {
     macros: MacroMap,
     funcs: FuncMap,
@@ -67,8 +62,9 @@ pub struct Maps {
 impl Maps {
     pub fn new(input: Stream, output: Stream) -> Self {
         Self {
+            macros: MacroMap::default(),
+            funcs: FuncMap::default(),
             streams: StreamMap::new(input, output),
-            ..Default::default()
         }
     }
     pub fn get(&mut self, regs: &mut Registers) {

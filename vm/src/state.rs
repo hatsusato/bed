@@ -4,7 +4,7 @@ use crate::memory::Memory;
 use crate::reg::Registers;
 use util::{Block, Stream};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct State {
     regs: Registers,
     memory: Memory,
@@ -112,7 +112,7 @@ impl State {
 
 #[cfg(test)]
 mod state_tests {
-    use super::{Inst, Registers, State};
+    use super::{Inst, Registers, State, Stream};
 
     #[test]
     fn func_call_test() {
@@ -205,7 +205,7 @@ mod state_tests {
         zero_test(&state);
     }
     fn make() -> State {
-        let state = State::default();
+        let state = State::new(Stream::default(), Stream::default());
         zero_test(&state);
         state
     }
