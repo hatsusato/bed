@@ -1,102 +1,8 @@
-use crate::inst::{Inst, Name, Seq};
+use crate::inst::{Inst, Name};
+use crate::maps::Maps;
 use crate::memory::Memory;
 use crate::reg::Registers;
-use std::collections::HashMap;
 use util::{Block, Stream};
-
-#[derive(Default, Debug)]
-struct MacroMap {
-    map: HashMap<u8, Seq>,
-}
-impl MacroMap {
-    fn insert(&mut self, key: u8, val: Seq) {
-        self.map.insert(key, val);
-    }
-    fn get(&self, key: u8) -> Seq {
-        self.map.get(&key).cloned().unwrap_or_default()
-    }
-}
-
-#[derive(Default, Debug)]
-struct FuncMap {
-    map: HashMap<Name, Seq>,
-}
-impl FuncMap {
-    fn insert(&mut self, key: Name, val: Seq) {
-        self.map.entry(key).or_insert(val);
-    }
-    fn get(&self, key: &Name) -> Seq {
-        self.map.get(key).cloned().unwrap_or_default()
-    }
-}
-
-#[derive(Debug)]
-pub struct StreamMap {
-    map: HashMap<u8, Stream>,
-    in_id: u8,
-    out_id: u8,
-}
-impl Default for StreamMap {
-    fn default() -> Self {
-        Self::new(Stream::stdin(), Stream::stdout())
-    }
-}
-impl StreamMap {
-    pub fn new(input: Stream, output: Stream) -> Self {
-        let (in_id, out_id) = (0, 1);
-        let mut map = HashMap::new();
-        map.insert(in_id, input);
-        map.insert(out_id, output);
-        Self { map, in_id, out_id }
-    }
-    pub fn get(&mut self) -> Option<u8> {
-        let get = Stream::get;
-        self.map.get_mut(&self.in_id).and_then(get)
-    }
-    pub fn put(&mut self, data: u8) -> Option<()> {
-        let put = |stream| Stream::put(stream, data);
-        self.map.get_mut(&self.out_id).and_then(put)
-    }
-}
-
-#[derive(Debug, Default)]
-struct Maps {
-    macros: MacroMap,
-    funcs: FuncMap,
-    streams: StreamMap,
-}
-impl Maps {
-    fn new(input: Stream, output: Stream) -> Self {
-        Self {
-            streams: StreamMap::new(input, output),
-            ..Default::default()
-        }
-    }
-    fn get(&mut self, regs: &mut Registers) {
-        match self.streams.get() {
-            Some(data) => regs.data = data,
-            None => regs.error = true,
-        }
-    }
-    fn put(&mut self, regs: &mut Registers) {
-        match self.streams.put(regs.data) {
-            Some(_) => (),
-            None => regs.error = true,
-        }
-    }
-    fn define(&mut self, name: Name, body: Seq) {
-        self.funcs.insert(name, body);
-    }
-    fn get_func(&self, name: Name) -> Seq {
-        self.funcs.get(&name)
-    }
-    fn register(&mut self, key: u8, val: Seq) {
-        self.macros.insert(key, val);
-    }
-    fn get_macro(&self, key: u8) -> Seq {
-        self.macros.get(key)
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct State {
@@ -171,7 +77,7 @@ impl State {
             Inst::Put => self.maps.put(regs),
             Inst::Quote(input) => self.memory.quote(regs, &input),
             Inst::Func(name, body) => self.maps.define(name, body),
-            Inst::Call(name) => self.call(name),
+            Inst::Call(name) => self.call(&name),
             Inst::Macro(key, val) => self.maps.register(key, val),
             Inst::Exec(key) => self.exec(key),
             Inst::Repeat(key) => self.repeat(key),
@@ -184,7 +90,7 @@ impl State {
             self.issue(inst.clone());
         }
     }
-    fn call(&mut self, name: Name) {
+    fn call(&mut self, name: &Name) {
         self.run(&self.maps.get_func(name));
     }
     fn exec(&mut self, key: u8) {
