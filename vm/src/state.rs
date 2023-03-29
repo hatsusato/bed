@@ -59,20 +59,58 @@ impl StreamMap {
     }
 }
 
-#[derive(Default, Debug)]
-pub struct State {
-    regs: Registers,
-    memory: Memory,
+#[derive(Debug, Default)]
+struct Maps {
     macros: MacroMap,
     funcs: FuncMap,
     streams: StreamMap,
+}
+impl Maps {
+    fn new(input: Stream, output: Stream) -> Self {
+        Self {
+            streams: StreamMap::new(input, output),
+            ..Default::default()
+        }
+    }
+    fn get(&mut self, regs: &mut Registers) {
+        match self.streams.get() {
+            Some(data) => regs.data = data,
+            None => regs.error = true,
+        }
+    }
+    fn put(&mut self, regs: &mut Registers) {
+        match self.streams.put(regs.data) {
+            Some(_) => (),
+            None => regs.error = true,
+        }
+    }
+    fn define(&mut self, name: Name, body: Seq) {
+        self.funcs.insert(name, body);
+    }
+    fn get_func(&self, name: Name) -> Seq {
+        self.funcs.get(&name)
+    }
+    fn register(&mut self, key: u8, val: Seq) {
+        self.macros.insert(key, val);
+    }
+    fn get_macro(&self, key: u8) -> Seq {
+        self.macros.get(key)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct State {
+    regs: Registers,
+    memory: Memory,
+    maps: Maps,
 }
 impl State {
     #[must_use]
     pub fn new(input: Stream, output: Stream) -> Self {
         Self {
-            streams: StreamMap::new(input, output),
-            ..Default::default()
+            regs: Registers::default(),
+            memory: Memory::default(),
+            maps: Maps::new(input, output),
         }
     }
     #[must_use]
@@ -129,12 +167,12 @@ impl State {
             Inst::Store => mem.store(regs),
             Inst::Save => mem.save(regs),
             Inst::Restore => mem.restore(regs),
-            Inst::Get => self.get(),
-            Inst::Put => self.put(),
-            Inst::Quote(input) => self.quote(&input),
-            Inst::Func(name, body) => self.define(name, body),
-            Inst::Call(name) => self.call(&name),
-            Inst::Macro(key, val) => self.register(key, val),
+            Inst::Get => self.maps.get(regs),
+            Inst::Put => self.maps.put(regs),
+            Inst::Quote(input) => self.memory.quote(regs, &input),
+            Inst::Func(name, body) => self.maps.define(name, body),
+            Inst::Call(name) => self.call(name),
+            Inst::Macro(key, val) => self.maps.register(key, val),
             Inst::Exec(key) => self.exec(key),
             Inst::Repeat(key) => self.repeat(key),
             Inst::Eval => self.eval(),
@@ -146,32 +184,11 @@ impl State {
             self.issue(inst.clone());
         }
     }
-    fn get(&mut self) {
-        match self.streams.get() {
-            Some(data) => self.regs.data = data,
-            None => self.regs.error = true,
-        }
-    }
-    fn put(&mut self) {
-        match self.streams.put(self.regs.data) {
-            Some(_) => (),
-            None => self.regs.error = true,
-        }
-    }
-    fn quote(&mut self, input: &[u8]) {
-        self.memory.quote(&mut self.regs, input);
-    }
-    fn define(&mut self, name: Name, body: Seq) {
-        self.funcs.insert(name, body);
-    }
-    fn call(&mut self, name: &Name) {
-        self.run(&self.funcs.get(name));
-    }
-    fn register(&mut self, key: u8, val: Seq) {
-        self.macros.insert(key, val);
+    fn call(&mut self, name: Name) {
+        self.run(&self.maps.get_func(name));
     }
     fn exec(&mut self, key: u8) {
-        self.run(&self.macros.get(key));
+        self.run(&self.maps.get_macro(key));
     }
     fn repeat(&mut self, key: u8) {
         let count = self.regs.accum;
