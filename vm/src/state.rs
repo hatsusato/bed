@@ -25,11 +25,12 @@ impl State {
     }
     #[must_use]
     pub fn get_memory(&self) -> &Block<Block<u8>> {
-        &self.memory.blocks
+        self.memory.get_memory()
     }
     pub fn issue(&mut self, inst: Inst) {
         let regs = &mut self.regs;
         let mem = &mut self.memory;
+        let maps = &mut self.maps;
         match inst {
             Inst::Direct(data) => regs.direct(data),
             Inst::Insert(digit) => regs.insert(digit),
@@ -73,12 +74,12 @@ impl State {
             Inst::Store => mem.store(regs),
             Inst::Save => mem.save(regs),
             Inst::Restore => mem.restore(regs),
-            Inst::Get => self.maps.get(regs),
-            Inst::Put => self.maps.put(regs),
-            Inst::Quote(input) => self.memory.quote(regs, &input),
-            Inst::Func(name, body) => self.maps.define(name, body),
+            Inst::Get => maps.get(regs),
+            Inst::Put => maps.put(regs),
+            Inst::Quote(input) => mem.quote(regs, &input),
+            Inst::Func(name, body) => maps.define(name, body),
             Inst::Call(name) => self.call(&name),
-            Inst::Macro(key, val) => self.maps.register(key, val),
+            Inst::Macro(key, val) => maps.register(key, val),
             Inst::Exec(key) => self.exec(key),
             Inst::Repeat(key) => self.repeat(key),
             Inst::Eval => self.eval(),
@@ -216,10 +217,11 @@ mod state_tests {
         assert!(!regs.error);
     }
     fn zero_test(state: &State) {
+        let memory = state.get_memory();
         zero_regs_test(&state.regs);
         for b in 0..u8::MAX {
             for c in 0..u8::MAX {
-                assert_eq!(state.memory.blocks[b][c], 0);
+                assert_eq!(memory[b][c], 0);
             }
         }
     }

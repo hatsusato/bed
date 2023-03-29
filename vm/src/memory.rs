@@ -3,11 +3,14 @@ use util::Block;
 
 #[derive(Default, Debug)]
 pub struct Memory {
-    pub blocks: Block<Block<u8>>,
+    blocks: Block<Block<u8>>,
 }
 impl Memory {
     fn get_page(&mut self, regs: &Registers) -> &mut Block<u8> {
         &mut self.blocks[regs.block]
+    }
+    pub fn get_memory(&self) -> &Block<Block<u8>> {
+        &self.blocks
     }
     pub fn load(&mut self, regs: &mut Registers) {
         let page = self.get_page(regs);
