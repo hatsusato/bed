@@ -75,6 +75,7 @@ impl State {
             Inst::Restore => mem.restore(regs),
             Inst::Get => maps.get(regs),
             Inst::Put => maps.put(regs),
+            Inst::Action => maps.action(regs),
             Inst::Quote(input) => mem.quote(regs, &input),
             Inst::Func(name, body) => maps.define(name, body),
             Inst::Call(name) => self.call(&name),

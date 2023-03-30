@@ -3,10 +3,40 @@ use crate::reg::Registers;
 use std::collections::HashMap;
 use util::Stream;
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum Select {
+    Input,
+    Output,
+}
+impl Select {
+    fn new(flag: u8) -> Self {
+        match flag % 2 {
+            0 => Self::Input,
+            1 => Self::Output,
+            _ => unreachable!(),
+        }
+    }
+}
+pub enum Action {
+    SetIndex(u8),
+    GetIndex,
+    Open(u8),
+    Nop,
+}
+impl Action {
+    fn new(data: u8, accum: u8) -> Self {
+        match data / 2 {
+            0 => Self::SetIndex(accum),
+            1 => Self::GetIndex,
+            2 => Self::Open(accum),
+            _ => Self::Nop,
+        }
+    }
+}
+
 pub struct StreamMap {
     map: HashMap<u8, Stream>,
-    input: u8,
-    output: u8,
+    indices: HashMap<Select, u8>,
 }
 impl StreamMap {
     pub fn new(input: Stream, output: Stream) -> Self {
@@ -17,16 +47,29 @@ impl StreamMap {
         map.insert(STDIN, input);
         map.insert(STDOUT, output);
         map.insert(STDERR, Stream::Stderr);
-        let (input, output) = (STDIN, STDOUT);
-        Self { map, input, output }
+        let mut indices = HashMap::new();
+        indices.insert(Select::Input, STDIN);
+        indices.insert(Select::Output, STDOUT);
+        Self { map, indices }
     }
     pub fn get(&mut self) -> Option<u8> {
         let get = Stream::get;
-        self.map.get_mut(&self.input).and_then(get)
+        let index = self.indices.get(&Select::Input)?;
+        self.map.get_mut(index).and_then(get)
     }
     pub fn put(&mut self, data: u8) -> Option<()> {
         let put = |stream| Stream::put(stream, data);
-        self.map.get_mut(&self.output).and_then(put)
+        let index = self.indices.get(&Select::Output)?;
+        self.map.get_mut(index).and_then(put)
+    }
+    pub fn action(&mut self, action: &Action, select: Select) -> Option<u8> {
+        let index = self.indices.get_mut(&select).unwrap();
+        match &action {
+            Action::SetIndex(set) => *index = *set,
+            Action::GetIndex => return Some(*index),
+            _ => (),
+        }
+        None
     }
 }
 
@@ -53,6 +96,13 @@ impl Maps {
         match self.streams.put(regs.data) {
             Some(()) => (),
             None => regs.error = true,
+        }
+    }
+    pub fn action(&mut self, regs: &mut Registers) {
+        let action = Action::new(regs.data, regs.accum);
+        let select = Select::new(regs.data);
+        if let Some(accum) = self.streams.action(&action, select) {
+            regs.accum = accum;
         }
     }
     pub fn define(&mut self, name: Name, body: Seq) {
