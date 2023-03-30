@@ -2,7 +2,6 @@ use std::collections::VecDeque;
 use std::io::{Read, Result, Write};
 use std::path::Path;
 
-#[derive(Debug)]
 enum Kind {
     Null,
     Stdin,
@@ -15,6 +14,43 @@ enum Kind {
 impl Default for Kind {
     fn default() -> Self {
         Kind::Null
+    }
+}
+impl Kind {
+    pub fn make_argv(index: u8) -> Self {
+        let argv = std::env::args().nth(index.into());
+        let argv = argv.map(|argv| argv.as_bytes().iter().copied().collect());
+        Self::Queue(argv.unwrap_or_default())
+    }
+    pub fn make_file<P: AsRef<Path>>(path: P, flag: &Flag) -> Result<Self> {
+        let mut options = std::fs::File::options();
+        options.read(flag.is_read()).write(flag.is_write());
+        options.open(path).map(Self::File)
+    }
+    pub fn get(&mut self) -> Option<u8> {
+        match self {
+            Kind::Stdin => read(&mut std::io::stdin()),
+            Kind::File(file) => read(file),
+            Kind::Queue(queue) => queue.pop_front(),
+            Kind::Stack(stack) => stack.pop(),
+            _ => None,
+        }
+    }
+    pub fn put(&mut self, data: u8) -> Option<()> {
+        match self {
+            Kind::Stdout => write(&mut std::io::stdout(), data),
+            Kind::Stderr => write(&mut std::io::stderr(), data),
+            Kind::File(file) => write(file, data),
+            Kind::Queue(queue) => {
+                queue.push_back(data);
+                Some(())
+            }
+            Kind::Stack(stack) => {
+                stack.push(data);
+                Some(())
+            }
+            _ => None,
+        }
     }
 }
 
@@ -32,7 +68,7 @@ impl Flag {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Stream {
     kind: Kind,
 }
@@ -65,41 +101,19 @@ impl Stream {
         Self { kind }
     }
     pub fn make_argv(index: u8) -> Self {
-        let argv = std::env::args().nth(index.into());
-        let argv = argv.map(|argv| argv.as_bytes().iter().copied().collect());
-        let kind = argv.map(Kind::Queue).unwrap_or_default();
+        let kind = Kind::make_argv(index);
         Self { kind }
     }
     /// # Errors
     pub fn open<P: AsRef<Path>>(path: P, flag: &Flag) -> Result<Self> {
-        let mut options = std::fs::File::options();
-        options.read(flag.is_read()).write(flag.is_write());
-        options.open(path).map(Self::make_file)
+        let kind = Kind::make_file(path, flag)?;
+        Ok(Self { kind })
     }
     pub fn get(&mut self) -> Option<u8> {
-        match &mut self.kind {
-            Kind::Stdin => read(&mut std::io::stdin()),
-            Kind::File(file) => read(file),
-            Kind::Queue(queue) => queue.pop_front(),
-            Kind::Stack(stack) => stack.pop(),
-            _ => None,
-        }
+        self.kind.get()
     }
     pub fn put(&mut self, data: u8) -> Option<()> {
-        match &mut self.kind {
-            Kind::Stdout => write(&mut std::io::stdout(), data),
-            Kind::Stderr => write(&mut std::io::stderr(), data),
-            Kind::File(file) => write(file, data),
-            Kind::Queue(queue) => {
-                queue.push_back(data);
-                Some(())
-            }
-            Kind::Stack(stack) => {
-                stack.push(data);
-                Some(())
-            }
-            _ => None,
-        }
+        self.kind.put(data)
     }
 }
 fn write(output: &mut dyn Write, data: u8) -> Option<()> {

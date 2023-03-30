@@ -3,7 +3,6 @@ use crate::reg::Registers;
 use std::collections::HashMap;
 use util::Stream;
 
-#[derive(Debug)]
 pub struct StreamMap {
     map: HashMap<u8, Stream>,
     input: u8,
@@ -29,7 +28,6 @@ impl StreamMap {
     }
 }
 
-#[derive(Debug)]
 pub struct Maps {
     macros: HashMap<u8, Seq>,
     funcs: HashMap<Name, Seq>,

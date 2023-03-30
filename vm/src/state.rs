@@ -4,7 +4,6 @@ use crate::memory::Memory;
 use crate::reg::Registers;
 use util::{Block, Stream};
 
-#[derive(Debug)]
 pub struct State {
     regs: Registers,
     memory: Memory,
