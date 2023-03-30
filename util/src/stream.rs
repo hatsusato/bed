@@ -17,12 +17,6 @@ impl Default for Stream {
     }
 }
 impl Stream {
-    pub fn stdin() -> Self {
-        Stream::Stdin
-    }
-    pub fn stdout() -> Self {
-        Stream::Stdout
-    }
     pub fn make_argv(index: u8) -> Self {
         let argv = std::env::args().nth(index.into());
         let argv = argv.map(|argv| argv.as_bytes().iter().copied().collect());

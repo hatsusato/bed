@@ -33,18 +33,18 @@ impl Args {
         Ok(if let Some(path) = self.output.as_ref() {
             Stream::make_file(path, &Flag::Read)?
         } else if self.is_interactive() {
-            Stream::default()
+            Stream::Null
         } else {
-            Stream::stdin()
+            Stream::Stdin
         })
     }
     pub fn open_output(&self) -> Result<Stream> {
         Ok(if let Some(path) = self.output.as_ref() {
             Stream::make_file(path, &Flag::Write)?
         } else if self.is_interactive() {
-            Stream::default()
+            Stream::Null
         } else {
-            Stream::stdout()
+            Stream::Stdout
         })
     }
 }

@@ -10,12 +10,14 @@ pub struct StreamMap {
 }
 impl StreamMap {
     pub fn new(input: Stream, output: Stream) -> Self {
-        const DEFAULT_IN: u8 = 0;
-        const DEFAULT_OUT: u8 = 1;
+        const STDIN: u8 = 0;
+        const STDOUT: u8 = 1;
+        const STDERR: u8 = 2;
         let mut map = HashMap::new();
-        map.insert(DEFAULT_IN, input);
-        map.insert(DEFAULT_OUT, output);
-        let (input, output) = (DEFAULT_IN, DEFAULT_OUT);
+        map.insert(STDIN, input);
+        map.insert(STDOUT, output);
+        map.insert(STDERR, Stream::Stderr);
+        let (input, output) = (STDIN, STDOUT);
         Self { map, input, output }
     }
     pub fn get(&mut self) -> Option<u8> {
