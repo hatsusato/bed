@@ -31,7 +31,7 @@ impl Args {
     }
     pub fn open_input(&self) -> Result<Stream> {
         Ok(if let Some(path) = self.output.as_ref() {
-            Stream::open(path, &Flag::Read)?
+            Stream::make_file(path, &Flag::Read)?
         } else if self.is_interactive() {
             Stream::default()
         } else {
@@ -40,7 +40,7 @@ impl Args {
     }
     pub fn open_output(&self) -> Result<Stream> {
         Ok(if let Some(path) = self.output.as_ref() {
-            Stream::open(path, &Flag::Write)?
+            Stream::make_file(path, &Flag::Write)?
         } else if self.is_interactive() {
             Stream::default()
         } else {
