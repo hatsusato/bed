@@ -6,36 +6,27 @@ pub struct Memory {
     blocks: Block<Block<u8>>,
 }
 impl Memory {
-    fn get_page(&mut self, regs: &Registers) -> &mut Block<u8> {
-        &mut self.blocks[regs.block]
-    }
     pub fn get_memory(&self) -> &Block<Block<u8>> {
         &self.blocks
     }
     pub fn load(&mut self, regs: &mut Registers) {
-        let page = self.get_page(regs);
-        regs.data = page[regs.coord];
+        regs.data = self.blocks[regs.block][regs.coord];
     }
     pub fn store(&mut self, regs: &Registers) {
-        let page = self.get_page(regs);
-        page[regs.coord] = regs.data;
+        self.blocks[regs.block][regs.coord] = regs.data;
     }
     pub fn save(&mut self, regs: &Registers) {
-        let page = self.get_page(regs);
-        let base = get_base(regs);
-        for coord in base..(base + 4) {
-            page[coord] = *at(regs, coord);
-        }
+        let page = &mut self.blocks[regs.data];
+        let (base, next) = get_pair(regs.accum);
+        (page[base], page[next]) = (regs.block, regs.coord);
     }
     pub fn restore(&mut self, regs: &mut Registers) {
-        let page = self.get_page(regs);
-        let base = get_base(regs);
-        for coord in base..(base + 4) {
-            *at_mut(regs, coord) = page[coord];
-        }
+        let page = &self.blocks[regs.data];
+        let (base, next) = get_pair(regs.accum);
+        (regs.block, regs.coord) = (page[base], page[next]);
     }
     pub fn quote(&mut self, regs: &mut Registers, input: &[u8]) {
-        let page = self.get_page(regs);
+        let page = &mut self.blocks[regs.block];
         if let Some(src) = input.iter().next() {
             page[regs.coord] = *src;
         }
@@ -47,27 +38,9 @@ impl Memory {
         }
     }
 }
-
-fn get_base(regs: &Registers) -> u8 {
-    (regs.coord / 4) * 4
-}
-fn at(regs: &Registers, index: u8) -> &u8 {
-    match index % 4 {
-        0 => &regs.data,
-        1 => &regs.accum,
-        2 => &regs.block,
-        3 => &regs.coord,
-        _ => unreachable!(),
-    }
-}
-fn at_mut(regs: &mut Registers, index: u8) -> &mut u8 {
-    match index % 4 {
-        0 => &mut regs.data,
-        1 => &mut regs.accum,
-        2 => &mut regs.block,
-        3 => &mut regs.coord,
-        _ => unreachable!(),
-    }
+fn get_pair(base: u8) -> (u8, u8) {
+    let (next, _) = base.overflowing_add(1);
+    (base, next)
 }
 
 #[cfg(test)]
@@ -94,33 +67,25 @@ mod memory_tests {
     #[test]
     fn save_test() {
         let (mut mem, mut regs) = make();
-        (regs.data, regs.accum, regs.block, regs.coord) = (4, 3, 2, 1);
+        (regs.block, regs.coord) = (1, 2);
         mem.save(&regs);
-        regs.data = 0;
-        for i in 0..4 {
-            assert_eq!(mem.blocks[2][i], 4 - i);
-            regs.coord = i;
-            mem.store(&regs);
-        }
+        assert_eq!(mem.blocks[0][0], 1);
+        assert_eq!(mem.blocks[0][1], 2);
+        mem.blocks[0][0] = 0;
+        mem.blocks[0][1] = 0;
         zero_test(&mem);
     }
     #[test]
     fn restore_test() {
         let (mut mem, mut regs) = make();
-        for i in 0..4 {
-            (regs.data, regs.coord) = (i + 1, i);
-            mem.store(&regs);
-        }
+        mem.blocks[0][0] = 1;
+        mem.blocks[0][1] = 2;
         mem.restore(&mut regs);
-        assert_eq!(regs.data, 1);
-        assert_eq!(regs.accum, 2);
-        assert_eq!(regs.block, 3);
-        assert_eq!(regs.coord, 4);
-        (regs.data, regs.block) = (0, 0);
-        for i in 0..4 {
-            regs.coord = i;
-            mem.store(&regs);
-        }
+        assert_eq!(regs.block, 1);
+        assert_eq!(regs.coord, 2);
+        (regs.block, regs.coord) = (0, 0);
+        mem.blocks[0][0] = 0;
+        mem.blocks[0][1] = 0;
         zero_test(&mem);
     }
     #[test]
