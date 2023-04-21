@@ -8,7 +8,7 @@ const STDOUT: u8 = 1;
 const STDERR: u8 = 2;
 const NULL: u8 = u8::MAX;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Select {
     Input,
     Output,
@@ -61,8 +61,11 @@ impl Default for StreamIndices {
     }
 }
 impl StreamIndices {
-    fn get(&mut self, select: &Select) -> &mut u8 {
-        self.map.get_mut(select).unwrap()
+    fn get(&mut self, select: Select) -> u8 {
+        *self.map.get(&select).unwrap()
+    }
+    fn set(&mut self, select: Select, val: u8) {
+        self.map.insert(select, val);
     }
 }
 
@@ -80,20 +83,22 @@ impl StreamMap {
         let indices = StreamIndices::default();
         Self { map, indices }
     }
-    fn get(&mut self, select: &Select) -> &mut Stream {
-        let index = *self.indices.get(select);
-        let key = if self.map.contains_key(&index) {
-            index
-        } else {
-            NULL
-        };
+    fn get(&mut self, select: Select) -> &mut Stream {
+        let index = self.indices.get(select);
+        let contains = self.map.contains_key(&index);
+        let key = if contains { index } else { NULL };
         self.map.get_mut(&key).unwrap()
     }
+    fn set_index(&mut self, select: Select, val: u8) {
+        self.indices.set(select, val);
+    }
+    fn get_index(&mut self, select: Select) -> u8 {
+        self.indices.get(select)
+    }
     fn action(&mut self, action: &StreamAction) -> Option<u8> {
-        let index = self.indices.get(&action.select);
         match action.action {
-            Action::SetIndex(set) => *index = set,
-            Action::GetIndex => return Some(*index),
+            Action::SetIndex(val) => self.set_index(action.select, val),
+            Action::GetIndex => return Some(self.get_index(action.select)),
             _ => (),
         }
         None
@@ -114,10 +119,10 @@ impl Maps {
         }
     }
     pub fn get(&mut self, regs: &mut Registers) {
-        regs.get(self.streams.get(&Select::Input));
+        regs.get(self.streams.get(Select::Input));
     }
     pub fn put(&mut self, regs: &mut Registers) {
-        regs.put(self.streams.get(&Select::Output));
+        regs.put(self.streams.get(Select::Output));
     }
     pub fn action(&mut self, regs: &mut Registers) {
         let action = StreamAction::new(regs.data, regs.accum);
