@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use util::Stream;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub enum Select {
+enum Select {
     Input,
     Output,
 }
@@ -17,7 +17,7 @@ impl Select {
         }
     }
 }
-pub enum Action {
+enum Action {
     SetIndex(u8),
     GetIndex,
     Open(u8),
@@ -33,13 +33,24 @@ impl Action {
         }
     }
 }
+struct StreamAction {
+    select: Select,
+    action: Action,
+}
+impl StreamAction {
+    fn new(flags: u8, index: u8) -> Self {
+        let select = Select::new(flags);
+        let action = Action::new(flags, index);
+        Self { select, action }
+    }
+}
 
-pub struct StreamMap {
+struct StreamMap {
     map: HashMap<u8, Stream>,
     indices: HashMap<Select, u8>,
 }
 impl StreamMap {
-    pub fn new(input: Stream, output: Stream) -> Self {
+    fn new(input: Stream, output: Stream) -> Self {
         const STDIN: u8 = 0;
         const STDOUT: u8 = 1;
         const STDERR: u8 = 2;
@@ -52,19 +63,19 @@ impl StreamMap {
         indices.insert(Select::Output, STDOUT);
         Self { map, indices }
     }
-    pub fn get(&mut self) -> Option<u8> {
+    fn get(&mut self) -> Option<u8> {
         let get = Stream::get;
         let index = self.indices.get(&Select::Input)?;
         self.map.get_mut(index).and_then(get)
     }
-    pub fn put(&mut self, data: u8) -> Option<()> {
+    fn put(&mut self, data: u8) -> Option<()> {
         let put = |stream| Stream::put(stream, data);
         let index = self.indices.get(&Select::Output)?;
         self.map.get_mut(index).and_then(put)
     }
-    pub fn action(&mut self, action: &Action, select: Select) -> Option<u8> {
-        let index = self.indices.get_mut(&select).unwrap();
-        match &action {
+    fn action(&mut self, action: StreamAction) -> Option<u8> {
+        let index = self.indices.get_mut(&action.select).unwrap();
+        match &action.action {
             Action::SetIndex(set) => *index = *set,
             Action::GetIndex => return Some(*index),
             _ => (),
@@ -99,9 +110,8 @@ impl Maps {
         }
     }
     pub fn action(&mut self, regs: &mut Registers) {
-        let action = Action::new(regs.data, regs.accum);
-        let select = Select::new(regs.data);
-        if let Some(accum) = self.streams.action(&action, select) {
+        let action = StreamAction::new(regs.data, regs.accum);
+        if let Some(accum) = self.streams.action(action) {
             regs.accum = accum;
         }
     }
