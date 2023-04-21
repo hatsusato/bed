@@ -6,6 +6,7 @@ use util::Stream;
 const STDIN: u8 = 0;
 const STDOUT: u8 = 1;
 const STDERR: u8 = 2;
+const NULL: u8 = u8::MAX;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum Select {
@@ -75,18 +76,18 @@ impl StreamMap {
         map.insert(STDIN, input);
         map.insert(STDOUT, output);
         map.insert(STDERR, Stream::Stderr);
+        map.insert(NULL, Stream::Null);
         let indices = StreamIndices::default();
         Self { map, indices }
     }
-    fn get(&mut self) -> Option<u8> {
-        let get = Stream::get;
-        let index = self.indices.get(&Select::Input);
-        self.map.get_mut(index).and_then(get)
-    }
-    fn put(&mut self, data: u8) -> Option<()> {
-        let put = |stream| Stream::put(stream, data);
-        let index = self.indices.get(&Select::Output);
-        self.map.get_mut(index).and_then(put)
+    fn get(&mut self, select: &Select) -> &mut Stream {
+        let index = *self.indices.get(select);
+        let key = if self.map.contains_key(&index) {
+            index
+        } else {
+            NULL
+        };
+        self.map.get_mut(&key).unwrap()
     }
     fn action(&mut self, action: &StreamAction) -> Option<u8> {
         let index = self.indices.get(&action.select);
@@ -113,16 +114,10 @@ impl Maps {
         }
     }
     pub fn get(&mut self, regs: &mut Registers) {
-        match self.streams.get() {
-            Some(data) => regs.data = data,
-            None => regs.error = true,
-        }
+        regs.get(self.streams.get(&Select::Input));
     }
     pub fn put(&mut self, regs: &mut Registers) {
-        match self.streams.put(regs.data) {
-            Some(()) => (),
-            None => regs.error = true,
-        }
+        regs.put(self.streams.get(&Select::Output));
     }
     pub fn action(&mut self, regs: &mut Registers) {
         let action = StreamAction::new(regs.data, regs.accum);

@@ -1,4 +1,4 @@
-use util::BLOCK_SIDE;
+use util::{Stream, BLOCK_SIDE};
 
 #[derive(Default, Clone, Debug)]
 pub struct Registers {
@@ -129,6 +129,17 @@ impl Registers {
     }
     pub fn rotr(&mut self) {
         self.accum = rot(self.accum, false);
+    }
+    pub fn get(&mut self, stream: &mut Stream) {
+        match stream.get() {
+            Some(data) => self.data = data,
+            None => self.error = true,
+        }
+    }
+    pub fn put(&mut self, stream: &mut Stream) {
+        if stream.put(self.data).is_none() {
+            self.error = true;
+        }
     }
 }
 
