@@ -23,17 +23,17 @@ impl Select {
     }
 }
 enum Action {
-    SetIndex(u8),
+    SetIndex,
     GetIndex,
-    Open(u8),
+    Open,
     Nop,
 }
 impl Action {
-    fn new(data: u8, accum: u8) -> Self {
-        match data / 2 {
-            0 => Self::SetIndex(accum),
+    fn new(flags: u8) -> Self {
+        match flags / 2 {
+            0 => Self::SetIndex,
             1 => Self::GetIndex,
-            2 => Self::Open(accum),
+            2 => Self::Open,
             _ => Self::Nop,
         }
     }
@@ -41,12 +41,17 @@ impl Action {
 struct StreamAction {
     select: Select,
     action: Action,
+    index: u8,
 }
 impl StreamAction {
     fn new(flags: u8, index: u8) -> Self {
         let select = Select::new(flags);
-        let action = Action::new(flags, index);
-        Self { select, action }
+        let action = Action::new(flags);
+        Self {
+            select,
+            action,
+            index,
+        }
     }
 }
 struct StreamIndices {
@@ -97,7 +102,7 @@ impl StreamMap {
     }
     fn action(&mut self, action: &StreamAction) -> Option<u8> {
         match action.action {
-            Action::SetIndex(val) => self.set_index(action.select, val),
+            Action::SetIndex => self.set_index(action.select, action.index),
             Action::GetIndex => return Some(self.get_index(action.select)),
             _ => (),
         }
