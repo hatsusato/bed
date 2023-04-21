@@ -3,6 +3,10 @@ use crate::reg::Registers;
 use std::collections::HashMap;
 use util::Stream;
 
+const STDIN: u8 = 0;
+const STDOUT: u8 = 1;
+const STDERR: u8 = 2;
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum Select {
     Input,
@@ -44,39 +48,50 @@ impl StreamAction {
         Self { select, action }
     }
 }
+struct StreamIndices {
+    map: HashMap<Select, u8>,
+}
+impl Default for StreamIndices {
+    fn default() -> Self {
+        let mut map = HashMap::default();
+        map.insert(Select::Input, STDIN);
+        map.insert(Select::Output, STDOUT);
+        Self { map }
+    }
+}
+impl StreamIndices {
+    fn get(&mut self, select: &Select) -> &mut u8 {
+        self.map.get_mut(select).unwrap()
+    }
+}
 
 struct StreamMap {
     map: HashMap<u8, Stream>,
-    indices: HashMap<Select, u8>,
+    indices: StreamIndices,
 }
 impl StreamMap {
     fn new(input: Stream, output: Stream) -> Self {
-        const STDIN: u8 = 0;
-        const STDOUT: u8 = 1;
-        const STDERR: u8 = 2;
         let mut map = HashMap::new();
         map.insert(STDIN, input);
         map.insert(STDOUT, output);
         map.insert(STDERR, Stream::Stderr);
-        let mut indices = HashMap::new();
-        indices.insert(Select::Input, STDIN);
-        indices.insert(Select::Output, STDOUT);
+        let indices = StreamIndices::default();
         Self { map, indices }
     }
     fn get(&mut self) -> Option<u8> {
         let get = Stream::get;
-        let index = self.indices.get(&Select::Input)?;
+        let index = self.indices.get(&Select::Input);
         self.map.get_mut(index).and_then(get)
     }
     fn put(&mut self, data: u8) -> Option<()> {
         let put = |stream| Stream::put(stream, data);
-        let index = self.indices.get(&Select::Output)?;
+        let index = self.indices.get(&Select::Output);
         self.map.get_mut(index).and_then(put)
     }
-    fn action(&mut self, action: StreamAction) -> Option<u8> {
-        let index = self.indices.get_mut(&action.select).unwrap();
-        match &action.action {
-            Action::SetIndex(set) => *index = *set,
+    fn action(&mut self, action: &StreamAction) -> Option<u8> {
+        let index = self.indices.get(&action.select);
+        match action.action {
+            Action::SetIndex(set) => *index = set,
             Action::GetIndex => return Some(*index),
             _ => (),
         }
@@ -111,7 +126,7 @@ impl Maps {
     }
     pub fn action(&mut self, regs: &mut Registers) {
         let action = StreamAction::new(regs.data, regs.accum);
-        if let Some(accum) = self.streams.action(action) {
+        if let Some(accum) = self.streams.action(&action) {
             regs.accum = accum;
         }
     }
