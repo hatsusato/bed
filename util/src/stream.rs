@@ -11,7 +11,6 @@ pub enum Stream {
     Stderr,
     File(File),
     Queue(VecDeque<u8>),
-    Stack(Vec<u8>),
 }
 impl Default for Stream {
     fn default() -> Self {
@@ -39,7 +38,6 @@ impl Stream {
             Stream::Stdin => read(&mut stdin()),
             Stream::File(file) => read(file),
             Stream::Queue(queue) => queue.pop_front(),
-            Stream::Stack(stack) => stack.pop(),
             _ => None,
         }
     }
@@ -50,10 +48,6 @@ impl Stream {
             Stream::File(file) => write(file, data),
             Stream::Queue(queue) => {
                 queue.push_back(data);
-                Some(())
-            }
-            Stream::Stack(stack) => {
-                stack.push(data);
                 Some(())
             }
             _ => None,
