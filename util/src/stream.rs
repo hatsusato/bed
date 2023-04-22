@@ -41,12 +41,11 @@ impl Stream {
             .map(Self::File)
             .unwrap_or_default()
     }
-    pub fn take_string(&mut self) -> Option<String> {
+    pub fn take_string(self) -> Option<String> {
         match self {
             Stream::Queue(queue) => Some(queue),
             _ => None,
         }
-        .map(std::mem::take)
         .map(Vec::from)
         .map(String::from_utf8)
         .and_then(to_option)

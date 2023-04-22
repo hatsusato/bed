@@ -1,7 +1,7 @@
 use crate::inst::{Name, Seq};
 use crate::reg::Registers;
 use std::collections::HashMap;
-use util::{Select, Stream};
+use util::{Flag, Select, Stream};
 
 const STDIN: u8 = 0;
 const STDOUT: u8 = 1;
@@ -83,6 +83,20 @@ impl StreamMap {
         let key = if contains { index } else { NULL };
         self.map.get_mut(&key).unwrap()
     }
+    fn open(&mut self, index: u8, regs: &mut Registers) {
+        if index != NULL {
+            let stream = self.get(index);
+            if matches!(stream, Stream::Queue(_)) {
+                let stream = std::mem::take(stream);
+                if let Some(path) = stream.take_string() {
+                    let stream = Stream::make_file(path, Flag::Both);
+                    self.map.insert(index, stream);
+                    return;
+                }
+            }
+        }
+        regs.error = true;
+    }
 }
 
 pub struct Maps {
@@ -113,6 +127,7 @@ impl Maps {
         match &action.action {
             Action::SetIndex => action.set_index(&mut self.indices),
             Action::GetIndex => regs.accum = action.get_index(&self.indices),
+            Action::Open => self.streams.open(action.index, regs),
             _ => unimplemented!(),
         }
     }
