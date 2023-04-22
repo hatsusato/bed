@@ -4,7 +4,7 @@ mod stream;
 
 pub use block::{Block, BLOCK_SIDE};
 pub use display::as_hex;
-pub use stream::{Flag, Stream};
+pub use stream::{Flag, Select, Stream};
 
 pub fn to_option<T>(result: std::io::Result<T>) -> Option<T> {
     let p = |e| {

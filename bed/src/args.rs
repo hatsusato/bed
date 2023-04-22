@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::path::PathBuf;
-use util::{to_option, Flag, Stream};
+use util::{to_option, Flag, Select, Stream};
 
 #[derive(Debug, Parser)]
 #[command(version, about)]
@@ -29,22 +29,16 @@ impl Args {
             .and_then(to_option)
             .map(|_| buf)
     }
-    pub fn open_input(&self) -> Stream {
-        if let Some(path) = self.output.as_ref() {
-            Stream::make_file(path, Flag::Read)
-        } else if self.is_interactive() {
-            Stream::Null
-        } else {
-            Stream::Stdin
+    pub fn open_default(&self, select: Select) -> Stream {
+        match self.choose(select) {
+            Some(path) => Stream::make_file(path, Flag::from(select)),
+            None => Stream::make_default(self.is_interactive(), select),
         }
     }
-    pub fn open_output(&self) -> Stream {
-        if let Some(path) = self.output.as_ref() {
-            Stream::make_file(path, Flag::Write)
-        } else if self.is_interactive() {
-            Stream::Null
-        } else {
-            Stream::Stdout
+    fn choose(&self, select: Select) -> Option<&PathBuf> {
+        match select {
+            Select::Input => self.input.as_ref(),
+            Select::Output => self.output.as_ref(),
         }
     }
 }

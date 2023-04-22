@@ -1,27 +1,13 @@
 use crate::inst::{Name, Seq};
 use crate::reg::Registers;
 use std::collections::HashMap;
-use util::Stream;
+use util::{Select, Stream};
 
 const STDIN: u8 = 0;
 const STDOUT: u8 = 1;
 const STDERR: u8 = 2;
 const NULL: u8 = u8::MAX;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-enum Select {
-    Input,
-    Output,
-}
-impl Select {
-    fn new(flag: u8) -> Self {
-        match flag % 2 {
-            0 => Self::Input,
-            1 => Self::Output,
-            _ => unreachable!(),
-        }
-    }
-}
 enum Action {
     SetIndex,
     GetIndex,
@@ -45,7 +31,7 @@ struct StreamAction {
 }
 impl StreamAction {
     fn new(flags: u8, index: u8) -> Self {
-        let select = Select::new(flags);
+        let select = Select::from(flags);
         let action = Action::new(flags);
         Self {
             select,

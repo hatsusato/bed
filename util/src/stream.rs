@@ -18,6 +18,14 @@ impl Default for Stream {
     }
 }
 impl Stream {
+    #[must_use]
+    pub fn make_default(interactive: bool, select: Select) -> Self {
+        match (interactive, select) {
+            (true, _) => Self::default(),
+            (false, Select::Input) => Self::Stdin,
+            (false, Select::Output) => Self::Stdout,
+        }
+    }
     pub fn make_argv(index: u8) -> Self {
         std::env::args()
             .nth(usize::from(index))
@@ -67,6 +75,29 @@ impl Flag {
     }
     fn is_write(self) -> bool {
         matches!(self, Flag::Write | Flag::Both)
+    }
+}
+impl From<Select> for Flag {
+    fn from(select: Select) -> Self {
+        match select {
+            Select::Input => Self::Read,
+            Select::Output => Self::Write,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Select {
+    Input,
+    Output,
+}
+impl From<u8> for Select {
+    fn from(value: u8) -> Self {
+        match value % 2 {
+            0 => Self::Input,
+            1 => Self::Output,
+            _ => unreachable!(),
+        }
     }
 }
 
