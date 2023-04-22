@@ -6,7 +6,7 @@ pub use block::{Block, BLOCK_SIDE};
 pub use display::as_hex;
 pub use stream::{Flag, Select, Stream};
 
-pub fn to_option<T>(result: std::io::Result<T>) -> Option<T> {
+pub fn to_option<T, E: std::error::Error>(result: Result<T, E>) -> Option<T> {
     let p = |e| {
         eprintln!("{e}");
         None
