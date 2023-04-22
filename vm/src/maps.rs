@@ -39,6 +39,12 @@ impl StreamAction {
             index,
         }
     }
+    fn set_index(&self, indices: &mut StreamIndices) {
+        indices.set(self.select, self.index);
+    }
+    fn get_index(&self, indices: &StreamIndices) -> u8 {
+        indices.get(self.select)
+    }
 }
 struct StreamIndices {
     map: HashMap<Select, u8>,
@@ -52,7 +58,7 @@ impl Default for StreamIndices {
     }
 }
 impl StreamIndices {
-    fn get(&mut self, select: Select) -> u8 {
+    fn get(&self, select: Select) -> u8 {
         *self.map.get(&select).unwrap()
     }
     fn set(&mut self, select: Select, val: u8) {
@@ -80,20 +86,6 @@ impl StreamMap {
         let key = if contains { index } else { NULL };
         self.map.get_mut(&key).unwrap()
     }
-    fn set_index(&mut self, select: Select, val: u8) {
-        self.indices.set(select, val);
-    }
-    fn get_index(&mut self, select: Select) -> u8 {
-        self.indices.get(select)
-    }
-    fn action(&mut self, action: &StreamAction) -> Option<u8> {
-        match action.action {
-            Action::SetIndex => self.set_index(action.select, action.index),
-            Action::GetIndex => return Some(self.get_index(action.select)),
-            _ => (),
-        }
-        None
-    }
 }
 
 pub struct Maps {
@@ -117,8 +109,10 @@ impl Maps {
     }
     pub fn action(&mut self, regs: &mut Registers) {
         let action = StreamAction::new(regs.data, regs.accum);
-        if let Some(accum) = self.streams.action(&action) {
-            regs.accum = accum;
+        match &action.action {
+            Action::SetIndex => action.set_index(&mut self.streams.indices),
+            Action::GetIndex => regs.accum = action.get_index(&self.streams.indices),
+            _ => unimplemented!(),
         }
     }
     pub fn define(&mut self, name: Name, body: Seq) {
