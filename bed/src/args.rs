@@ -1,8 +1,6 @@
 use clap::Parser;
-use std::fs::File;
-use std::io::{BufReader, Read, Result};
 use std::path::PathBuf;
-use util::{Flag, Stream};
+use util::{to_option, Flag, Stream};
 
 #[derive(Debug, Parser)]
 #[command(version, about)]
@@ -18,33 +16,35 @@ impl Args {
     pub fn is_interactive(&self) -> bool {
         self.source.is_none()
     }
-    pub fn open_code(&self) -> Result<Vec<u8>> {
-        Ok(match self.source.as_ref() {
-            Some(path) => {
-                let file = File::open(path)?;
-                let mut buf = String::new();
-                BufReader::new(file).read_to_string(&mut buf)?;
-                buf.into_bytes()
-            }
-            None => Vec::default(),
-        })
+    pub fn open_code(&self) -> Option<Vec<u8>> {
+        use std::fs::File;
+        use std::io::{BufReader, Read};
+        let mut buf = Vec::new();
+        self.source
+            .as_ref()
+            .map(File::open)
+            .and_then(to_option)
+            .map(BufReader::new)
+            .map(|mut reader| reader.read_to_end(&mut buf))
+            .and_then(to_option)
+            .map(|_| buf)
     }
-    pub fn open_input(&self) -> Result<Stream> {
-        Ok(if let Some(path) = self.output.as_ref() {
-            Stream::make_file(path, &Flag::Read)?
+    pub fn open_input(&self) -> Stream {
+        if let Some(path) = self.output.as_ref() {
+            Stream::make_file(path, &Flag::Read)
         } else if self.is_interactive() {
             Stream::Null
         } else {
             Stream::Stdin
-        })
+        }
     }
-    pub fn open_output(&self) -> Result<Stream> {
-        Ok(if let Some(path) = self.output.as_ref() {
-            Stream::make_file(path, &Flag::Write)?
+    pub fn open_output(&self) -> Stream {
+        if let Some(path) = self.output.as_ref() {
+            Stream::make_file(path, &Flag::Write)
         } else if self.is_interactive() {
             Stream::Null
         } else {
             Stream::Stdout
-        })
+        }
     }
 }
