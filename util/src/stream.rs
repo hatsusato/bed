@@ -26,7 +26,7 @@ impl Stream {
             .map(Stream::Queue)
             .unwrap_or_default()
     }
-    pub fn make_file<P: AsRef<Path>>(path: P, flag: &Flag) -> Self {
+    pub fn make_file<P: AsRef<Path>>(path: P, flag: Flag) -> Self {
         let mut options = File::options();
         options.read(flag.is_read()).write(flag.is_write());
         to_option(options.open(path))
@@ -55,16 +55,17 @@ impl Stream {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum Flag {
     Read,
     Write,
     Both,
 }
 impl Flag {
-    fn is_read(&self) -> bool {
+    fn is_read(self) -> bool {
         matches!(self, Flag::Read | Flag::Both)
     }
-    fn is_write(&self) -> bool {
+    fn is_write(self) -> bool {
         matches!(self, Flag::Write | Flag::Both)
     }
 }
