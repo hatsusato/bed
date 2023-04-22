@@ -68,7 +68,6 @@ impl StreamIndices {
 
 struct StreamMap {
     map: HashMap<u8, Stream>,
-    indices: StreamIndices,
 }
 impl StreamMap {
     fn new(input: Stream, output: Stream) -> Self {
@@ -77,11 +76,9 @@ impl StreamMap {
         map.insert(STDOUT, output);
         map.insert(STDERR, Stream::Stderr);
         map.insert(NULL, Stream::Null);
-        let indices = StreamIndices::default();
-        Self { map, indices }
+        Self { map }
     }
-    fn get(&mut self, select: Select) -> &mut Stream {
-        let index = self.indices.get(select);
+    fn get(&mut self, index: u8) -> &mut Stream {
         let contains = self.map.contains_key(&index);
         let key = if contains { index } else { NULL };
         self.map.get_mut(&key).unwrap()
@@ -92,6 +89,7 @@ pub struct Maps {
     macros: HashMap<u8, Seq>,
     funcs: HashMap<Name, Seq>,
     streams: StreamMap,
+    indices: StreamIndices,
 }
 impl Maps {
     pub fn new(input: Stream, output: Stream) -> Self {
@@ -99,19 +97,22 @@ impl Maps {
             macros: HashMap::default(),
             funcs: HashMap::default(),
             streams: StreamMap::new(input, output),
+            indices: StreamIndices::default(),
         }
     }
     pub fn get(&mut self, regs: &mut Registers) {
-        regs.get(self.streams.get(Select::Input));
+        let index = self.indices.get(Select::Input);
+        regs.get(self.streams.get(index));
     }
     pub fn put(&mut self, regs: &mut Registers) {
-        regs.put(self.streams.get(Select::Output));
+        let index = self.indices.get(Select::Output);
+        regs.put(self.streams.get(index));
     }
     pub fn action(&mut self, regs: &mut Registers) {
         let action = StreamAction::new(regs.data, regs.accum);
         match &action.action {
-            Action::SetIndex => action.set_index(&mut self.streams.indices),
-            Action::GetIndex => regs.accum = action.get_index(&self.streams.indices),
+            Action::SetIndex => action.set_index(&mut self.indices),
+            Action::GetIndex => regs.accum = action.get_index(&self.indices),
             _ => unimplemented!(),
         }
     }
