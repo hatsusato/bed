@@ -78,14 +78,14 @@ impl StreamMap {
         map.insert(NULL, Stream::Null);
         Self { map }
     }
-    fn get(&mut self, index: u8) -> &mut Stream {
+    fn get_stream(&mut self, index: u8) -> &mut Stream {
         let contains = self.map.contains_key(&index);
         let key = if contains { index } else { NULL };
         self.map.get_mut(&key).unwrap()
     }
     fn open(&mut self, index: u8, regs: &mut Registers) {
         if index != NULL {
-            let stream = self.get(index);
+            let stream = self.get_stream(index);
             if matches!(stream, Stream::Queue(_)) {
                 let stream = std::mem::take(stream);
                 if let Some(path) = stream.take_string() {
@@ -116,11 +116,13 @@ impl Maps {
     }
     pub fn get(&mut self, regs: &mut Registers) {
         let index = self.indices.get(Select::Input);
-        regs.get(self.streams.get(index));
+        let stream = self.streams.get_stream(index);
+        regs.get(|| stream.get());
     }
     pub fn put(&mut self, regs: &mut Registers) {
         let index = self.indices.get(Select::Output);
-        regs.put(self.streams.get(index));
+        let stream = self.streams.get_stream(index);
+        regs.put(|data| stream.put(data));
     }
     pub fn action(&mut self, regs: &mut Registers) {
         let action = StreamAction::new(regs.data, regs.accum);
