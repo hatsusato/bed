@@ -25,12 +25,15 @@ impl Memory {
         let (base, next) = get_pair(regs.accum);
         (regs.block, regs.cell) = (page[base], page[next]);
     }
-    pub fn quote(&mut self, regs: &mut Registers, input: &[u8]) {
+    pub fn direct(&mut self, regs: &Registers, data: u8) {
+        self.blocks[regs.block][regs.cell] = data;
+    }
+    pub fn quote(&mut self, regs: &mut Registers, seq: &[u8]) {
         let page = &mut self.blocks[regs.block];
-        if let Some(src) = input.iter().next() {
+        if let Some(src) = seq.iter().next() {
             page[regs.cell] = *src;
         }
-        for src in &input[1..] {
+        for src in &seq[1..] {
             if let Some(cell) = regs.cell.checked_add(1) {
                 regs.cell = cell;
                 page[regs.cell] = *src;
@@ -86,6 +89,20 @@ mod memory_tests {
         (regs.block, regs.cell) = (0, 0);
         mem.blocks[0][0] = 0;
         mem.blocks[0][1] = 0;
+        zero_test(&mem);
+    }
+    #[test]
+    fn direct_test() {
+        let (mut mem, mut regs) = make();
+        for i in 0..=u8::MAX {
+            regs.cell = i;
+            mem.direct(&regs, i);
+        }
+        regs.cell = 0;
+        for i in 0..=u8::MAX {
+            assert_eq!(mem.blocks[0][i], i);
+            mem.blocks[0][i] = 0;
+        }
         zero_test(&mem);
     }
     #[test]

@@ -9,9 +9,6 @@ pub struct Registers {
     pub error: bool,
 }
 impl Registers {
-    pub fn direct(&mut self, key: u8) {
-        self.data = key;
-    }
     pub fn insert(&mut self, digit: u8) {
         self.data = nibble_combine(self.data, digit);
     }
@@ -175,60 +172,53 @@ mod register_tests {
     use super::Registers;
 
     #[test]
-    fn direct_insert_test() {
-        let mut reg = make();
-        reg.direct(0x42);
-        assert_eq!(reg.data, 0x42);
-        reg.insert(1);
-        assert_eq!(reg.data, 0x21);
-        reg.insert(0);
-        assert_eq!(reg.data, 0x10);
-        reg.zero();
-        zero_test(&reg);
-    }
-    #[test]
     fn swap_zero_delete_test() {
         let mut reg = make();
-        reg.direct(42);
-        assert_eq!((reg.data, reg.accum), (42, 0));
+        reg.insert(4);
+        reg.insert(2);
+        assert_eq!((reg.data, reg.accum), (0x42, 0));
         reg.swap();
-        assert_eq!((reg.data, reg.accum), (0, 42));
-        reg.direct(42);
-        assert_eq!((reg.data, reg.accum), (42, 42));
+        assert_eq!((reg.data, reg.accum), (0, 0x42));
+        reg.insert(4);
+        reg.insert(2);
+        assert_eq!((reg.data, reg.accum), (0x42, 0x42));
         reg.delete();
-        assert_eq!((reg.data, reg.accum), (42, 0));
+        assert_eq!((reg.data, reg.accum), (0x42, 0));
         reg.zero();
         zero_test(&reg);
     }
     #[test]
     fn high_low_test() {
         let mut reg = make();
-        reg.direct(42);
-        assert_eq!((reg.data, reg.accum), (42, 0));
+        reg.insert(4);
+        reg.insert(2);
+        assert_eq!((reg.data, reg.accum), (0x42, 0));
         reg.low();
-        assert_eq!((reg.data, reg.accum), (42, 42));
+        assert_eq!((reg.data, reg.accum), (0x42, 0x42));
         reg.zero();
-        assert_eq!((reg.data, reg.accum), (0, 42));
+        assert_eq!((reg.data, reg.accum), (0, 0x42));
         reg.swap();
-        assert_eq!((reg.data, reg.accum), (42, 0));
+        assert_eq!((reg.data, reg.accum), (0x42, 0));
         reg.high();
         zero_test(&reg);
     }
     #[test]
     fn goto_jump_test() {
         let mut reg = make();
-        reg.direct(0x42);
+        reg.insert(4);
+        reg.insert(2);
         assert_eq!((reg.data, reg.block, reg.cell), (0x42, 0, 0));
         reg.goto();
         assert_eq!((reg.data, reg.block, reg.cell), (0x42, 0, 0x42));
-        reg.direct(42);
-        assert_eq!((reg.data, reg.block, reg.cell), (42, 0, 0x42));
+        reg.insert(3);
+        reg.insert(1);
+        assert_eq!((reg.data, reg.block, reg.cell), (0x31, 0, 0x42));
         reg.jump();
-        assert_eq!((reg.data, reg.block, reg.cell), (42, 42, 0x42));
+        assert_eq!((reg.data, reg.block, reg.cell), (0x31, 0x31, 0x42));
         reg.zero();
-        assert_eq!((reg.data, reg.block, reg.cell), (0, 42, 0x42));
+        assert_eq!((reg.data, reg.block, reg.cell), (0, 0x31, 0x42));
         reg.goto();
-        assert_eq!((reg.data, reg.block, reg.cell), (0, 42, 0));
+        assert_eq!((reg.data, reg.block, reg.cell), (0, 0x31, 0));
         reg.jump();
         zero_test(&reg);
     }
@@ -261,12 +251,13 @@ mod register_tests {
     #[test]
     fn page_start() {
         let mut reg = make();
-        reg.direct(42);
-        assert_eq!((reg.data, reg.block), (42, 0));
+        reg.insert(4);
+        reg.insert(2);
+        assert_eq!((reg.data, reg.block), (0x42, 0));
         reg.jump();
-        assert_eq!((reg.data, reg.block), (42, 42));
+        assert_eq!((reg.data, reg.block), (0x42, 0x42));
         reg.begin();
-        assert_eq!((reg.data, reg.block), (42, 0));
+        assert_eq!((reg.data, reg.block), (0x42, 0));
         reg.zero();
         zero_test(&reg);
     }
@@ -284,11 +275,13 @@ mod register_tests {
     #[test]
     fn add_test() {
         let mut reg = make();
-        reg.direct(0x42);
+        reg.insert(4);
+        reg.insert(2);
         assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.add();
         assert_eq!((reg.data, reg.accum), (0x00, 0x42));
-        reg.direct(0xcc);
+        reg.insert(0xc);
+        reg.insert(0xc);
         assert_eq!((reg.data, reg.accum), (0xcc, 0x42));
         reg.add();
         assert_eq!((reg.data, reg.accum), (0x01, 0x0e));
@@ -300,7 +293,8 @@ mod register_tests {
     #[test]
     fn sub_test() {
         let mut reg = make();
-        reg.direct(0x42);
+        reg.insert(4);
+        reg.insert(2);
         assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.sub();
         assert_eq!((reg.data, reg.accum), (0xff, 0xbe));
@@ -312,7 +306,8 @@ mod register_tests {
     #[test]
     fn mul_test() {
         let mut reg = make();
-        reg.direct(0x42);
+        reg.insert(4);
+        reg.insert(2);
         assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.inc();
         assert_eq!((reg.data, reg.accum), (0x42, 0x01));
@@ -333,7 +328,8 @@ mod register_tests {
         reg.inc();
         reg.inc();
         reg.inc();
-        reg.direct(0x42);
+        reg.insert(4);
+        reg.insert(2);
         assert_eq!((reg.data, reg.accum, reg.error), (0x42, 0x03, false));
         reg.swap();
         assert_eq!((reg.data, reg.accum, reg.error), (0x03, 0x42, false));
@@ -377,7 +373,8 @@ mod register_tests {
         let mut reg = make();
         reg.not();
         assert_eq!((reg.data, reg.accum), (0x00, 0xff));
-        reg.direct(0x42);
+        reg.insert(4);
+        reg.insert(2);
         assert_eq!((reg.data, reg.accum), (0x42, 0xff));
         reg.and();
         assert_eq!((reg.data, reg.accum), (0x42, 0x42));
@@ -391,19 +388,22 @@ mod register_tests {
     #[test]
     fn or_xor_test() {
         let mut reg = make();
-        reg.direct(0x42);
+        reg.insert(4);
+        reg.insert(2);
         assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.or();
         assert_eq!((reg.data, reg.accum), (0x42, 0x42));
         reg.xor();
         assert_eq!((reg.data, reg.accum), (0x42, 0x00));
-        reg.direct(0x00);
+        reg.insert(0);
+        reg.insert(0);
         zero_test(&reg);
     }
     #[test]
     fn shl_test() {
         let mut reg = make();
-        reg.direct(0x5a);
+        reg.insert(5);
+        reg.insert(0xa);
         reg.swap();
         assert_eq!(reg.accum, 0x5a);
         reg.shl();
@@ -424,7 +424,8 @@ mod register_tests {
     #[test]
     fn shr_test() {
         let mut reg = make();
-        reg.direct(0x5a);
+        reg.insert(5);
+        reg.insert(0xa);
         reg.swap();
         assert_eq!(reg.accum, 0x5a);
         reg.shr();
@@ -445,7 +446,8 @@ mod register_tests {
     #[test]
     fn rotl_test() {
         let mut reg = make();
-        reg.direct(0x5a);
+        reg.insert(5);
+        reg.insert(0xa);
         reg.swap();
         assert_eq!(reg.accum, 0x5a);
         reg.rotl();
@@ -470,7 +472,8 @@ mod register_tests {
     #[test]
     fn rotr_test() {
         let mut reg = make();
-        reg.direct(0x5a);
+        reg.insert(5);
+        reg.insert(0xa);
         reg.swap();
         assert_eq!(reg.accum, 0x5a);
         reg.rotr();

@@ -75,8 +75,8 @@ impl State {
             Inst::Input => maps.input(regs),
             Inst::Output => maps.output(regs),
             Inst::Stream => maps.stream(regs),
-            Inst::Direct(data) => regs.direct(data),
-            Inst::Quote(input) => mem.quote(regs, &input),
+            Inst::Direct(data) => mem.direct(regs, data),
+            Inst::Quote(seq) => mem.quote(regs, &seq),
             Inst::Macro(key, val) => maps.register(key, val),
             Inst::Exec(key) => self.exec(key),
             Inst::Repeat(key) => self.repeat(key),
@@ -115,16 +115,19 @@ mod state_tests {
     use super::{Inst, Registers, State, Stream};
 
     #[test]
-    fn func_call_test() {
+    fn func_invoke_test() {
         let mut state = make();
         let to_vec = |name: &str| name.as_bytes().to_vec();
         let test = [
-            Inst::Direct(4),
+            Inst::Insert(4),
+            Inst::Low,
             Inst::Goto,
-            Inst::Direct(3),
+            Inst::Dec,
+            Inst::High,
             Inst::Jump,
-            Inst::Direct(2),
-            Inst::Inc,
+            Inst::Dec,
+            Inst::High,
+            Inst::Dec,
             Inst::Swap,
         ]
         .to_vec();
@@ -144,12 +147,15 @@ mod state_tests {
     fn macro_exec_test() {
         let mut state = make();
         let record = [
-            Inst::Direct(4),
+            Inst::Insert(4),
+            Inst::Low,
             Inst::Goto,
-            Inst::Direct(3),
+            Inst::Dec,
+            Inst::High,
             Inst::Jump,
-            Inst::Direct(2),
-            Inst::Inc,
+            Inst::Dec,
+            Inst::High,
+            Inst::Dec,
             Inst::Swap,
         ]
         .to_vec();
@@ -171,7 +177,7 @@ mod state_tests {
         let clear = [Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
         zero_test(&state);
-        state.run(&[Inst::Direct(10), Inst::Swap]);
+        state.run(&[Inst::Insert(10), Inst::Swap]);
         assert_eq!(state.get_regs().data, 0);
         assert_eq!(state.get_regs().accum, 10);
         state.issue(Inst::Repeat(b'a'));
@@ -185,23 +191,36 @@ mod state_tests {
         let mut state = make();
         let record = [
             Inst::Exec(b'c'),
-            Inst::Direct(4),
+            Inst::Insert(4),
+            Inst::Low,
+            Inst::High,
             Inst::Goto,
-            Inst::Direct(3),
+            Inst::Dec,
+            Inst::High,
             Inst::Jump,
-            Inst::Direct(2),
-            Inst::Inc,
+            Inst::Dec,
+            Inst::High,
+            Inst::Dec,
             Inst::Swap,
         ]
         .to_vec();
         let clear = [Inst::Origin, Inst::Begin, Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
-        state.run(&[Inst::Direct(b'a'), Inst::Eval]);
+        state.run(&[Inst::Direct(b'a'), Inst::Load, Inst::Eval]);
         assert_eq!(state.get_regs().data, 1);
         assert_eq!(state.get_regs().accum, 2);
         assert_eq!(state.get_regs().block, 3);
         assert_eq!(state.get_regs().cell, 4);
-        state.run(&[Inst::Direct(b'c'), Inst::Eval]);
+        state.run(&[
+            Inst::Direct(b'c'),
+            Inst::Load,
+            Inst::Low,
+            Inst::Zero,
+            Inst::Store,
+            Inst::High,
+            Inst::Eval,
+            Inst::Store,
+        ]);
         zero_test(&state);
     }
     fn make() -> State {
