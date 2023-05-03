@@ -1,10 +1,25 @@
 use crate::reg::Registers;
 use util::Stream;
 
-const STDIN: u8 = 0;
-const STDOUT: u8 = 1;
-const STDERR: u8 = 2;
 const STREAM_COUNT: usize = 1 << u8::BITS;
+
+#[derive(Clone, Copy)]
+struct Descriptor {
+    desc: u8,
+}
+impl Descriptor {
+    fn new(desc: u8) -> Self {
+        Self { desc }
+    }
+    const STDIN: Self = Self { desc: 0 };
+    const STDOUT: Self = Self { desc: 1 };
+    const STDERR: Self = Self { desc: 2 };
+}
+impl From<Descriptor> for u8 {
+    fn from(value: Descriptor) -> Self {
+        value.desc
+    }
+}
 
 struct StreamArray {
     array: [Stream; STREAM_COUNT],
@@ -18,32 +33,32 @@ impl Default for StreamArray {
 impl StreamArray {
     fn new() -> Self {
         let mut this = Self::default();
-        *this.get_mut(STDIN) = Stream::Stdin;
-        *this.get_mut(STDOUT) = Stream::Stdout;
-        *this.get_mut(STDERR) = Stream::Stderr;
+        *this.get_mut(Descriptor::STDIN) = Stream::Stdin;
+        *this.get_mut(Descriptor::STDOUT) = Stream::Stdout;
+        *this.get_mut(Descriptor::STDERR) = Stream::Stderr;
         this
     }
-    fn get_mut(&mut self, descriptor: u8) -> &mut Stream {
-        &mut self.array[usize::from(descriptor)]
+    fn get_mut(&mut self, desc: Descriptor) -> &mut Stream {
+        &mut self.array[usize::from(desc.desc)]
     }
 }
 
 pub struct Maps {
     array: StreamArray,
-    input: u8,
-    output: u8,
+    input: Descriptor,
+    output: Descriptor,
 }
 impl Maps {
     pub fn new() -> Self {
         Self {
             array: StreamArray::new(),
-            input: STDIN,
-            output: STDOUT,
+            input: Descriptor::STDIN,
+            output: Descriptor::STDOUT,
         }
     }
     pub fn init(&mut self, input: Stream, output: Stream) {
-        *self.array.get_mut(STDIN) = input;
-        *self.array.get_mut(STDOUT) = output;
+        *self.array.get_mut(Descriptor::STDIN) = input;
+        *self.array.get_mut(Descriptor::STDOUT) = output;
     }
     pub fn getchar(&mut self, regs: &mut Registers) {
         let stream = self.array.get_mut(self.input);
@@ -55,10 +70,10 @@ impl Maps {
     }
     pub fn stream(&mut self, regs: &mut Registers) {
         match regs.data {
-            0 => regs.get_descriptor(|| self.input),
-            1 => regs.get_descriptor(|| self.output),
-            2 => regs.set_descriptor(|desc| self.input = desc),
-            3 => regs.set_descriptor(|desc| self.output = desc),
+            0 => regs.get_descriptor(|| self.input.into()),
+            1 => regs.get_descriptor(|| self.output.into()),
+            2 => regs.set_descriptor(|desc| self.input = Descriptor::new(desc)),
+            3 => regs.set_descriptor(|desc| self.output = Descriptor::new(desc)),
             _ => unimplemented!(),
         }
     }
