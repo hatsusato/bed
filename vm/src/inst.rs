@@ -4,6 +4,11 @@ pub type Seq = Vec<Inst>;
 #[derive(Clone, PartialEq, Debug)]
 pub enum Inst {
     Insert(u8),
+    High,
+    Low,
+    Swap,
+    Zero,
+    Delete,
     Right,
     Left,
     Down,
@@ -14,11 +19,6 @@ pub enum Inst {
     Page,
     Origin,
     Begin,
-    High,
-    Low,
-    Swap,
-    Zero,
-    Delete,
     Add,
     Sub,
     Mul,

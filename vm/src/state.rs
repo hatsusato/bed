@@ -32,6 +32,11 @@ impl State {
         let maps = &mut self.maps;
         match inst {
             Inst::Insert(digit) => regs.insert(digit),
+            Inst::High => regs.high(),
+            Inst::Low => regs.low(),
+            Inst::Swap => regs.swap(),
+            Inst::Zero => regs.zero(),
+            Inst::Delete => regs.delete(),
             Inst::Right => regs.right(),
             Inst::Left => regs.left(),
             Inst::Down => regs.down(),
@@ -42,11 +47,6 @@ impl State {
             Inst::Page => regs.page(),
             Inst::Origin => regs.origin(),
             Inst::Begin => regs.begin(),
-            Inst::High => regs.high(),
-            Inst::Low => regs.low(),
-            Inst::Swap => regs.swap(),
-            Inst::Zero => regs.zero(),
-            Inst::Delete => regs.delete(),
             Inst::Add => regs.add(),
             Inst::Sub => regs.sub(),
             Inst::Mul => regs.mul(),
@@ -120,7 +120,7 @@ mod state_tests {
         let to_vec = |name: &str| name.as_bytes().to_vec();
         let test = [
             Inst::Insert(4),
-            Inst::Low,
+            Inst::High,
             Inst::Goto,
             Inst::Dec,
             Inst::High,
@@ -148,7 +148,7 @@ mod state_tests {
         let mut state = make();
         let record = [
             Inst::Insert(4),
-            Inst::Low,
+            Inst::High,
             Inst::Goto,
             Inst::Dec,
             Inst::High,
@@ -177,7 +177,7 @@ mod state_tests {
         let clear = [Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
         zero_test(&state);
-        state.run(&[Inst::Insert(10), Inst::Swap]);
+        state.run(&[Inst::Insert(10)]);
         assert_eq!(state.get_regs().data, 0);
         assert_eq!(state.get_regs().accum, 10);
         state.issue(Inst::Repeat(b'a'));
@@ -192,7 +192,6 @@ mod state_tests {
         let record = [
             Inst::Exec(b'c'),
             Inst::Insert(4),
-            Inst::Low,
             Inst::High,
             Inst::Goto,
             Inst::Dec,
