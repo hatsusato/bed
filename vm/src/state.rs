@@ -10,6 +10,7 @@ pub struct State {
     mem: Memory,
     maps: Maps,
     defs: HashMap<Name, Seq>,
+    registry: HashMap<u8, Seq>,
 }
 impl State {
     #[must_use]
@@ -19,6 +20,7 @@ impl State {
             mem: Memory::default(),
             maps: Maps::new(input, output),
             defs: HashMap::new(),
+            registry: HashMap::new(),
         }
     }
     #[must_use]
@@ -80,7 +82,7 @@ impl State {
             Inst::Stream => maps.stream(regs),
             Inst::Direct(data) => mem.direct(regs, data),
             Inst::Quote(seq) => mem.quote(regs, &seq),
-            Inst::Macro(key, val) => maps.register(key, val),
+            Inst::Register(key, val) => self.register(key, val),
             Inst::Exec(key) => self.exec(key),
             Inst::Repeat(key) => self.repeat(key),
             Inst::Eval => self.eval(),
@@ -92,8 +94,12 @@ impl State {
     fn run(&mut self, seq: &[Inst]) {
         seq.iter().for_each(|inst| self.issue(inst.clone()));
     }
+    fn register(&mut self, key: u8, seq: Seq) {
+        self.registry.insert(key, seq);
+    }
     fn exec(&mut self, key: u8) {
-        self.run(&self.maps.get_macro(key));
+        let seq = self.registry.get(&key).cloned().unwrap_or_default();
+        self.run(&seq);
     }
     fn repeat(&mut self, key: u8) {
         let count = self.regs.accum;
@@ -165,7 +171,7 @@ mod state_tests {
         ]
         .to_vec();
         let clear = [Inst::Origin, Inst::Begin, Inst::Delete, Inst::Zero].to_vec();
-        state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
+        state.run(&[Inst::Register(b'a', record), Inst::Register(b'c', clear)]);
         zero_test(&state);
         state.issue(Inst::Exec(b'a'));
         assert_eq!(state.get_regs().data, 1);
@@ -180,7 +186,7 @@ mod state_tests {
         let mut state = make();
         let record = [Inst::Add, Inst::High].to_vec();
         let clear = [Inst::Delete, Inst::Zero].to_vec();
-        state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
+        state.run(&[Inst::Register(b'a', record), Inst::Register(b'c', clear)]);
         zero_test(&state);
         state.run(&[Inst::Insert(10)]);
         assert_eq!(state.get_regs().data, 0);
@@ -209,7 +215,7 @@ mod state_tests {
         ]
         .to_vec();
         let clear = [Inst::Origin, Inst::Begin, Inst::Delete, Inst::Zero].to_vec();
-        state.run(&[Inst::Macro(b'a', record), Inst::Macro(b'c', clear)]);
+        state.run(&[Inst::Register(b'a', record), Inst::Register(b'c', clear)]);
         state.run(&[Inst::Direct(b'a'), Inst::Load, Inst::Eval]);
         assert_eq!(state.get_regs().data, 1);
         assert_eq!(state.get_regs().accum, 2);

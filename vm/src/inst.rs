@@ -49,7 +49,7 @@ pub enum Inst {
     Stream,
     Direct(u8),
     Quote(Name),
-    Macro(u8, Seq),
+    Register(u8, Seq),
     Exec(u8),
     Repeat(u8),
     Eval,

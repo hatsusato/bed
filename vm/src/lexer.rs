@@ -16,14 +16,14 @@ enum Mode {
     Normal,
     Comment,
     Invoke,
-    Func,
-    Body,
+    Define,
+    Function,
     Quote,
     Direct,
-    Exec,
+    Execute,
     Repeat,
     Register,
-    Record,
+    Macro,
 }
 impl Default for Mode {
     fn default() -> Self {
@@ -35,10 +35,10 @@ impl Mode {
         match input {
             HASH => Mode::Comment,
             COLON => Mode::Invoke,
-            SEMICOLON => Mode::Func,
+            SEMICOLON => Mode::Define,
             QUOTE => Mode::Quote,
             APOSTROPHE => Mode::Direct,
-            AT => Mode::Exec,
+            AT => Mode::Execute,
             DOLLAR => Mode::Repeat,
             Q => Mode::Register,
             _ => unreachable!(),
@@ -51,9 +51,9 @@ struct Next {
     invoke: Mode,
     quote: Mode,
     direct: Mode,
-    exec: Mode,
+    execute: Mode,
     repeat: Mode,
-    record: Mode,
+    register: Mode,
 }
 impl Default for Next {
     fn default() -> Self {
@@ -62,79 +62,79 @@ impl Default for Next {
             invoke: Mode::Invoke,
             quote: Mode::Quote,
             direct: Mode::Direct,
-            exec: Mode::Exec,
+            execute: Mode::Execute,
             repeat: Mode::Repeat,
-            record: Mode::Register,
+            register: Mode::Register,
         }
     }
 }
 impl Next {
     fn toggle_comment(&mut self, next: &mut Mode) {
         assert!(match self.comment {
-            Mode::Comment => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
-            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Comment),
+            Mode::Comment => matches!(next, Mode::Normal | Mode::Function | Mode::Macro),
+            Mode::Normal | Mode::Function | Mode::Macro => matches!(next, Mode::Comment),
             _ => false,
         });
         mem::swap(&mut self.comment, next);
     }
     fn toggle_invoke(&mut self, next: &mut Mode) {
         assert!(match self.invoke {
-            Mode::Invoke => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
-            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Invoke),
+            Mode::Invoke => matches!(next, Mode::Normal | Mode::Function | Mode::Macro),
+            Mode::Normal | Mode::Function | Mode::Macro => matches!(next, Mode::Invoke),
             _ => false,
         });
         mem::swap(&mut self.invoke, next);
     }
-    fn toggle_func(next: &mut Mode) {
+    fn toggle_define(next: &mut Mode) {
         match next {
-            Mode::Normal => mem::replace(next, Mode::Func),
-            Mode::Func => mem::replace(next, Mode::Body),
-            Mode::Body => mem::replace(next, Mode::Normal),
+            Mode::Normal => mem::replace(next, Mode::Define),
+            Mode::Define => mem::replace(next, Mode::Function),
+            Mode::Function => mem::replace(next, Mode::Normal),
             _ => unreachable!(),
         };
     }
     fn toggle_quote(&mut self, next: &mut Mode) {
         assert!(match self.quote {
-            Mode::Quote => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
-            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Quote),
+            Mode::Quote => matches!(next, Mode::Normal | Mode::Function | Mode::Macro),
+            Mode::Normal | Mode::Function | Mode::Macro => matches!(next, Mode::Quote),
             _ => false,
         });
         mem::swap(&mut self.quote, next);
     }
     fn toggle_direct(&mut self, next: &mut Mode) {
         assert!(match self.direct {
-            Mode::Direct => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
-            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Direct),
+            Mode::Direct => matches!(next, Mode::Normal | Mode::Function | Mode::Macro),
+            Mode::Normal | Mode::Function | Mode::Macro => matches!(next, Mode::Direct),
             _ => false,
         });
         mem::swap(&mut self.direct, next);
     }
-    fn toggle_exec(&mut self, next: &mut Mode) {
-        assert!(match self.exec {
-            Mode::Exec => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
-            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Exec),
+    fn toggle_execute(&mut self, next: &mut Mode) {
+        assert!(match self.execute {
+            Mode::Execute => matches!(next, Mode::Normal | Mode::Function | Mode::Macro),
+            Mode::Normal | Mode::Function | Mode::Macro => matches!(next, Mode::Execute),
             _ => false,
         });
-        mem::swap(&mut self.exec, next);
+        mem::swap(&mut self.execute, next);
     }
     fn toggle_repeat(&mut self, next: &mut Mode) {
         assert!(match self.repeat {
-            Mode::Repeat => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
-            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Repeat),
+            Mode::Repeat => matches!(next, Mode::Normal | Mode::Function | Mode::Macro),
+            Mode::Normal | Mode::Function | Mode::Macro => matches!(next, Mode::Repeat),
             _ => false,
         });
         mem::swap(&mut self.repeat, next);
     }
-    fn toggle_record(&mut self, next: &mut Mode) {
-        assert!(match self.record {
-            Mode::Normal | Mode::Body => matches!(next, Mode::Register | Mode::Record),
-            Mode::Register | Mode::Record => matches!(next, Mode::Normal | Mode::Body),
+    fn toggle_register(&mut self, next: &mut Mode) {
+        assert!(match self.register {
+            Mode::Normal | Mode::Function => matches!(next, Mode::Register | Mode::Macro),
+            Mode::Register | Mode::Macro => matches!(next, Mode::Normal | Mode::Function),
             _ => false,
         });
         match next {
-            Mode::Normal | Mode::Body => mem::swap(&mut self.record, next),
-            Mode::Register => *next = Mode::Record,
-            Mode::Record => *next = mem::replace(&mut self.record, Mode::Register),
+            Mode::Normal | Mode::Function => mem::swap(&mut self.register, next),
+            Mode::Register => *next = Mode::Macro,
+            Mode::Macro => *next = mem::replace(&mut self.register, Mode::Register),
             _ => unreachable!(),
         };
     }
@@ -143,12 +143,12 @@ impl Next {
             Mode::Normal => unreachable!(),
             Mode::Comment => self.toggle_comment(next),
             Mode::Invoke => self.toggle_invoke(next),
-            Mode::Func | Mode::Body => Self::toggle_func(next),
+            Mode::Define | Mode::Function => Self::toggle_define(next),
             Mode::Quote => self.toggle_quote(next),
             Mode::Direct => self.toggle_direct(next),
-            Mode::Exec => self.toggle_exec(next),
+            Mode::Execute => self.toggle_execute(next),
             Mode::Repeat => self.toggle_repeat(next),
-            Mode::Register | Mode::Record => self.toggle_record(next),
+            Mode::Register | Mode::Macro => self.toggle_register(next),
         }
     }
 }
@@ -180,26 +180,30 @@ impl Lexer {
     fn consume(&mut self, input: u8) -> Inst {
         if matches!(
             (self.mode, input, self.is_head()),
-            (Mode::Normal | Mode::Body | Mode::Record, SEMICOLON, false)
+            (
+                Mode::Normal | Mode::Function | Mode::Macro,
+                SEMICOLON,
+                false
+            )
         ) {
             return self.add(Inst::Nop);
         }
         match (self.mode, input) {
-            (Mode::Normal | Mode::Body, Q)
+            (Mode::Normal | Mode::Function, Q)
             | (Mode::Normal, SEMICOLON)
             | (
-                Mode::Normal | Mode::Body | Mode::Record,
+                Mode::Normal | Mode::Function | Mode::Macro,
                 HASH | COLON | QUOTE | APOSTROPHE | AT | DOLLAR,
             ) => self.toggle(Mode::new(input), None),
-            (Mode::Record, SEMICOLON) => self.finish(input, true),
-            (Mode::Comment | Mode::Invoke | Mode::Func, NEWLINE)
-            | (Mode::Body, SEMICOLON)
+            (Mode::Macro, SEMICOLON) => self.finish(input, true),
+            (Mode::Comment | Mode::Invoke | Mode::Define, NEWLINE)
+            | (Mode::Function, SEMICOLON)
             | (Mode::Quote, QUOTE)
-            | (Mode::Record, Q)
-            | (Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register, _) => {
+            | (Mode::Macro, Q)
+            | (Mode::Direct | Mode::Execute | Mode::Repeat | Mode::Register, _) => {
                 self.finish(input, false)
             }
-            (Mode::Invoke | Mode::Func | Mode::Body | Mode::Quote | Mode::Record, _) => {
+            (Mode::Invoke | Mode::Define | Mode::Function | Mode::Quote | Mode::Macro, _) => {
                 self.push(input)
             }
             (Mode::Comment, _) => Inst::Skip,
@@ -208,29 +212,29 @@ impl Lexer {
     }
     fn push(&mut self, input: u8) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Comment | Mode::Direct | Mode::Exec | Mode::Repeat => {
+            Mode::Normal | Mode::Comment | Mode::Direct | Mode::Execute | Mode::Repeat => {
                 unreachable!()
             }
             Mode::Invoke => self.invoke.push(input),
-            Mode::Func => self.func.push(input),
-            Mode::Body => self.body.push(Inst::new(input)),
+            Mode::Define => self.func.push(input),
+            Mode::Function => self.body.push(Inst::new(input)),
             Mode::Quote => self.quote.push(input),
-            Mode::Record => self.record.push(Inst::new(input)),
+            Mode::Macro => self.record.push(Inst::new(input)),
             Mode::Register => self.register = Some(input),
         }
         Inst::Skip
     }
     fn take(&mut self, input: u8) -> Inst {
         match self.mode {
-            Mode::Comment | Mode::Func => Inst::Skip,
+            Mode::Comment | Mode::Define => Inst::Skip,
             Mode::Invoke => Inst::Invoke(mem::take(&mut self.invoke)),
-            Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
+            Mode::Function => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
             Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
             Mode::Direct => Inst::Direct(input),
-            Mode::Exec => Inst::Exec(input),
+            Mode::Execute => Inst::Exec(input),
             Mode::Repeat => Inst::Repeat(input),
             Mode::Register => self.push(input),
-            Mode::Record => Inst::Macro(
+            Mode::Macro => Inst::Register(
                 mem::take(&mut self.register).unwrap(),
                 mem::take(&mut self.record),
             ),
@@ -241,8 +245,8 @@ impl Lexer {
         if inst != Inst::Skip {
             match self.mode {
                 Mode::Normal => return inst,
-                Mode::Body => self.body.push(inst),
-                Mode::Record => self.record.push(inst),
+                Mode::Function => self.body.push(inst),
+                Mode::Macro => self.record.push(inst),
                 _ => unreachable!(),
             }
         }
@@ -279,10 +283,13 @@ mod lexer_tests {
                 Comment, Normal,
             ],
         );
-        mode_test(";\n#;\n;", &[Func, Body, Comment, Comment, Body, Normal]);
+        mode_test(
+            ";\n#;\n;",
+            &[Define, Function, Comment, Comment, Function, Normal],
+        );
         mode_test(
             "q##q\nq",
-            &[Register, Record, Comment, Comment, Record, Normal],
+            &[Register, Macro, Comment, Comment, Macro, Normal],
         );
     }
     #[test]
@@ -295,36 +302,36 @@ mod lexer_tests {
                 Invoke, Invoke, Invoke, Invoke, Invoke, Invoke, Invoke, Invoke, Invoke, Normal,
             ],
         );
-        mode_test(";\n:;\n;", &[Func, Body, Invoke, Invoke, Body, Normal]);
         mode_test(
-            "q::q\nq",
-            &[Register, Record, Invoke, Invoke, Record, Normal],
+            ";\n:;\n;",
+            &[Define, Function, Invoke, Invoke, Function, Normal],
         );
+        mode_test("q::q\nq", &[Register, Macro, Invoke, Invoke, Macro, Normal]);
     }
     #[test]
-    fn func_test() {
-        mode_test(";;\n;", &[Func, Func, Body, Normal]);
+    fn define_test() {
+        mode_test(";;\n;", &[Define, Define, Function, Normal]);
         mode_test(
             "; \"#$':;@q\nabc\n;",
             &[
-                Func, Func, Func, Func, Func, Func, Func, Func, Func, Func, Body, Body, Body, Body,
-                Body, Normal,
+                Define, Define, Define, Define, Define, Define, Define, Define, Define, Define,
+                Function, Function, Function, Function, Function, Normal,
             ],
         );
         mode_test(
             ";q;\nq;\n ;q\n;",
             &[
-                Func, Func, Func, Body, Register, Record, Record, Record, Record, Body, Body,
-                Normal,
+                Define, Define, Define, Function, Register, Macro, Macro, Macro, Macro, Function,
+                Function, Normal,
             ],
         );
         mode_test(
             "q;\n;q\nq;\n;",
             &[
-                Register, Record, Record, Func, Func, Body, Register, Record, Record, Normal,
+                Register, Macro, Macro, Define, Define, Function, Register, Macro, Macro, Normal,
             ],
         );
-        mode_test("q;q", &[Register, Record, Normal]);
+        mode_test("q;q", &[Register, Macro, Normal]);
     }
     #[test]
     fn quote_test() {
@@ -337,12 +344,11 @@ mod lexer_tests {
         );
         mode_test(
             ";\n\";\n;\"\n;",
-            &[Func, Body, Quote, Quote, Quote, Quote, Body, Body, Normal],
+            &[
+                Define, Function, Quote, Quote, Quote, Quote, Function, Function, Normal,
+            ],
         );
-        mode_test(
-            "q\"\"q\"q",
-            &[Register, Record, Quote, Quote, Record, Normal],
-        );
+        mode_test("q\"\"q\"q", &[Register, Macro, Quote, Quote, Macro, Normal]);
     }
     #[test]
     fn direct_test() {
@@ -355,26 +361,32 @@ mod lexer_tests {
         );
         mode_test(
             ";\n';'\n;",
-            &[Func, Body, Direct, Body, Direct, Body, Normal],
+            &[Define, Function, Direct, Function, Direct, Function, Normal],
         );
         mode_test(
             "q''q'\nq",
-            &[Register, Record, Direct, Record, Direct, Record, Normal],
+            &[Register, Macro, Direct, Macro, Direct, Macro, Normal],
         );
     }
     #[test]
-    fn exec_test() {
+    fn execute_test() {
         mode_test(
             "@ @\"@#@$@'@:@;@@@q@\n",
             &[
-                Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal,
-                Exec, Normal, Exec, Normal, Exec, Normal, Exec, Normal,
+                Execute, Normal, Execute, Normal, Execute, Normal, Execute, Normal, Execute,
+                Normal, Execute, Normal, Execute, Normal, Execute, Normal, Execute, Normal,
+                Execute, Normal,
             ],
         );
-        mode_test(";\n@;@\n;", &[Func, Body, Exec, Body, Exec, Body, Normal]);
+        mode_test(
+            ";\n@;@\n;",
+            &[
+                Define, Function, Execute, Function, Execute, Function, Normal,
+            ],
+        );
         mode_test(
             "q@@q@\nq",
-            &[Register, Record, Exec, Record, Exec, Record, Normal],
+            &[Register, Macro, Execute, Macro, Execute, Macro, Normal],
         );
     }
     #[test]
@@ -388,18 +400,18 @@ mod lexer_tests {
         );
         mode_test(
             ";\n$;$\n;",
-            &[Func, Body, Repeat, Body, Repeat, Body, Normal],
+            &[Define, Function, Repeat, Function, Repeat, Function, Normal],
         );
         mode_test(
             "q$$q$\nq",
-            &[Register, Record, Repeat, Record, Repeat, Record, Normal],
+            &[Register, Macro, Repeat, Macro, Repeat, Macro, Normal],
         );
     }
     #[test]
-    fn record_test() {
-        mode_test("q q", &[Register, Record, Normal]);
-        mode_test("q\nq", &[Register, Record, Normal]);
-        mode_test("qqq", &[Register, Record, Normal]);
+    fn register_test() {
+        mode_test("q q", &[Register, Macro, Normal]);
+        mode_test("q\nq", &[Register, Macro, Normal]);
+        mode_test("qqq", &[Register, Macro, Normal]);
     }
     fn mode_test(input: &str, modes: &[Mode]) {
         assert_eq!(input.len(), modes.len());
