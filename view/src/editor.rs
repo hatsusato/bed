@@ -65,14 +65,14 @@ fn move_cell(x: u8, y: u8) {
     Screen::move_cursor(x, y);
 }
 fn print_cell(state: &State, x: u8, y: u8) {
-    let regs = state.get_regs();
+    let regs = state.get_registers();
     let block = &state.get_memory()[regs.block];
     let index = x + y * BLOCK_SIDE;
     let highlight = regs.cell == index;
     Screen::print_display(util::as_hex(block[index]), highlight);
 }
 fn print_register(state: &State, last: u8) {
-    let regs = state.get_regs();
+    let regs = state.get_registers();
     let disp = format!(
         "D: {}, A: {}, B: {}, C: {}, E: {}, KEY: {:<4}",
         util::as_hex(regs.data),

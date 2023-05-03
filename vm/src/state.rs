@@ -6,34 +6,34 @@ use std::collections::HashMap;
 use util::{Block, Stream};
 
 pub struct State {
-    regs: Registers,
-    mem: Memory,
-    maps: Maps,
-    defs: HashMap<Name, Seq>,
+    registers: Registers,
+    memory: Memory,
+    definition: HashMap<Name, Seq>,
     registry: HashMap<u8, Seq>,
+    maps: Maps,
 }
 impl State {
     #[must_use]
     pub fn new(input: Stream, output: Stream) -> Self {
         Self {
-            regs: Registers::default(),
-            mem: Memory::default(),
-            maps: Maps::new(input, output),
-            defs: HashMap::new(),
+            registers: Registers::default(),
+            memory: Memory::default(),
+            definition: HashMap::new(),
             registry: HashMap::new(),
+            maps: Maps::new(input, output),
         }
     }
     #[must_use]
-    pub fn get_regs(&self) -> &Registers {
-        &self.regs
+    pub fn get_registers(&self) -> &Registers {
+        &self.registers
     }
     #[must_use]
     pub fn get_memory(&self) -> &Block<Block<u8>> {
-        self.mem.get_memory()
+        self.memory.get_memory()
     }
     pub fn issue(&mut self, inst: Inst) {
-        let regs = &mut self.regs;
-        let mem = &mut self.mem;
+        let regs = &mut self.registers;
+        let mem = &mut self.memory;
         let maps = &mut self.maps;
         match inst {
             Inst::Insert(digit) => regs.insert(digit),
@@ -102,21 +102,21 @@ impl State {
         self.run(&seq);
     }
     fn repeat(&mut self, key: u8) {
-        let count = self.regs.accum;
+        let count = self.registers.accum;
         for i in 0..count {
-            self.regs.accum = i;
+            self.registers.accum = i;
             self.exec(key);
         }
-        self.regs.accum = count;
+        self.registers.accum = count;
     }
     fn eval(&mut self) {
-        self.exec(self.regs.data);
+        self.exec(self.registers.data);
     }
     fn define(&mut self, name: Name, body: Seq) {
-        self.defs.entry(name).or_insert(body);
+        self.definition.entry(name).or_insert(body);
     }
     fn invoke(&mut self, name: &Name) {
-        let body = self.defs.get(name).cloned().unwrap_or_default();
+        let body = self.definition.get(name).cloned().unwrap_or_default();
         self.run(&body);
     }
 }
@@ -147,10 +147,10 @@ mod state_tests {
         state.issue(Inst::Define(to_vec("clear"), clear));
         zero_test(&state);
         state.issue(Inst::Invoke(to_vec("test")));
-        assert_eq!(state.get_regs().data, 1);
-        assert_eq!(state.get_regs().accum, 2);
-        assert_eq!(state.get_regs().block, 3);
-        assert_eq!(state.get_regs().cell, 4);
+        assert_eq!(state.get_registers().data, 1);
+        assert_eq!(state.get_registers().accum, 2);
+        assert_eq!(state.get_registers().block, 3);
+        assert_eq!(state.get_registers().cell, 4);
         state.issue(Inst::Invoke(to_vec("clear")));
         zero_test(&state);
     }
@@ -174,10 +174,10 @@ mod state_tests {
         state.run(&[Inst::Register(b'a', record), Inst::Register(b'c', clear)]);
         zero_test(&state);
         state.issue(Inst::Exec(b'a'));
-        assert_eq!(state.get_regs().data, 1);
-        assert_eq!(state.get_regs().accum, 2);
-        assert_eq!(state.get_regs().block, 3);
-        assert_eq!(state.get_regs().cell, 4);
+        assert_eq!(state.get_registers().data, 1);
+        assert_eq!(state.get_registers().accum, 2);
+        assert_eq!(state.get_registers().block, 3);
+        assert_eq!(state.get_registers().cell, 4);
         state.issue(Inst::Exec(b'c'));
         zero_test(&state);
     }
@@ -189,11 +189,11 @@ mod state_tests {
         state.run(&[Inst::Register(b'a', record), Inst::Register(b'c', clear)]);
         zero_test(&state);
         state.run(&[Inst::Insert(10)]);
-        assert_eq!(state.get_regs().data, 0);
-        assert_eq!(state.get_regs().accum, 10);
+        assert_eq!(state.get_registers().data, 0);
+        assert_eq!(state.get_registers().accum, 10);
         state.issue(Inst::Repeat(b'a'));
-        assert_eq!(state.get_regs().data, 45);
-        assert_eq!(state.get_regs().accum, 10);
+        assert_eq!(state.get_registers().data, 45);
+        assert_eq!(state.get_registers().accum, 10);
         state.issue(Inst::Exec(b'c'));
         zero_test(&state);
     }
@@ -217,10 +217,10 @@ mod state_tests {
         let clear = [Inst::Origin, Inst::Begin, Inst::Delete, Inst::Zero].to_vec();
         state.run(&[Inst::Register(b'a', record), Inst::Register(b'c', clear)]);
         state.run(&[Inst::Direct(b'a'), Inst::Load, Inst::Eval]);
-        assert_eq!(state.get_regs().data, 1);
-        assert_eq!(state.get_regs().accum, 2);
-        assert_eq!(state.get_regs().block, 3);
-        assert_eq!(state.get_regs().cell, 4);
+        assert_eq!(state.get_registers().data, 1);
+        assert_eq!(state.get_registers().accum, 2);
+        assert_eq!(state.get_registers().block, 3);
+        assert_eq!(state.get_registers().cell, 4);
         state.run(&[
             Inst::Direct(b'c'),
             Inst::Load,
@@ -247,7 +247,7 @@ mod state_tests {
     }
     fn zero_test(state: &State) {
         let memory = state.get_memory();
-        zero_regs_test(&state.regs);
+        zero_regs_test(&state.registers);
         for b in 0..u8::MAX {
             for c in 0..u8::MAX {
                 assert_eq!(memory[b][c], 0);
