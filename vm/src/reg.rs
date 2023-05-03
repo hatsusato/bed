@@ -133,6 +133,12 @@ impl Registers {
     pub fn store<'a, F: FnOnce(u8, u8) -> &'a mut u8>(&self, consumer: F) {
         *consumer(self.block, self.cell) = self.data;
     }
+    pub fn restore<'a, F: FnOnce(u8, u8) -> &'a u8>(&mut self, producer: F) {
+        self.cell = *producer(self.block, self.data);
+    }
+    pub fn save<'a, F: FnOnce(u8, u8) -> &'a mut u8>(&self, consumer: F) {
+        *consumer(self.block, self.data) = self.cell;
+    }
     pub fn input<F: FnOnce() -> Option<u8>>(&mut self, producer: F) {
         match producer() {
             Some(data) => self.data = data,
