@@ -1,13 +1,15 @@
-use crate::inst::{Inst, Name};
+use crate::inst::{Inst, Name, Seq};
 use crate::maps::Maps;
 use crate::memory::Memory;
 use crate::reg::Registers;
+use std::collections::HashMap;
 use util::{Block, Stream};
 
 pub struct State {
     regs: Registers,
     mem: Memory,
     maps: Maps,
+    defs: HashMap<Name, Seq>,
 }
 impl State {
     #[must_use]
@@ -16,6 +18,7 @@ impl State {
             regs: Registers::default(),
             mem: Memory::default(),
             maps: Maps::new(input, output),
+            defs: HashMap::new(),
         }
     }
     #[must_use]
@@ -81,18 +84,13 @@ impl State {
             Inst::Exec(key) => self.exec(key),
             Inst::Repeat(key) => self.repeat(key),
             Inst::Eval => self.eval(),
-            Inst::Define(name, body) => maps.define(name, body),
-            Inst::Invoke(name) => self.call(&name),
+            Inst::Define(name, body) => self.define(name, body),
+            Inst::Invoke(name) => self.invoke(&name),
             Inst::Nop | Inst::Skip => (),
         }
     }
     fn run(&mut self, seq: &[Inst]) {
-        for inst in seq {
-            self.issue(inst.clone());
-        }
-    }
-    fn call(&mut self, name: &Name) {
-        self.run(&self.maps.get_func(name));
+        seq.iter().for_each(|inst| self.issue(inst.clone()));
     }
     fn exec(&mut self, key: u8) {
         self.run(&self.maps.get_macro(key));
@@ -107,6 +105,13 @@ impl State {
     }
     fn eval(&mut self) {
         self.exec(self.regs.data);
+    }
+    fn define(&mut self, name: Name, body: Seq) {
+        self.defs.entry(name).or_insert(body);
+    }
+    fn invoke(&mut self, name: &Name) {
+        let body = self.defs.get(name).cloned().unwrap_or_default();
+        self.run(&body);
     }
 }
 

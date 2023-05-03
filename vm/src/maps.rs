@@ -1,4 +1,4 @@
-use crate::inst::{Name, Seq};
+use crate::inst::Seq;
 use crate::reg::Registers;
 use std::collections::HashMap;
 use util::{Flag, Select, Stream};
@@ -101,7 +101,6 @@ impl StreamMap {
 
 pub struct Maps {
     macros: HashMap<u8, Seq>,
-    funcs: HashMap<Name, Seq>,
     streams: StreamMap,
     indices: StreamIndices,
 }
@@ -109,7 +108,6 @@ impl Maps {
     pub fn new(input: Stream, output: Stream) -> Self {
         Self {
             macros: HashMap::default(),
-            funcs: HashMap::default(),
             streams: StreamMap::new(input, output),
             indices: StreamIndices::default(),
         }
@@ -132,12 +130,6 @@ impl Maps {
             Action::Open => self.streams.open(action.index, regs),
             _ => unimplemented!(),
         }
-    }
-    pub fn define(&mut self, name: Name, body: Seq) {
-        self.funcs.entry(name).or_insert(body);
-    }
-    pub fn get_func(&self, name: &Name) -> Seq {
-        self.funcs.get(name).cloned().unwrap_or_default()
     }
     pub fn register(&mut self, key: u8, val: Seq) {
         self.macros.insert(key, val);
