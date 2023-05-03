@@ -1,64 +1,58 @@
 use crate::reg::Registers;
-use std::collections::HashMap;
-use util::{Flag, Stream};
+use util::Stream;
 
 const STDIN: u8 = 0;
 const STDOUT: u8 = 1;
 const STDERR: u8 = 2;
-const NULL: u8 = u8::MAX;
+const STREAM_COUNT: usize = 1 << u8::BITS;
 
-struct StreamMap {
-    map: HashMap<u8, Stream>,
+struct StreamArray {
+    array: [Stream; STREAM_COUNT],
 }
-impl StreamMap {
-    fn new(input: Stream, output: Stream) -> Self {
-        let mut map = HashMap::new();
-        map.insert(STDIN, input);
-        map.insert(STDOUT, output);
-        map.insert(STDERR, Stream::Stderr);
-        map.insert(NULL, Stream::Null);
-        Self { map }
+impl Default for StreamArray {
+    fn default() -> Self {
+        let array = [(); STREAM_COUNT].map(|_| Stream::Null);
+        Self { array }
     }
-    fn get_stream(&mut self, index: u8) -> &mut Stream {
-        let contains = self.map.contains_key(&index);
-        let key = if contains { index } else { NULL };
-        self.map.get_mut(&key).unwrap()
+}
+impl StreamArray {
+    fn new() -> Self {
+        let mut this = Self::default();
+        *this.get_mut(STDIN) = Stream::Stdin;
+        *this.get_mut(STDOUT) = Stream::Stdout;
+        *this.get_mut(STDERR) = Stream::Stderr;
+        this
     }
-    fn open(&mut self, index: u8, regs: &mut Registers) {
-        if index != NULL {
-            let stream = self.get_stream(index);
-            if matches!(stream, Stream::Queue(_)) {
-                let stream = std::mem::take(stream);
-                if let Some(path) = stream.take_string() {
-                    let stream = Stream::make_file(path, Flag::Both);
-                    self.map.insert(index, stream);
-                    return;
-                }
-            }
-        }
-        regs.error = true;
+    fn get_mut(&mut self, descriptor: u8) -> &mut Stream {
+        &mut self.array[usize::from(descriptor)]
     }
 }
 
 pub struct Maps {
-    streams: StreamMap,
+    array: StreamArray,
     input: u8,
     output: u8,
 }
 impl Maps {
     pub fn new(input: Stream, output: Stream) -> Self {
-        Self {
-            streams: StreamMap::new(input, output),
+        let mut this = Self {
+            array: StreamArray::new(),
             input: STDIN,
             output: STDOUT,
-        }
+        };
+        this.init(input, output);
+        this
+    }
+    pub fn init(&mut self, input: Stream, output: Stream) {
+        *self.array.get_mut(STDIN) = input;
+        *self.array.get_mut(STDOUT) = output;
     }
     pub fn getchar(&mut self, regs: &mut Registers) {
-        let stream = self.streams.get_stream(self.input);
+        let stream = self.array.get_mut(self.input);
         regs.getchar(|| stream.getchar());
     }
     pub fn putchar(&mut self, regs: &mut Registers) {
-        let stream = self.streams.get_stream(self.output);
+        let stream = self.array.get_mut(self.output);
         regs.putchar(|data| stream.putchar(data));
     }
     pub fn stream(&mut self, regs: &mut Registers) {
