@@ -10,10 +10,10 @@ impl Memory {
         &self.blocks
     }
     pub fn load(&mut self, regs: &mut Registers) {
-        regs.data = self.blocks[regs.block][regs.cell];
+        regs.load(|block, cell| &self.blocks[block][cell]);
     }
     pub fn store(&mut self, regs: &Registers) {
-        self.blocks[regs.block][regs.cell] = regs.data;
+        regs.store(|block, cell| &mut self.blocks[block][cell]);
     }
     pub fn save(&mut self, regs: &Registers) {
         let page = &mut self.blocks[regs.data];

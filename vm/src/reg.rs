@@ -127,6 +127,12 @@ impl Registers {
     pub fn clear(&mut self) {
         self.error = false;
     }
+    pub fn load<'a, F: FnOnce(u8, u8) -> &'a u8>(&mut self, producer: F) {
+        self.data = *producer(self.block, self.cell);
+    }
+    pub fn store<'a, F: FnOnce(u8, u8) -> &'a mut u8>(&self, consumer: F) {
+        *consumer(self.block, self.cell) = self.data;
+    }
     pub fn input<F: FnOnce() -> Option<u8>>(&mut self, producer: F) {
         match producer() {
             Some(data) => self.data = data,
