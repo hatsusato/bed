@@ -11,9 +11,9 @@ fn main() {
     let input = args.open_default(Select::Input);
     let output = args.open_default(Select::Output);
     if args.is_interactive() {
-        Editor::new(input, output).run();
+        Editor::run(input, output);
     } else {
         let code = args.open_code().unwrap_or_default();
-        Machine::new(input, output).run(&code);
+        Machine::run(&code, input, output);
     }
 }

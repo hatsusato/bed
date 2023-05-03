@@ -34,14 +34,12 @@ pub struct Maps {
     output: u8,
 }
 impl Maps {
-    pub fn new(input: Stream, output: Stream) -> Self {
-        let mut this = Self {
+    pub fn new() -> Self {
+        Self {
             array: StreamArray::new(),
             input: STDIN,
             output: STDOUT,
-        };
-        this.init(input, output);
-        this
+        }
     }
     pub fn init(&mut self, input: Stream, output: Stream) {
         *self.array.get_mut(STDIN) = input;

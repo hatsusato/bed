@@ -12,16 +12,20 @@ pub struct State {
     registry: HashMap<u8, Seq>,
     maps: Maps,
 }
-impl State {
-    #[must_use]
-    pub fn new(input: Stream, output: Stream) -> Self {
+impl Default for State {
+    fn default() -> Self {
         Self {
             registers: Registers::default(),
             memory: Memory::default(),
             definition: HashMap::new(),
             registry: HashMap::new(),
-            maps: Maps::new(input, output),
+            maps: Maps::new(),
         }
+    }
+}
+impl State {
+    pub fn init(&mut self, input: Stream, output: Stream) {
+        self.maps.init(input, output);
     }
     #[must_use]
     pub fn get_registers(&self) -> &Registers {
@@ -123,7 +127,7 @@ impl State {
 
 #[cfg(test)]
 mod state_tests {
-    use super::{Inst, Registers, State, Stream};
+    use super::{Inst, Registers, State};
 
     #[test]
     fn func_invoke_test() {
@@ -234,7 +238,7 @@ mod state_tests {
         zero_test(&state);
     }
     fn make() -> State {
-        let state = State::new(Stream::default(), Stream::default());
+        let state = State::default();
         zero_test(&state);
         state
     }
