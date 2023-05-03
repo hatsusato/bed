@@ -139,13 +139,13 @@ impl Registers {
     pub fn save<'a, F: FnOnce(u8, u8) -> &'a mut u8>(&self, consumer: F) {
         *consumer(self.block, self.data) = self.cell;
     }
-    pub fn input<F: FnOnce() -> Option<u8>>(&mut self, producer: F) {
+    pub fn getchar<F: FnOnce() -> Option<u8>>(&mut self, producer: F) {
         match producer() {
             Some(data) => self.data = data,
             None => self.error = true,
         }
     }
-    pub fn output<F: FnOnce(u8) -> Option<()>>(&mut self, consumer: F) {
+    pub fn putchar<F: FnOnce(u8) -> Option<()>>(&mut self, consumer: F) {
         if consumer(self.data).is_none() {
             self.error = true;
         }

@@ -101,23 +101,27 @@ impl StreamMap {
 pub struct Maps {
     streams: StreamMap,
     indices: StreamIndices,
+    input_descriptor: u8,
+    output_descriptor: u8,
 }
 impl Maps {
     pub fn new(input: Stream, output: Stream) -> Self {
         Self {
             streams: StreamMap::new(input, output),
             indices: StreamIndices::default(),
+            input_descriptor: STDIN,
+            output_descriptor: STDOUT,
         }
     }
-    pub fn input(&mut self, regs: &mut Registers) {
+    pub fn getchar(&mut self, regs: &mut Registers) {
         let index = self.indices.get(Select::Input);
         let stream = self.streams.get_stream(index);
-        regs.input(|| stream.input());
+        regs.getchar(|| stream.getchar());
     }
-    pub fn output(&mut self, regs: &mut Registers) {
+    pub fn putchar(&mut self, regs: &mut Registers) {
         let index = self.indices.get(Select::Output);
         let stream = self.streams.get_stream(index);
-        regs.output(|data| stream.output(data));
+        regs.putchar(|data| stream.putchar(data));
     }
     pub fn stream(&mut self, regs: &mut Registers) {
         let action = StreamAction::new(regs.data, regs.accum);
