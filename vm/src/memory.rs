@@ -10,30 +10,30 @@ impl Memory {
         &self.blocks
     }
     pub fn load(&mut self, regs: &mut Registers) {
-        regs.data = self.blocks[regs.block][regs.coord];
+        regs.data = self.blocks[regs.block][regs.cell];
     }
     pub fn store(&mut self, regs: &Registers) {
-        self.blocks[regs.block][regs.coord] = regs.data;
+        self.blocks[regs.block][regs.cell] = regs.data;
     }
     pub fn save(&mut self, regs: &Registers) {
         let page = &mut self.blocks[regs.data];
         let (base, next) = get_pair(regs.accum);
-        (page[base], page[next]) = (regs.block, regs.coord);
+        (page[base], page[next]) = (regs.block, regs.cell);
     }
     pub fn restore(&mut self, regs: &mut Registers) {
         let page = &self.blocks[regs.data];
         let (base, next) = get_pair(regs.accum);
-        (regs.block, regs.coord) = (page[base], page[next]);
+        (regs.block, regs.cell) = (page[base], page[next]);
     }
     pub fn quote(&mut self, regs: &mut Registers, input: &[u8]) {
         let page = &mut self.blocks[regs.block];
         if let Some(src) = input.iter().next() {
-            page[regs.coord] = *src;
+            page[regs.cell] = *src;
         }
         for src in &input[1..] {
-            if let Some(coord) = regs.coord.checked_add(1) {
-                regs.coord = coord;
-                page[regs.coord] = *src;
+            if let Some(cell) = regs.cell.checked_add(1) {
+                regs.cell = cell;
+                page[regs.cell] = *src;
             }
         }
     }
@@ -51,12 +51,12 @@ mod memory_tests {
     fn load_store_test() {
         let (mut mem, mut regs) = make();
         for i in 0..=u8::MAX {
-            (regs.data, regs.coord) = (i, i);
+            (regs.data, regs.cell) = (i, i);
             mem.store(&regs);
         }
         for i in 0..=u8::MAX {
             assert_eq!(mem.blocks[0][i], i);
-            regs.coord = i;
+            regs.cell = i;
             mem.load(&mut regs);
             assert_eq!(regs.data, i);
             regs.data = 0;
@@ -67,7 +67,7 @@ mod memory_tests {
     #[test]
     fn save_test() {
         let (mut mem, mut regs) = make();
-        (regs.block, regs.coord) = (1, 2);
+        (regs.block, regs.cell) = (1, 2);
         mem.save(&regs);
         assert_eq!(mem.blocks[0][0], 1);
         assert_eq!(mem.blocks[0][1], 2);
@@ -82,8 +82,8 @@ mod memory_tests {
         mem.blocks[0][1] = 2;
         mem.restore(&mut regs);
         assert_eq!(regs.block, 1);
-        assert_eq!(regs.coord, 2);
-        (regs.block, regs.coord) = (0, 0);
+        assert_eq!(regs.cell, 2);
+        (regs.block, regs.cell) = (0, 0);
         mem.blocks[0][0] = 0;
         mem.blocks[0][1] = 0;
         zero_test(&mem);
@@ -92,10 +92,10 @@ mod memory_tests {
     fn quote_test() {
         let (mut mem, mut regs) = make();
         mem.quote(&mut regs, &[1, 2, 3, 4]);
-        assert_eq!(regs.coord, 3);
+        assert_eq!(regs.cell, 3);
         for i in 0..4 {
             assert_eq!(mem.blocks[0][i], i + 1);
-            regs.coord = i;
+            regs.cell = i;
             mem.store(&regs);
         }
         zero_test(&mem);

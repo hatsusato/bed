@@ -14,8 +14,8 @@ const Q: u8 = b'q';
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Mode {
     Normal,
-    Ignore,
-    Call,
+    Comment,
+    Invoke,
     Func,
     Body,
     Quote,
@@ -33,8 +33,8 @@ impl Default for Mode {
 impl Mode {
     fn new(input: u8) -> Self {
         match input {
-            HASH => Mode::Ignore,
-            COLON => Mode::Call,
+            HASH => Mode::Comment,
+            COLON => Mode::Invoke,
             SEMICOLON => Mode::Func,
             QUOTE => Mode::Quote,
             APOSTROPHE => Mode::Direct,
@@ -47,8 +47,8 @@ impl Mode {
 }
 
 struct Next {
-    ignore: Mode,
-    call: Mode,
+    comment: Mode,
+    invoke: Mode,
     quote: Mode,
     direct: Mode,
     exec: Mode,
@@ -58,8 +58,8 @@ struct Next {
 impl Default for Next {
     fn default() -> Self {
         Self {
-            ignore: Mode::Ignore,
-            call: Mode::Call,
+            comment: Mode::Comment,
+            invoke: Mode::Invoke,
             quote: Mode::Quote,
             direct: Mode::Direct,
             exec: Mode::Exec,
@@ -69,21 +69,21 @@ impl Default for Next {
     }
 }
 impl Next {
-    fn toggle_ignore(&mut self, next: &mut Mode) {
-        assert!(match self.ignore {
-            Mode::Ignore => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
-            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Ignore),
+    fn toggle_comment(&mut self, next: &mut Mode) {
+        assert!(match self.comment {
+            Mode::Comment => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
+            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Comment),
             _ => false,
         });
-        mem::swap(&mut self.ignore, next);
+        mem::swap(&mut self.comment, next);
     }
-    fn toggle_call(&mut self, next: &mut Mode) {
-        assert!(match self.call {
-            Mode::Call => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
-            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Call),
+    fn toggle_invoke(&mut self, next: &mut Mode) {
+        assert!(match self.invoke {
+            Mode::Invoke => matches!(next, Mode::Normal | Mode::Body | Mode::Record),
+            Mode::Normal | Mode::Body | Mode::Record => matches!(next, Mode::Invoke),
             _ => false,
         });
-        mem::swap(&mut self.call, next);
+        mem::swap(&mut self.invoke, next);
     }
     fn toggle_func(next: &mut Mode) {
         match next {
@@ -141,8 +141,8 @@ impl Next {
     fn toggle(&mut self, select: Mode, next: &mut Mode) {
         match select {
             Mode::Normal => unreachable!(),
-            Mode::Ignore => self.toggle_ignore(next),
-            Mode::Call => self.toggle_call(next),
+            Mode::Comment => self.toggle_comment(next),
+            Mode::Invoke => self.toggle_invoke(next),
             Mode::Func | Mode::Body => Self::toggle_func(next),
             Mode::Quote => self.toggle_quote(next),
             Mode::Direct => self.toggle_direct(next),
@@ -157,7 +157,7 @@ impl Next {
 pub struct Lexer {
     mode: Mode,
     next: Next,
-    call: Vec<u8>,
+    invoke: Vec<u8>,
     func: Vec<u8>,
     body: Vec<Inst>,
     quote: Vec<u8>,
@@ -192,26 +192,26 @@ impl Lexer {
                 HASH | COLON | QUOTE | APOSTROPHE | AT | DOLLAR,
             ) => self.toggle(Mode::new(input), None),
             (Mode::Record, SEMICOLON) => self.finish(input, true),
-            (Mode::Ignore | Mode::Call | Mode::Func, NEWLINE)
+            (Mode::Comment | Mode::Invoke | Mode::Func, NEWLINE)
             | (Mode::Body, SEMICOLON)
             | (Mode::Quote, QUOTE)
             | (Mode::Record, Q)
             | (Mode::Direct | Mode::Exec | Mode::Repeat | Mode::Register, _) => {
                 self.finish(input, false)
             }
-            (Mode::Call | Mode::Func | Mode::Body | Mode::Quote | Mode::Record, _) => {
+            (Mode::Invoke | Mode::Func | Mode::Body | Mode::Quote | Mode::Record, _) => {
                 self.push(input)
             }
-            (Mode::Ignore, _) => Inst::Skip,
+            (Mode::Comment, _) => Inst::Skip,
             (Mode::Normal, _) => Inst::new(input),
         }
     }
     fn push(&mut self, input: u8) -> Inst {
         match self.mode {
-            Mode::Normal | Mode::Ignore | Mode::Direct | Mode::Exec | Mode::Repeat => {
+            Mode::Normal | Mode::Comment | Mode::Direct | Mode::Exec | Mode::Repeat => {
                 unreachable!()
             }
-            Mode::Call => self.call.push(input),
+            Mode::Invoke => self.invoke.push(input),
             Mode::Func => self.func.push(input),
             Mode::Body => self.body.push(Inst::new(input)),
             Mode::Quote => self.quote.push(input),
@@ -222,9 +222,9 @@ impl Lexer {
     }
     fn take(&mut self, input: u8) -> Inst {
         match self.mode {
-            Mode::Ignore | Mode::Func => Inst::Skip,
-            Mode::Call => Inst::Call(mem::take(&mut self.call)),
-            Mode::Body => Inst::Func(mem::take(&mut self.func), mem::take(&mut self.body)),
+            Mode::Comment | Mode::Func => Inst::Skip,
+            Mode::Invoke => Inst::Invoke(mem::take(&mut self.invoke)),
+            Mode::Body => Inst::Define(mem::take(&mut self.func), mem::take(&mut self.body)),
             Mode::Quote => Inst::Quote(mem::take(&mut self.quote)),
             Mode::Direct => Inst::Direct(input),
             Mode::Exec => Inst::Exec(input),
@@ -269,32 +269,37 @@ mod lexer_tests {
     #[allow(clippy::enum_glob_use)]
     use Mode::*;
     #[test]
-    fn ignore_test() {
+    fn comment_test() {
         mode_test("", &[]);
-        mode_test(" #\n", &[Normal, Ignore, Normal]);
+        mode_test(" #\n", &[Normal, Comment, Normal]);
         mode_test(
             "# \"#$':;@q\n",
             &[
-                Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore, Ignore,
-                Normal,
+                Comment, Comment, Comment, Comment, Comment, Comment, Comment, Comment, Comment,
+                Comment, Normal,
             ],
         );
-        mode_test(";\n#;\n;", &[Func, Body, Ignore, Ignore, Body, Normal]);
+        mode_test(";\n#;\n;", &[Func, Body, Comment, Comment, Body, Normal]);
         mode_test(
             "q##q\nq",
-            &[Register, Record, Ignore, Ignore, Record, Normal],
+            &[Register, Record, Comment, Comment, Record, Normal],
         );
     }
     #[test]
-    fn call_test() {
-        mode_test(":\n", &[Call, Normal]);
-        mode_test(": a\n", &[Call, Call, Call, Normal]);
+    fn invoke_test() {
+        mode_test(":\n", &[Invoke, Normal]);
+        mode_test(": a\n", &[Invoke, Invoke, Invoke, Normal]);
         mode_test(
             ":\"#$':;@q\n",
-            &[Call, Call, Call, Call, Call, Call, Call, Call, Call, Normal],
+            &[
+                Invoke, Invoke, Invoke, Invoke, Invoke, Invoke, Invoke, Invoke, Invoke, Normal,
+            ],
         );
-        mode_test(";\n:;\n;", &[Func, Body, Call, Call, Body, Normal]);
-        mode_test("q::q\nq", &[Register, Record, Call, Call, Record, Normal]);
+        mode_test(";\n:;\n;", &[Func, Body, Invoke, Invoke, Body, Normal]);
+        mode_test(
+            "q::q\nq",
+            &[Register, Record, Invoke, Invoke, Record, Normal],
+        );
     }
     #[test]
     fn func_test() {

@@ -68,7 +68,7 @@ fn print_cell(state: &State, x: u8, y: u8) {
     let regs = state.get_regs();
     let block = &state.get_memory()[regs.block];
     let index = x + y * BLOCK_SIDE;
-    let highlight = regs.coord == index;
+    let highlight = regs.cell == index;
     Screen::print_display(util::as_hex(block[index]), highlight);
 }
 fn print_register(state: &State, last: u8) {
@@ -78,7 +78,7 @@ fn print_register(state: &State, last: u8) {
         util::as_hex(regs.data),
         util::as_hex(regs.accum),
         util::as_hex(regs.block),
-        util::as_hex(regs.coord),
+        util::as_hex(regs.cell),
         util::as_hex(regs.error),
         translate_ascii(last)
     );

@@ -114,17 +114,17 @@ impl Maps {
             indices: StreamIndices::default(),
         }
     }
-    pub fn get(&mut self, regs: &mut Registers) {
+    pub fn input(&mut self, regs: &mut Registers) {
         let index = self.indices.get(Select::Input);
         let stream = self.streams.get_stream(index);
-        regs.get(|| stream.get());
+        regs.input(|| stream.input());
     }
-    pub fn put(&mut self, regs: &mut Registers) {
+    pub fn output(&mut self, regs: &mut Registers) {
         let index = self.indices.get(Select::Output);
         let stream = self.streams.get_stream(index);
-        regs.put(|data| stream.put(data));
+        regs.output(|data| stream.output(data));
     }
-    pub fn action(&mut self, regs: &mut Registers) {
+    pub fn stream(&mut self, regs: &mut Registers) {
         let action = StreamAction::new(regs.data, regs.accum);
         match &action.action {
             Action::SetIndex => action.set_index(&mut self.indices),

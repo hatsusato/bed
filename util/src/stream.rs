@@ -50,7 +50,7 @@ impl Stream {
         .map(String::from_utf8)
         .and_then(to_option)
     }
-    pub fn get(&mut self) -> Option<u8> {
+    pub fn input(&mut self) -> Option<u8> {
         match self {
             Stream::Stdin => read(&mut stdin()),
             Stream::File(file) => read(file),
@@ -58,7 +58,7 @@ impl Stream {
             _ => None,
         }
     }
-    pub fn put(&mut self, data: u8) -> Option<()> {
+    pub fn output(&mut self, data: u8) -> Option<()> {
         match self {
             Stream::Stdout => write(&mut stdout(), data),
             Stream::Stderr => write(&mut stderr(), data),

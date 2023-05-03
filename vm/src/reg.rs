@@ -2,10 +2,10 @@ use util::BLOCK_SIDE;
 
 #[derive(Default, Clone, Debug)]
 pub struct Registers {
+    pub data: u8,
     pub accum: u8,
     pub block: u8,
-    pub coord: u8,
-    pub data: u8,
+    pub cell: u8,
     pub error: bool,
 }
 impl Registers {
@@ -15,6 +15,42 @@ impl Registers {
     pub fn insert(&mut self, digit: u8) {
         self.data = nibble_combine(self.data, digit);
     }
+    pub fn right(&mut self) {
+        self.cell = overflow_add(self.cell, 1);
+    }
+    pub fn left(&mut self) {
+        self.cell = overflow_sub(self.cell, 1);
+    }
+    pub fn down(&mut self) {
+        self.cell = overflow_add(self.cell, BLOCK_SIDE);
+    }
+    pub fn up(&mut self) {
+        self.cell = overflow_sub(self.cell, BLOCK_SIDE);
+    }
+    pub fn goto(&mut self) {
+        self.cell = self.data;
+    }
+    pub fn jump(&mut self) {
+        self.block = self.data;
+    }
+    pub fn coord(&mut self) {
+        self.data = self.cell;
+    }
+    pub fn page(&mut self) {
+        self.data = self.block;
+    }
+    pub fn origin(&mut self) {
+        self.cell = 0;
+    }
+    pub fn begin(&mut self) {
+        self.block = 0;
+    }
+    pub fn high(&mut self) {
+        self.data = self.accum;
+    }
+    pub fn low(&mut self) {
+        self.accum = self.data;
+    }
     pub fn swap(&mut self) {
         (self.data, self.accum) = (self.accum, self.data);
     }
@@ -23,48 +59,6 @@ impl Registers {
     }
     pub fn delete(&mut self) {
         self.accum = 0;
-    }
-    pub fn start(&mut self) {
-        self.block = 0;
-    }
-    pub fn origin(&mut self) {
-        self.coord = 0;
-    }
-    pub fn high(&mut self) {
-        self.data = self.accum;
-    }
-    pub fn low(&mut self) {
-        self.accum = self.data;
-    }
-    pub fn pos(&mut self) {
-        self.data = self.coord;
-    }
-    pub fn page(&mut self) {
-        self.data = self.block;
-    }
-    pub fn goto(&mut self) {
-        self.coord = self.data;
-    }
-    pub fn jump(&mut self) {
-        self.block = self.data;
-    }
-    pub fn left(&mut self) {
-        self.coord = overflow_sub(self.coord, 1);
-    }
-    pub fn right(&mut self) {
-        self.coord = overflow_add(self.coord, 1);
-    }
-    pub fn up(&mut self) {
-        self.coord = overflow_sub(self.coord, BLOCK_SIDE);
-    }
-    pub fn down(&mut self) {
-        self.coord = overflow_add(self.coord, BLOCK_SIDE);
-    }
-    pub fn inc(&mut self) {
-        self.accum = overflow_add(self.accum, 1);
-    }
-    pub fn dec(&mut self) {
-        self.accum = overflow_sub(self.accum, 1);
     }
     pub fn add(&mut self) {
         let val = u16::from(self.accum) + u16::from(self.data);
@@ -85,11 +79,35 @@ impl Registers {
             (self.data, self.accum) = (self.accum % self.data, self.accum / self.data);
         }
     }
-    pub fn clear(&mut self) {
-        self.error = false;
+    pub fn inc(&mut self) {
+        self.accum = overflow_add(self.accum, 1);
     }
-    pub fn check(&mut self) {
-        self.accum = u8::from(self.error);
+    pub fn dec(&mut self) {
+        self.accum = overflow_sub(self.accum, 1);
+    }
+    pub fn shl(&mut self) {
+        self.accum = shift(self.accum, true);
+    }
+    pub fn shr(&mut self) {
+        self.accum = shift(self.accum, false);
+    }
+    pub fn rotl(&mut self) {
+        self.accum = rot(self.accum, true);
+    }
+    pub fn rotr(&mut self) {
+        self.accum = rot(self.accum, false);
+    }
+    pub fn and(&mut self) {
+        self.accum &= self.data;
+    }
+    pub fn or(&mut self) {
+        self.accum |= self.data;
+    }
+    pub fn xor(&mut self) {
+        self.accum ^= self.data;
+    }
+    pub fn not(&mut self) {
+        self.accum = !self.accum;
     }
     pub fn neg(&mut self) {
         self.accum = u8::from(self.accum == 0);
@@ -106,37 +124,19 @@ impl Registers {
     pub fn gt(&mut self) {
         self.accum = u8::from(self.data > self.accum);
     }
-    pub fn not(&mut self) {
-        self.accum = !self.accum;
+    pub fn check(&mut self) {
+        self.accum = u8::from(self.error);
     }
-    pub fn and(&mut self) {
-        self.accum &= self.data;
+    pub fn clear(&mut self) {
+        self.error = false;
     }
-    pub fn or(&mut self) {
-        self.accum |= self.data;
-    }
-    pub fn xor(&mut self) {
-        self.accum ^= self.data;
-    }
-    pub fn shl(&mut self) {
-        self.accum = shift(self.accum, true);
-    }
-    pub fn shr(&mut self) {
-        self.accum = shift(self.accum, false);
-    }
-    pub fn rotl(&mut self) {
-        self.accum = rot(self.accum, true);
-    }
-    pub fn rotr(&mut self) {
-        self.accum = rot(self.accum, false);
-    }
-    pub fn get<F: FnOnce() -> Option<u8>>(&mut self, producer: F) {
+    pub fn input<F: FnOnce() -> Option<u8>>(&mut self, producer: F) {
         match producer() {
             Some(data) => self.data = data,
             None => self.error = true,
         }
     }
-    pub fn put<F: FnOnce(u8) -> Option<()>>(&mut self, consumer: F) {
+    pub fn output<F: FnOnce(u8) -> Option<()>>(&mut self, consumer: F) {
         if consumer(self.data).is_none() {
             self.error = true;
         }
@@ -218,17 +218,17 @@ mod register_tests {
     fn goto_jump_test() {
         let mut reg = make();
         reg.direct(0x42);
-        assert_eq!((reg.data, reg.block, reg.coord), (0x42, 0, 0));
+        assert_eq!((reg.data, reg.block, reg.cell), (0x42, 0, 0));
         reg.goto();
-        assert_eq!((reg.data, reg.block, reg.coord), (0x42, 0, 0x42));
+        assert_eq!((reg.data, reg.block, reg.cell), (0x42, 0, 0x42));
         reg.direct(42);
-        assert_eq!((reg.data, reg.block, reg.coord), (42, 0, 0x42));
+        assert_eq!((reg.data, reg.block, reg.cell), (42, 0, 0x42));
         reg.jump();
-        assert_eq!((reg.data, reg.block, reg.coord), (42, 42, 0x42));
+        assert_eq!((reg.data, reg.block, reg.cell), (42, 42, 0x42));
         reg.zero();
-        assert_eq!((reg.data, reg.block, reg.coord), (0, 42, 0x42));
+        assert_eq!((reg.data, reg.block, reg.cell), (0, 42, 0x42));
         reg.goto();
-        assert_eq!((reg.data, reg.block, reg.coord), (0, 42, 0));
+        assert_eq!((reg.data, reg.block, reg.cell), (0, 42, 0));
         reg.jump();
         zero_test(&reg);
     }
@@ -236,11 +236,11 @@ mod register_tests {
     fn left_right_up_down_test() {
         let mut reg = make();
         reg.left();
-        assert_eq!(reg.coord, 0xff);
+        assert_eq!(reg.cell, 0xff);
         reg.down();
-        assert_eq!(reg.coord, 0x0f);
+        assert_eq!(reg.cell, 0x0f);
         reg.right();
-        assert_eq!(reg.coord, 0x10);
+        assert_eq!(reg.cell, 0x10);
         reg.up();
         zero_test(&reg);
     }
@@ -248,14 +248,14 @@ mod register_tests {
     fn pos_origin_test() {
         let mut reg = make();
         reg.right();
-        assert_eq!((reg.data, reg.coord), (0x00, 0x01));
+        assert_eq!((reg.data, reg.cell), (0x00, 0x01));
         reg.down();
-        assert_eq!((reg.data, reg.coord), (0x00, 0x11));
-        reg.pos();
-        assert_eq!((reg.data, reg.coord), (0x11, 0x11));
+        assert_eq!((reg.data, reg.cell), (0x00, 0x11));
+        reg.coord();
+        assert_eq!((reg.data, reg.cell), (0x11, 0x11));
         reg.origin();
-        assert_eq!((reg.data, reg.coord), (0x11, 0x00));
-        reg.pos();
+        assert_eq!((reg.data, reg.cell), (0x11, 0x00));
+        reg.coord();
         zero_test(&reg);
     }
     #[test]
@@ -265,7 +265,7 @@ mod register_tests {
         assert_eq!((reg.data, reg.block), (42, 0));
         reg.jump();
         assert_eq!((reg.data, reg.block), (42, 42));
-        reg.start();
+        reg.begin();
         assert_eq!((reg.data, reg.block), (42, 0));
         reg.zero();
         zero_test(&reg);
@@ -501,7 +501,7 @@ mod register_tests {
         assert_eq!(reg.data, 0);
         assert_eq!(reg.accum, 0);
         assert_eq!(reg.block, 0);
-        assert_eq!(reg.coord, 0);
+        assert_eq!(reg.cell, 0);
         assert!(!reg.error);
     }
 }
