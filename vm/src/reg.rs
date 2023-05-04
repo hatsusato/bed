@@ -127,16 +127,8 @@ impl Registers {
     pub fn clear(&mut self) {
         self.error = false;
     }
-    pub fn getchar<F: FnOnce() -> Option<u8>>(&mut self, producer: F) {
-        match producer() {
-            Some(data) => self.data = data,
-            None => self.error = true,
-        }
-    }
-    pub fn putchar<F: FnOnce(u8) -> Option<()>>(&mut self, consumer: F) {
-        if consumer(self.data).is_none() {
-            self.error = true;
-        }
+    pub fn raise(&mut self) {
+        self.error = true;
     }
     pub fn get_descriptor<F: FnOnce() -> u8>(&mut self, producer: F) {
         self.accum = producer();

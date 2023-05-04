@@ -10,10 +10,10 @@ impl Memory {
         &self.blocks
     }
     pub fn load(&mut self, regs: &mut Registers) {
-        regs.data = self.blocks[regs.block][regs.cell];
+        regs.data = self.get(regs);
     }
     pub fn store(&mut self, regs: &Registers) {
-        self.blocks[regs.block][regs.cell] = regs.data;
+        self.put(regs, regs.data);
     }
     pub fn restore(&mut self, regs: &mut Registers) {
         regs.cell = self.blocks[regs.block][regs.data];
@@ -22,21 +22,37 @@ impl Memory {
         self.blocks[regs.block][regs.data] = regs.cell;
     }
     pub fn direct(&mut self, regs: &Registers, data: u8) {
-        self.blocks[regs.block][regs.cell] = data;
+        self.put(regs, data);
     }
     pub fn quote(&mut self, regs: &mut Registers, seq: &[u8]) {
         if let Some(src) = seq.iter().next() {
-            self.blocks[regs.block][regs.cell] = *src;
+            self.put(regs, *src);
         }
         for src in seq.iter().skip(1) {
             if let Some(cell) = regs.cell.checked_add(1) {
                 regs.cell = cell;
-                self.blocks[regs.block][regs.cell] = *src;
+                self.put(regs, *src);
             } else {
-                regs.error = true;
+                regs.raise();
                 return;
             }
         }
+    }
+    pub fn getchar<F: FnOnce() -> Option<u8>>(&mut self, regs: &mut Registers, producer: F) {
+        if producer().map(|data| self.put(regs, data)).is_none() {
+            regs.raise();
+        }
+    }
+    pub fn putchar<F: FnOnce(u8) -> Option<()>>(&mut self, regs: &mut Registers, consumer: F) {
+        if consumer(self.get(regs)).is_none() {
+            regs.raise();
+        }
+    }
+    fn get(&self, regs: &Registers) -> u8 {
+        self.blocks[regs.block][regs.cell]
+    }
+    fn put(&mut self, regs: &Registers, data: u8) {
+        self.blocks[regs.block][regs.cell] = data;
     }
 }
 

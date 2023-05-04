@@ -1,3 +1,4 @@
+use crate::memory::Memory;
 use crate::reg::Registers;
 use util::Stream;
 
@@ -60,13 +61,13 @@ impl Maps {
         *self.array.get_mut(Descriptor::STDIN) = input;
         *self.array.get_mut(Descriptor::STDOUT) = output;
     }
-    pub fn getchar(&mut self, regs: &mut Registers) {
+    pub fn getchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
         let stream = self.array.get_mut(self.input);
-        regs.getchar(|| stream.getchar());
+        mem.getchar(regs, || stream.getchar());
     }
-    pub fn putchar(&mut self, regs: &mut Registers) {
+    pub fn putchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
         let stream = self.array.get_mut(self.output);
-        regs.putchar(|data| stream.putchar(data));
+        mem.putchar(regs, |data| stream.putchar(data));
     }
     pub fn stream(&mut self, regs: &mut Registers) {
         match regs.data {
