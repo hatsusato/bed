@@ -10,40 +10,33 @@ impl Memory {
         &self.blocks
     }
     pub fn load(&mut self, regs: &mut Registers) {
-        regs.load(|block, cell| self.at(block, cell));
+        regs.data = self.blocks[regs.block][regs.cell];
     }
     pub fn store(&mut self, regs: &Registers) {
-        regs.store(|block, cell| self.at_mut(block, cell));
+        self.blocks[regs.block][regs.cell] = regs.data;
     }
     pub fn restore(&mut self, regs: &mut Registers) {
-        regs.restore(|block, cell| self.at(block, cell));
+        regs.cell = self.blocks[regs.block][regs.data];
     }
     pub fn save(&mut self, regs: &Registers) {
-        regs.save(|block, cell| self.at_mut(block, cell));
+        self.blocks[regs.block][regs.data] = regs.cell;
     }
     pub fn direct(&mut self, regs: &Registers, data: u8) {
-        *self.at_mut(regs.block, regs.cell) = data;
+        self.blocks[regs.block][regs.cell] = data;
     }
     pub fn quote(&mut self, regs: &mut Registers, seq: &[u8]) {
-        let page = &mut self.blocks[regs.block];
         if let Some(src) = seq.iter().next() {
-            page[regs.cell] = *src;
+            self.blocks[regs.block][regs.cell] = *src;
         }
-        for src in &seq[1..] {
+        for src in seq.iter().skip(1) {
             if let Some(cell) = regs.cell.checked_add(1) {
                 regs.cell = cell;
-                page[regs.cell] = *src;
+                self.blocks[regs.block][regs.cell] = *src;
             } else {
                 regs.error = true;
                 return;
             }
         }
-    }
-    fn at(&self, block: u8, cell: u8) -> &u8 {
-        &self.blocks[block][cell]
-    }
-    fn at_mut(&mut self, block: u8, cell: u8) -> &mut u8 {
-        &mut self.blocks[block][cell]
     }
 }
 
