@@ -1,6 +1,6 @@
 use crate::memory::Memory;
 use crate::reg::Registers;
-use util::{Select, Stream};
+use util::{to_option, Select, Stream};
 
 const STREAM_COUNT: usize = 1 << u8::BITS;
 
@@ -95,26 +95,26 @@ impl StreamMap {
         let flag = self
             .read_number(regs.accum)
             .and_then(|index| std::env::args().nth(index))
-            .and_then(|arg| self.write_stream(arg.as_bytes()))
+            .and_then(|arg| self.select_stream(Select::Output).write(arg.as_bytes()))
             .map(|_| ());
         regs.raise(flag);
     }
     fn read_number(&mut self, count: u8) -> Option<usize> {
         const SIZE: usize = std::mem::size_of::<usize>();
-        if usize::from(count) < SIZE {
-            let mut bytes = [0; SIZE];
-            self.read_stream(&mut bytes[..usize::from(count)])
-                .and_then(|len| bool_to_option(len == count))
-                .and(Some(bytes))
-                .map(usize::from_le_bytes)
-        } else {
-            None
-        }
+        let count = usize::from(count);
+        let mut bytes = [0; SIZE];
+        conditional_option(count < SIZE, || &mut bytes[..count])
+            .and_then(|buf| self.select_stream(Select::Input).read(buf))
+            .and_then(|len| conditional_option(len == count, || bytes))
+            .map(usize::from_le_bytes)
     }
     fn write_number(&mut self, number: usize) -> Option<u8> {
         let bytes = number.to_le_bytes();
         let count = bytes.into_iter().rev().skip_while(|&x| x == 0).count();
-        self.write_stream(&bytes[..count])
+        self.select_stream(Select::Output)
+            .write(&bytes[..count])
+            .map(u8::try_from)
+            .and_then(to_option)
     }
     fn get_descriptor(&self, regs: &mut Registers, select: Select) {
         regs.accum = self.select_descriptor(select).into();
@@ -125,14 +125,6 @@ impl StreamMap {
             Select::Input => self.input = desc,
             Select::Output => self.output = desc,
         }
-    }
-    fn read_stream(&mut self, buf: &mut [u8]) -> Option<u8> {
-        let stream = self.select_stream(Select::Input);
-        stream.read(buf)
-    }
-    fn write_stream(&mut self, buf: &[u8]) -> Option<u8> {
-        let stream = self.select_stream(Select::Output);
-        stream.write(buf)
     }
     fn select_stream(&mut self, select: Select) -> &mut Stream {
         let desc = self.select_descriptor(select);
@@ -146,9 +138,9 @@ impl StreamMap {
     }
 }
 
-fn bool_to_option(x: bool) -> Option<()> {
+fn conditional_option<T, F: FnOnce() -> T>(x: bool, f: F) -> Option<T> {
     if x {
-        Some(())
+        Some(f())
     } else {
         None
     }

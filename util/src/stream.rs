@@ -58,17 +58,15 @@ impl Stream {
             _ => unreachable!(),
         }
     }
-    pub fn read(&mut self, buf: &mut [u8]) -> Option<u8> {
+    pub fn read(&mut self, buf: &mut [u8]) -> Option<usize> {
         to_option(match self {
             Stream::Stdin => stdin().read(buf),
             Stream::File(file) => file.read(buf),
             Stream::Queue(queue) => queue.read(buf),
             Stream::Empty | Stream::Stdout | Stream::Stderr => return None,
         })
-        .map(u8::try_from)
-        .and_then(to_option)
     }
-    pub fn write(&mut self, buf: &[u8]) -> Option<u8> {
+    pub fn write(&mut self, buf: &[u8]) -> Option<usize> {
         to_option(match self {
             Stream::Stdout => stdout().write(buf),
             Stream::Stderr => stderr().write(buf),
@@ -76,8 +74,6 @@ impl Stream {
             Stream::Queue(queue) => queue.write(buf),
             Stream::Empty | Stream::Stdin => return None,
         })
-        .map(u8::try_from)
-        .and_then(to_option)
     }
 }
 impl From<Select> for Stream {
