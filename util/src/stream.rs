@@ -25,6 +25,16 @@ impl Stream {
     pub fn make_queue() -> Self {
         Self::Queue(VecDeque::default())
     }
+    #[must_use]
+    pub fn make_standard(index: u8) -> Option<Self> {
+        Some(match index {
+            0 => Stream::Stdin,
+            1 => Stream::Stdout,
+            2 => Stream::Stderr,
+            255 => Stream::Empty,
+            _ => return None,
+        })
+    }
     pub fn take_string(&mut self) -> Option<String> {
         match self {
             Stream::Queue(queue) => Some(std::mem::take(queue)),
