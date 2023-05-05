@@ -1,7 +1,7 @@
 use crate::inst::{Inst, Name, Seq};
-use crate::maps::StreamMap;
 use crate::memory::Memory;
 use crate::reg::Registers;
+use crate::streams::StreamMap;
 use std::collections::HashMap;
 use util::{Block, Stream};
 
