@@ -85,12 +85,16 @@ impl StreamMap {
         }
     }
     fn argc(&mut self, regs: &mut Registers) {
-        let len = std::env::args().len().to_le_bytes();
-        let count = len.into_iter().rev().skip_while(|&x| x == 0).count();
-        let buf: Vec<_> = len.into_iter().take(count).collect();
-        let stream = self.select_stream(Select::Output);
-        let flag = stream.write(buf.as_slice()).map(|count| regs.accum = count);
+        let flag = self
+            .write_number(std::env::args().len())
+            .map(|count| regs.accum = count);
         regs.raise(flag);
+    }
+    fn write_number(&mut self, number: usize) -> Option<u8> {
+        let bytes = number.to_le_bytes();
+        let count = bytes.into_iter().rev().skip_while(|&x| x == 0).count();
+        let stream = self.select_stream(Select::Output);
+        stream.write(&bytes[..count])
     }
     fn get_descriptor(&self, regs: &mut Registers, select: Select) {
         regs.accum = self.select_descriptor(select).into();
