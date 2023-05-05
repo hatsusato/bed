@@ -86,7 +86,21 @@ impl StreamMap {
             1 => self.get_descriptor(regs, Select::Output),
             2 => self.set_descriptor(regs, Select::Input),
             3 => self.set_descriptor(regs, Select::Output),
+            4 => self.argc(regs),
             _ => unimplemented!(),
+        }
+    }
+    fn argc(&mut self, regs: &mut Registers) {
+        let len = std::env::args().len().to_le_bytes();
+        let count = len.into_iter().rev().skip_while(|&x| x == 0).count();
+        let buf: Vec<_> = len.into_iter().take(count).collect();
+        let stream = self.select_stream(Select::Output);
+        if stream
+            .write(buf.as_slice())
+            .map(|count| regs.accum = count)
+            .is_none()
+        {
+            regs.raise();
         }
     }
     fn get_descriptor(&self, regs: &mut Registers, select: Select) {
