@@ -31,9 +31,12 @@ impl Args {
             .map(|_len| buf)
     }
     pub fn open_default(&self, select: Select) -> Stream {
-        match self.choose(select) {
-            Some(path) => Stream::make_file(path, Flag::from(select)),
-            None => Stream::make_default(self.is_interactive(), select),
+        if let Some(path) = self.choose(select) {
+            Stream::make_file(path, Flag::from(select))
+        } else if self.is_interactive() {
+            Stream::default()
+        } else {
+            Stream::from(select)
         }
     }
     fn choose(&self, select: Select) -> Option<&PathBuf> {

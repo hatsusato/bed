@@ -18,13 +18,12 @@ impl Default for Stream {
     }
 }
 impl Stream {
-    #[must_use]
-    pub fn make_default(interactive: bool, select: Select) -> Self {
-        match (interactive, select) {
-            (true, _) => Self::default(),
-            (false, Select::Input) => Self::Stdin,
-            (false, Select::Output) => Self::Stdout,
-        }
+    pub fn make_file<P: AsRef<Path>>(path: P, flag: Flag) -> Self {
+        let mut options = File::options();
+        options.read(flag.is_read()).write(flag.is_write());
+        to_option(options.open(path))
+            .map(Self::File)
+            .unwrap_or_default()
     }
     pub fn make_argv(index: u8) -> Self {
         std::env::args()
@@ -32,13 +31,6 @@ impl Stream {
             .map(|argv| argv.as_bytes().to_vec())
             .map(VecDeque::from)
             .map(Stream::Queue)
-            .unwrap_or_default()
-    }
-    pub fn make_file<P: AsRef<Path>>(path: P, flag: Flag) -> Self {
-        let mut options = File::options();
-        options.read(flag.is_read()).write(flag.is_write());
-        to_option(options.open(path))
-            .map(Self::File)
             .unwrap_or_default()
     }
     pub fn take_string(self) -> Option<String> {
@@ -88,6 +80,14 @@ impl Stream {
         .and_then(to_option)
     }
 }
+impl From<Select> for Stream {
+    fn from(value: Select) -> Self {
+        match value {
+            Select::Input => Stream::Stdin,
+            Select::Output => Stream::Stdout,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum Flag {
@@ -104,8 +104,8 @@ impl Flag {
     }
 }
 impl From<Select> for Flag {
-    fn from(select: Select) -> Self {
-        match select {
+    fn from(value: Select) -> Self {
+        match value {
             Select::Input => Self::Read,
             Select::Output => Self::Write,
         }
