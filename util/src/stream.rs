@@ -1,7 +1,5 @@
-use crate::to_option;
 use std::collections::VecDeque;
-use std::fs::{File, OpenOptions};
-use std::io::{stderr, stdin, stdout, Read, Write};
+use std::fs::File;
 use std::path::Path;
 
 pub enum Stream {
@@ -19,7 +17,7 @@ impl Default for Stream {
 }
 impl Stream {
     pub fn make_file<P: AsRef<Path>>(path: P, flag: Flag) -> Self {
-        to_option(flag.to_option().open(path))
+        crate::to_option(flag.to_option().open(path))
             .map(Self::File)
             .unwrap_or_default()
     }
@@ -34,7 +32,7 @@ impl Stream {
         }
         .map(Vec::from)
         .map(String::from_utf8)
-        .and_then(to_option)
+        .and_then(crate::to_option)
     }
     pub fn getchar(&mut self) -> Option<u8> {
         let buf = &mut [0; 1];
@@ -53,7 +51,8 @@ impl Stream {
         }
     }
     pub fn read(&mut self, buf: &mut [u8]) -> Option<usize> {
-        to_option(match self {
+        use std::io::{stdin, Read};
+        crate::to_option(match self {
             Stream::Stdin => stdin().read(buf),
             Stream::File(file) => file.read(buf),
             Stream::Queue(queue) => queue.read(buf),
@@ -61,7 +60,8 @@ impl Stream {
         })
     }
     pub fn write(&mut self, buf: &[u8]) -> Option<usize> {
-        to_option(match self {
+        use std::io::{stderr, stdout, Write};
+        crate::to_option(match self {
             Stream::Stdout => stdout().write(buf),
             Stream::Stderr => stderr().write(buf),
             Stream::File(file) => file.write(buf),
@@ -94,7 +94,7 @@ impl Flag {
     pub fn new(bits: u8) -> Self {
         Self { bits }
     }
-    fn to_option(self) -> OpenOptions {
+    fn to_option(self) -> std::fs::OpenOptions {
         let mut options = File::options();
         options
             .read(self.check(Flag::READ))

@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::path::PathBuf;
-use util::{to_option, Flag, Select, Stream};
+use util::{Select, Stream};
 
 #[derive(Debug, Parser)]
 #[command(version, about)]
@@ -24,15 +24,15 @@ impl Args {
         let mut buf = Vec::new();
         Some(&self.source)
             .map(File::open)
-            .and_then(to_option)
+            .and_then(util::to_option)
             .map(BufReader::new)
             .map(|mut reader| reader.read_to_end(&mut buf))
-            .and_then(to_option)
-            .map(|_len| buf)
+            .and_then(util::to_option)
+            .and(Some(buf))
     }
     pub fn open_default(&self, select: Select) -> Stream {
         if let Some(path) = self.choose(select) {
-            Stream::make_file(path, Flag::from(select))
+            Stream::make_file(path, util::Flag::from(select))
         } else if self.is_interactive() {
             Stream::default()
         } else {

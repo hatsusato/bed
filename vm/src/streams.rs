@@ -1,6 +1,6 @@
 use crate::memory::Memory;
 use crate::reg::Registers;
-use util::{to_option, Flag, Select, Stream};
+use util::{Select, Stream};
 
 const STREAM_COUNT: usize = 1 << u8::BITS;
 
@@ -15,11 +15,6 @@ impl Descriptor {
     const STDIN: Self = Self { desc: 0 };
     const STDOUT: Self = Self { desc: 1 };
     const STDERR: Self = Self { desc: 2 };
-}
-impl From<Descriptor> for u8 {
-    fn from(value: Descriptor) -> Self {
-        value.desc
-    }
 }
 
 struct StreamArray {
@@ -105,7 +100,7 @@ impl StreamMap {
         let flag = self
             .select_stream(Select::Input)
             .take_string()
-            .map(|path| Stream::make_file(path, Flag::new(regs.accum)))
+            .map(|path| Stream::make_file(path, util::Flag::new(regs.accum)))
             .and_then(|stream| conditional_option(!matches!(stream, Stream::Empty), || stream))
             .map(|file| *self.select_stream(Select::Output) = file);
         regs.raise(flag);
@@ -139,10 +134,10 @@ impl StreamMap {
         self.select_stream(Select::Output)
             .write(&bytes[..count])
             .map(u8::try_from)
-            .and_then(to_option)
+            .and_then(util::to_option)
     }
     fn get_descriptor(&self, regs: &mut Registers, select: Select) {
-        regs.accum = self.select_descriptor(select).into();
+        regs.accum = self.select_descriptor(select).desc;
     }
     fn set_descriptor(&mut self, regs: &mut Registers, select: Select) {
         let desc = Descriptor::new(regs.accum);
