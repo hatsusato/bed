@@ -58,13 +58,12 @@ impl Maps {
         }
     }
     pub fn init(&mut self, input: Stream, output: Stream) {
-        *self.array.get_mut(Descriptor::STDIN) = input;
-        *self.array.get_mut(Descriptor::STDOUT) = output;
+        *self.input_stream() = input;
+        *self.output_stream() = output;
     }
     pub fn getchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
         if self
-            .array
-            .get_mut(self.input)
+            .input_stream()
             .getchar()
             .map(|data| mem.putchar(regs, data))
             .is_none()
@@ -73,12 +72,7 @@ impl Maps {
         }
     }
     pub fn putchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
-        if self
-            .array
-            .get_mut(self.output)
-            .putchar(mem.getchar(regs))
-            .is_none()
-        {
+        if self.output_stream().putchar(mem.getchar(regs)).is_none() {
             regs.raise();
         }
     }
@@ -90,5 +84,11 @@ impl Maps {
             3 => regs.set_descriptor(|desc| self.output = Descriptor::new(desc)),
             _ => unimplemented!(),
         }
+    }
+    fn input_stream(&mut self) -> &mut Stream {
+        self.array.get_mut(self.input)
+    }
+    fn output_stream(&mut self) -> &mut Stream {
+        self.array.get_mut(self.output)
     }
 }
