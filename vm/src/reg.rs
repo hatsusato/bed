@@ -130,12 +130,6 @@ impl Registers {
     pub fn raise(&mut self) {
         self.error = true;
     }
-    pub fn get_descriptor<F: FnOnce() -> u8>(&mut self, producer: F) {
-        self.accum = producer();
-    }
-    pub fn set_descriptor<F: FnOnce(u8)>(&self, consumer: F) {
-        consumer(self.accum);
-    }
 }
 
 fn nibble_combine(hi: u8, lo: u8) -> u8 {

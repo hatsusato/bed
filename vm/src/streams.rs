@@ -1,6 +1,6 @@
 use crate::memory::Memory;
 use crate::reg::Registers;
-use util::Stream;
+use util::{Select, Stream};
 
 const STREAM_COUNT: usize = 1 << u8::BITS;
 
@@ -58,12 +58,12 @@ impl StreamMap {
         }
     }
     pub fn init(&mut self, input: Stream, output: Stream) {
-        *self.input_stream() = input;
-        *self.output_stream() = output;
+        *self.select_stream(Select::Input) = input;
+        *self.select_stream(Select::Output) = output;
     }
     pub fn getchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
         if self
-            .input_stream()
+            .select_stream(Select::Input)
             .getchar()
             .map(|data| mem.putchar(regs, data))
             .is_none()
@@ -72,23 +72,41 @@ impl StreamMap {
         }
     }
     pub fn putchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
-        if self.output_stream().putchar(mem.getchar(regs)).is_none() {
+        if self
+            .select_stream(Select::Output)
+            .putchar(mem.getchar(regs))
+            .is_none()
+        {
             regs.raise();
         }
     }
     pub fn stream(&mut self, regs: &mut Registers) {
         match regs.data {
-            0 => regs.get_descriptor(|| self.input.into()),
-            1 => regs.get_descriptor(|| self.output.into()),
-            2 => regs.set_descriptor(|desc| self.input = Descriptor::new(desc)),
-            3 => regs.set_descriptor(|desc| self.output = Descriptor::new(desc)),
+            0 => self.get_descriptor(regs, Select::Input),
+            1 => self.get_descriptor(regs, Select::Output),
+            2 => self.set_descriptor(regs, Select::Input),
+            3 => self.set_descriptor(regs, Select::Output),
             _ => unimplemented!(),
         }
     }
-    fn input_stream(&mut self) -> &mut Stream {
-        self.array.get_mut(self.input)
+    fn get_descriptor(&self, regs: &mut Registers, select: Select) {
+        regs.accum = self.select_descriptor(select).into();
     }
-    fn output_stream(&mut self) -> &mut Stream {
-        self.array.get_mut(self.output)
+    fn set_descriptor(&mut self, regs: &mut Registers, select: Select) {
+        let desc = Descriptor::new(regs.accum);
+        match select {
+            Select::Input => self.input = desc,
+            Select::Output => self.output = desc,
+        }
+    }
+    fn select_stream(&mut self, select: Select) -> &mut Stream {
+        let desc = self.select_descriptor(select);
+        self.array.get_mut(desc)
+    }
+    fn select_descriptor(&self, select: Select) -> Descriptor {
+        match select {
+            Select::Input => self.input,
+            Select::Output => self.output,
+        }
     }
 }
