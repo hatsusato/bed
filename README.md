@@ -487,13 +487,13 @@ Values of the D register other than those listed in the table are reserved.
   - Raise the error flag if the input stream is not a queue stream.
 - Open a file stream using the obtained file path and a open mode flags.
   - Use the bits in the A register to determine the mode flags for opening the file:
-    - A[0]: read
-    - A[1]: write
-    - A[2]: append
-    - A[3]: truncate
-    - A[4]: create
-    - A[5]: create_new
-    - A[i] refers to the i-th least significant bit of the value of the A register.
+    - `A[0]`: read
+    - `A[1]`: write
+    - `A[2]`: append
+    - `A[3]`: truncate
+    - `A[4]`: create
+    - `A[5]`: create_new
+    - `A[i]` refers to the i-th least significant bit of the value of the A register.
   - Raise the error flag if the file opening fails.
 - Associate the opened file stream with the output descriptor in the Stream Map.
 - If a stream is already associated with the output descriptor, close the old stream and overwrite it with the new file stream.
