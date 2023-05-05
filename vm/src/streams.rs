@@ -83,11 +83,22 @@ impl StreamMap {
             4 => self.argc(regs),
             5 => self.argv(regs),
             6 => self.open_queue(),
+            7 => self.open_standard(regs),
             _ => unimplemented!(),
         }
     }
     fn open_queue(&mut self) {
         *self.select_stream(Select::Output) = Stream::make_queue();
+    }
+    fn open_standard(&mut self, regs: &Registers) {
+        let stream = match regs.accum {
+            0 => Stream::Stdin,
+            1 => Stream::Stdout,
+            2 => Stream::Stderr,
+            255 => Stream::Empty,
+            _ => return,
+        };
+        *self.select_stream(Select::Output) = stream;
     }
     fn argc(&mut self, regs: &mut Registers) {
         let flag = self

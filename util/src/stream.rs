@@ -25,6 +25,7 @@ impl Stream {
             .map(Self::File)
             .unwrap_or_default()
     }
+    #[must_use]
     pub fn make_queue() -> Self {
         Self::Queue(VecDeque::default())
     }
