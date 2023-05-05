@@ -1,7 +1,6 @@
 # RUN: @bed @file
 # CHECK: こんにちは、世界！
-"こんにちは、世界！
-"
-q0r.lq
-q1up[m$0q
-@1
+
+"こんにちは、世界！"
+qaig.q
+laiwluo$a

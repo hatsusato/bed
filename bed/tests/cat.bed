@@ -1,5 +1,5 @@
 # RUN: echo 'こんにちは、世界！' | @bed @file
 # CHECK: こんにちは、世界！
-q0.@1q
-q1,\!$0q
-@1
+qa.@bq
+qb,\!$aq
+@b
