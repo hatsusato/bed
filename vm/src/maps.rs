@@ -44,12 +44,12 @@ impl StreamArray {
     }
 }
 
-pub struct Maps {
+pub struct StreamMap {
     array: StreamArray,
     input: Descriptor,
     output: Descriptor,
 }
-impl Maps {
+impl StreamMap {
     pub fn new() -> Self {
         Self {
             array: StreamArray::new(),

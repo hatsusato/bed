@@ -1,5 +1,5 @@
 use crate::inst::{Inst, Name, Seq};
-use crate::maps::Maps;
+use crate::maps::StreamMap;
 use crate::memory::Memory;
 use crate::reg::Registers;
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ pub struct State {
     memory: Memory,
     definition: HashMap<Name, Seq>,
     registry: HashMap<u8, Seq>,
-    maps: Maps,
+    streams: StreamMap,
 }
 impl Default for State {
     fn default() -> Self {
@@ -19,13 +19,13 @@ impl Default for State {
             memory: Memory::default(),
             definition: HashMap::new(),
             registry: HashMap::new(),
-            maps: Maps::new(),
+            streams: StreamMap::new(),
         }
     }
 }
 impl State {
     pub fn init(&mut self, input: Stream, output: Stream) {
-        self.maps.init(input, output);
+        self.streams.init(input, output);
     }
     #[must_use]
     pub fn get_registers(&self) -> &Registers {
@@ -36,56 +36,56 @@ impl State {
         self.memory.get_memory()
     }
     pub fn issue(&mut self, inst: Inst) {
-        let regs = &mut self.registers;
-        let mem = &mut self.memory;
-        let maps = &mut self.maps;
+        let registers = &mut self.registers;
+        let memory = &mut self.memory;
+        let streams = &mut self.streams;
         match inst {
-            Inst::Insert(digit) => regs.insert(digit),
-            Inst::High => regs.high(),
-            Inst::Low => regs.low(),
-            Inst::Swap => regs.swap(),
-            Inst::Zero => regs.zero(),
-            Inst::Delete => regs.delete(),
-            Inst::Right => regs.right(),
-            Inst::Left => regs.left(),
-            Inst::Down => regs.down(),
-            Inst::Up => regs.up(),
-            Inst::Goto => regs.goto(),
-            Inst::Jump => regs.jump(),
-            Inst::Coord => regs.coord(),
-            Inst::Page => regs.page(),
-            Inst::Origin => regs.origin(),
-            Inst::Begin => regs.begin(),
-            Inst::Add => regs.add(),
-            Inst::Sub => regs.sub(),
-            Inst::Mul => regs.mul(),
-            Inst::Div => regs.div(),
-            Inst::Inc => regs.inc(),
-            Inst::Dec => regs.dec(),
-            Inst::Shl => regs.shl(),
-            Inst::Shr => regs.shr(),
-            Inst::Rotl => regs.rotl(),
-            Inst::Rotr => regs.rotr(),
-            Inst::And => regs.and(),
-            Inst::Or => regs.or(),
-            Inst::Xor => regs.xor(),
-            Inst::Not => regs.not(),
-            Inst::Neg => regs.neg(),
-            Inst::Bool => regs.bool(),
-            Inst::Eq => regs.eq(),
-            Inst::Lt => regs.lt(),
-            Inst::Gt => regs.gt(),
-            Inst::Check => regs.check(),
-            Inst::Clear => regs.clear(),
-            Inst::Load => mem.load(regs),
-            Inst::Store => mem.store(regs),
-            Inst::Restore => mem.restore(regs),
-            Inst::Save => mem.save(regs),
-            Inst::Getchar => maps.getchar(regs, mem),
-            Inst::Putchar => maps.putchar(regs, mem),
-            Inst::Stream => maps.stream(regs),
-            Inst::Direct(data) => mem.direct(regs, data),
-            Inst::Quote(seq) => mem.quote(regs, &seq),
+            Inst::Insert(digit) => registers.insert(digit),
+            Inst::High => registers.high(),
+            Inst::Low => registers.low(),
+            Inst::Swap => registers.swap(),
+            Inst::Zero => registers.zero(),
+            Inst::Delete => registers.delete(),
+            Inst::Right => registers.right(),
+            Inst::Left => registers.left(),
+            Inst::Down => registers.down(),
+            Inst::Up => registers.up(),
+            Inst::Goto => registers.goto(),
+            Inst::Jump => registers.jump(),
+            Inst::Coord => registers.coord(),
+            Inst::Page => registers.page(),
+            Inst::Origin => registers.origin(),
+            Inst::Begin => registers.begin(),
+            Inst::Add => registers.add(),
+            Inst::Sub => registers.sub(),
+            Inst::Mul => registers.mul(),
+            Inst::Div => registers.div(),
+            Inst::Inc => registers.inc(),
+            Inst::Dec => registers.dec(),
+            Inst::Shl => registers.shl(),
+            Inst::Shr => registers.shr(),
+            Inst::Rotl => registers.rotl(),
+            Inst::Rotr => registers.rotr(),
+            Inst::And => registers.and(),
+            Inst::Or => registers.or(),
+            Inst::Xor => registers.xor(),
+            Inst::Not => registers.not(),
+            Inst::Neg => registers.neg(),
+            Inst::Bool => registers.bool(),
+            Inst::Eq => registers.eq(),
+            Inst::Lt => registers.lt(),
+            Inst::Gt => registers.gt(),
+            Inst::Check => registers.check(),
+            Inst::Clear => registers.clear(),
+            Inst::Load => memory.load(registers),
+            Inst::Store => memory.store(registers),
+            Inst::Restore => memory.restore(registers),
+            Inst::Save => memory.save(registers),
+            Inst::Getchar => streams.getchar(registers, memory),
+            Inst::Putchar => streams.putchar(registers, memory),
+            Inst::Stream => streams.stream(registers),
+            Inst::Direct(data) => memory.direct(registers, data),
+            Inst::Quote(seq) => memory.quote(registers, &seq),
             Inst::Register(key, val) => self.register(key, val),
             Inst::Exec(key) => self.exec(key),
             Inst::Repeat(key) => self.repeat(key),
