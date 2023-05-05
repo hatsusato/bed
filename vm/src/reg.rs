@@ -71,7 +71,7 @@ impl Registers {
     }
     pub fn div(&mut self) {
         if self.data == 0 {
-            self.error = true;
+            self.raise(None);
         } else {
             (self.data, self.accum) = (self.accum % self.data, self.accum / self.data);
         }
@@ -127,8 +127,10 @@ impl Registers {
     pub fn clear(&mut self) {
         self.error = false;
     }
-    pub fn raise(&mut self) {
-        self.error = true;
+    pub fn raise(&mut self, flag: Option<()>) {
+        if flag.is_none() {
+            self.error = true;
+        }
     }
 }
 

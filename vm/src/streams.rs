@@ -62,23 +62,17 @@ impl StreamMap {
         *self.select_stream(Select::Output) = output;
     }
     pub fn getchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
-        if self
+        let flag = self
             .select_stream(Select::Input)
             .getchar()
-            .map(|data| mem.putchar(regs, data))
-            .is_none()
-        {
-            regs.raise();
-        }
+            .map(|data| mem.putchar(regs, data));
+        regs.raise(flag);
     }
     pub fn putchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
-        if self
+        let flag = self
             .select_stream(Select::Output)
-            .putchar(mem.getchar(regs))
-            .is_none()
-        {
-            regs.raise();
-        }
+            .putchar(mem.getchar(regs));
+        regs.raise(flag);
     }
     pub fn stream(&mut self, regs: &mut Registers) {
         match regs.data {
@@ -95,13 +89,8 @@ impl StreamMap {
         let count = len.into_iter().rev().skip_while(|&x| x == 0).count();
         let buf: Vec<_> = len.into_iter().take(count).collect();
         let stream = self.select_stream(Select::Output);
-        if stream
-            .write(buf.as_slice())
-            .map(|count| regs.accum = count)
-            .is_none()
-        {
-            regs.raise();
-        }
+        let flag = stream.write(buf.as_slice()).map(|count| regs.accum = count);
+        regs.raise(flag);
     }
     fn get_descriptor(&self, regs: &mut Registers, select: Select) {
         regs.accum = self.select_descriptor(select).into();

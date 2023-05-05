@@ -33,7 +33,7 @@ impl Memory {
                 regs.cell = cell;
                 self.putchar(regs, *src);
             } else {
-                regs.raise();
+                regs.raise(None);
                 return;
             }
         }
