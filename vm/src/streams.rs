@@ -81,6 +81,7 @@ impl StreamMap {
             2 => self.set_descriptor(regs, Select::Input),
             3 => self.set_descriptor(regs, Select::Output),
             4 => self.argc(regs),
+            5 => self.argv(regs),
             _ => unimplemented!(),
         }
     }
@@ -90,11 +91,30 @@ impl StreamMap {
             .map(|count| regs.accum = count);
         regs.raise(flag);
     }
+    fn argv(&mut self, regs: &mut Registers) {
+        let flag = self
+            .read_number(regs.accum)
+            .and_then(|index| std::env::args().nth(index))
+            .and_then(|arg| self.write_stream(arg.as_bytes()))
+            .map(|_| ());
+        regs.raise(flag);
+    }
+    fn read_number(&mut self, count: u8) -> Option<usize> {
+        const SIZE: usize = std::mem::size_of::<usize>();
+        if usize::from(count) < SIZE {
+            let mut bytes = [0; SIZE];
+            self.read_stream(&mut bytes[..usize::from(count)])
+                .and_then(|len| bool_to_option(len == count))
+                .and(Some(bytes))
+                .map(usize::from_le_bytes)
+        } else {
+            None
+        }
+    }
     fn write_number(&mut self, number: usize) -> Option<u8> {
         let bytes = number.to_le_bytes();
         let count = bytes.into_iter().rev().skip_while(|&x| x == 0).count();
-        let stream = self.select_stream(Select::Output);
-        stream.write(&bytes[..count])
+        self.write_stream(&bytes[..count])
     }
     fn get_descriptor(&self, regs: &mut Registers, select: Select) {
         regs.accum = self.select_descriptor(select).into();
@@ -106,6 +126,14 @@ impl StreamMap {
             Select::Output => self.output = desc,
         }
     }
+    fn read_stream(&mut self, buf: &mut [u8]) -> Option<u8> {
+        let stream = self.select_stream(Select::Input);
+        stream.read(buf)
+    }
+    fn write_stream(&mut self, buf: &[u8]) -> Option<u8> {
+        let stream = self.select_stream(Select::Output);
+        stream.write(buf)
+    }
     fn select_stream(&mut self, select: Select) -> &mut Stream {
         let desc = self.select_descriptor(select);
         self.array.get_mut(desc)
@@ -115,5 +143,13 @@ impl StreamMap {
             Select::Input => self.input,
             Select::Output => self.output,
         }
+    }
+}
+
+fn bool_to_option(x: bool) -> Option<()> {
+    if x {
+        Some(())
+    } else {
+        None
     }
 }
