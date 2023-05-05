@@ -25,13 +25,8 @@ impl Stream {
             .map(Self::File)
             .unwrap_or_default()
     }
-    pub fn make_argv(index: u8) -> Self {
-        std::env::args()
-            .nth(usize::from(index))
-            .map(|argv| argv.as_bytes().to_vec())
-            .map(VecDeque::from)
-            .map(Stream::Queue)
-            .unwrap_or_default()
+    pub fn make_queue() -> Self {
+        Self::Queue(VecDeque::default())
     }
     pub fn take_string(self) -> Option<String> {
         match self {

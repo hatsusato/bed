@@ -82,8 +82,12 @@ impl StreamMap {
             3 => self.set_descriptor(regs, Select::Output),
             4 => self.argc(regs),
             5 => self.argv(regs),
+            6 => self.open_queue(),
             _ => unimplemented!(),
         }
+    }
+    fn open_queue(&mut self) {
+        *self.select_stream(Select::Output) = Stream::make_queue();
     }
     fn argc(&mut self, regs: &mut Registers) {
         let flag = self
