@@ -51,24 +51,41 @@ impl Stream {
         .and_then(to_option)
     }
     pub fn getchar(&mut self) -> Option<u8> {
-        match self {
-            Stream::Stdin => read(&mut stdin()),
-            Stream::File(file) => read(file),
-            Stream::Queue(queue) => queue.pop_front(),
-            _ => None,
+        let buf = &mut [0; 1];
+        match self.read(buf) {
+            Some(1) => Some(buf[0]),
+            Some(0) | None => None,
+            _ => unreachable!(),
         }
     }
     pub fn putchar(&mut self, data: u8) -> Option<()> {
-        match self {
-            Stream::Stdout => write(&mut stdout(), data),
-            Stream::Stderr => write(&mut stderr(), data),
-            Stream::File(file) => write(file, data),
-            Stream::Queue(queue) => {
-                queue.push_back(data);
-                Some(())
-            }
-            _ => None,
+        let buf = &[data; 1];
+        match self.write(buf) {
+            Some(1) => Some(()),
+            Some(0) | None => None,
+            _ => unreachable!(),
         }
+    }
+    pub fn read(&mut self, buf: &mut [u8]) -> Option<u8> {
+        to_option(match self {
+            Stream::Stdin => stdin().read(buf),
+            Stream::File(file) => file.read(buf),
+            Stream::Queue(queue) => queue.read(buf),
+            _ => return None,
+        })
+        .map(u8::try_from)
+        .and_then(to_option)
+    }
+    pub fn write(&mut self, buf: &[u8]) -> Option<u8> {
+        to_option(match self {
+            Stream::Stdout => stdout().write(buf),
+            Stream::Stderr => stderr().write(buf),
+            Stream::File(file) => file.write(buf),
+            Stream::Queue(queue) => queue.write(buf),
+            _ => return None,
+        })
+        .map(u8::try_from)
+        .and_then(to_option)
     }
 }
 
@@ -107,22 +124,5 @@ impl From<u8> for Select {
             1 => Self::Output,
             _ => unreachable!(),
         }
-    }
-}
-
-fn write(output: &mut dyn Write, data: u8) -> Option<()> {
-    let buf = &mut [data];
-    match to_option(output.write(buf)) {
-        Some(1) => Some(()),
-        Some(0) | None => None,
-        _ => unreachable!(),
-    }
-}
-fn read(input: &mut dyn Read) -> Option<u8> {
-    let buf = &mut [0];
-    match to_option(input.read(buf)) {
-        Some(1) => Some(buf[0]),
-        Some(0) | None => None,
-        _ => unreachable!(),
     }
 }
