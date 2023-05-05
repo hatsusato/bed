@@ -62,12 +62,25 @@ impl Maps {
         *self.array.get_mut(Descriptor::STDOUT) = output;
     }
     pub fn getchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
-        let stream = self.array.get_mut(self.input);
-        mem.getchar(regs, || stream.getchar());
+        if self
+            .array
+            .get_mut(self.input)
+            .getchar()
+            .map(|data| mem.putchar(regs, data))
+            .is_none()
+        {
+            regs.raise();
+        }
     }
     pub fn putchar(&mut self, regs: &mut Registers, mem: &mut Memory) {
-        let stream = self.array.get_mut(self.output);
-        mem.putchar(regs, |data| stream.putchar(data));
+        if self
+            .array
+            .get_mut(self.output)
+            .putchar(mem.getchar(regs))
+            .is_none()
+        {
+            regs.raise();
+        }
     }
     pub fn stream(&mut self, regs: &mut Registers) {
         match regs.data {
