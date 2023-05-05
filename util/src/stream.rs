@@ -1,6 +1,6 @@
 use crate::to_option;
 use std::collections::VecDeque;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{stderr, stdin, stdout, Read, Write};
 use std::path::Path;
 
@@ -19,9 +19,7 @@ impl Default for Stream {
 }
 impl Stream {
     pub fn make_file<P: AsRef<Path>>(path: P, flag: Flag) -> Self {
-        let mut options = File::options();
-        options.read(flag.is_read()).write(flag.is_write());
-        to_option(options.open(path))
+        to_option(flag.to_option().open(path))
             .map(Self::File)
             .unwrap_or_default()
     }
@@ -29,9 +27,9 @@ impl Stream {
     pub fn make_queue() -> Self {
         Self::Queue(VecDeque::default())
     }
-    pub fn take_string(self) -> Option<String> {
+    pub fn take_string(&mut self) -> Option<String> {
         match self {
-            Stream::Queue(queue) => Some(queue),
+            Stream::Queue(queue) => Some(std::mem::take(queue)),
             _ => None,
         }
         .map(Vec::from)
@@ -82,24 +80,40 @@ impl From<Select> for Stream {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum Flag {
-    Read,
-    Write,
-    Both,
+pub struct Flag {
+    bits: u8,
 }
 impl Flag {
-    fn is_read(self) -> bool {
-        matches!(self, Flag::Read | Flag::Both)
+    const READ: Self = Self { bits: 1 << 0 };
+    const WRITE: Self = Self { bits: 1 << 1 };
+    const APPEND: Self = Self { bits: 1 << 2 };
+    const TRUNCATE: Self = Self { bits: 1 << 3 };
+    const CREATE: Self = Self { bits: 1 << 4 };
+    const CREATE_NEW: Self = Self { bits: 1 << 5 };
+    #[must_use]
+    pub fn new(bits: u8) -> Self {
+        Self { bits }
     }
-    fn is_write(self) -> bool {
-        matches!(self, Flag::Write | Flag::Both)
+    fn to_option(self) -> OpenOptions {
+        let mut options = File::options();
+        options
+            .read(self.check(Flag::READ))
+            .write(self.check(Flag::WRITE))
+            .append(self.check(Flag::APPEND))
+            .truncate(self.check(Flag::TRUNCATE))
+            .create(self.check(Flag::CREATE))
+            .create_new(self.check(Flag::CREATE_NEW));
+        options
+    }
+    fn check(self, flag: Self) -> bool {
+        self.bits & flag.bits != 0
     }
 }
 impl From<Select> for Flag {
     fn from(value: Select) -> Self {
         match value {
-            Select::Input => Self::Read,
-            Select::Output => Self::Write,
+            Select::Input => Self::READ,
+            Select::Output => Self::WRITE,
         }
     }
 }
@@ -108,13 +122,4 @@ impl From<Select> for Flag {
 pub enum Select {
     Input,
     Output,
-}
-impl From<u8> for Select {
-    fn from(value: u8) -> Self {
-        match value % 2 {
-            0 => Self::Input,
-            1 => Self::Output,
-            _ => unreachable!(),
-        }
-    }
 }

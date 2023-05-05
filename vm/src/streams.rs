@@ -1,6 +1,6 @@
 use crate::memory::Memory;
 use crate::reg::Registers;
-use util::{to_option, Select, Stream};
+use util::{to_option, Flag, Select, Stream};
 
 const STREAM_COUNT: usize = 1 << u8::BITS;
 
@@ -84,6 +84,7 @@ impl StreamMap {
             5 => self.argv(regs),
             6 => self.open_queue(),
             7 => self.open_standard(regs),
+            8 => self.open_file(regs),
             _ => unimplemented!(),
         }
     }
@@ -99,6 +100,15 @@ impl StreamMap {
             _ => return,
         };
         *self.select_stream(Select::Output) = stream;
+    }
+    fn open_file(&mut self, regs: &mut Registers) {
+        let flag = self
+            .select_stream(Select::Input)
+            .take_string()
+            .map(|path| Stream::make_file(path, Flag::new(regs.accum)))
+            .and_then(|stream| conditional_option(!matches!(stream, Stream::Empty), || stream))
+            .map(|file| *self.select_stream(Select::Output) = file);
+        regs.raise(flag);
     }
     fn argc(&mut self, regs: &mut Registers) {
         let flag = self
