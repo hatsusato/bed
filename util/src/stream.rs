@@ -5,7 +5,7 @@ use std::io::{stderr, stdin, stdout, Read, Write};
 use std::path::Path;
 
 pub enum Stream {
-    Null,
+    Empty,
     Stdin,
     Stdout,
     Stderr,
@@ -14,7 +14,7 @@ pub enum Stream {
 }
 impl Default for Stream {
     fn default() -> Self {
-        Stream::Null
+        Stream::Empty
     }
 }
 impl Stream {
@@ -71,7 +71,7 @@ impl Stream {
             Stream::Stdin => stdin().read(buf),
             Stream::File(file) => file.read(buf),
             Stream::Queue(queue) => queue.read(buf),
-            _ => return None,
+            Stream::Empty | Stream::Stdout | Stream::Stderr => return None,
         })
         .map(u8::try_from)
         .and_then(to_option)
@@ -82,7 +82,7 @@ impl Stream {
             Stream::Stderr => stderr().write(buf),
             Stream::File(file) => file.write(buf),
             Stream::Queue(queue) => queue.write(buf),
-            _ => return None,
+            Stream::Empty | Stream::Stdin => return None,
         })
         .map(u8::try_from)
         .and_then(to_option)

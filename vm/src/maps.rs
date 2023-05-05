@@ -27,7 +27,7 @@ struct StreamArray {
 }
 impl Default for StreamArray {
     fn default() -> Self {
-        let array = [(); STREAM_COUNT].map(|_| Stream::Null);
+        let array = [(); STREAM_COUNT].map(|_| Stream::Empty);
         Self { array }
     }
 }
