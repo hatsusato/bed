@@ -30,14 +30,14 @@ The bed interpreter supports the following command-line options:
 
 | Option           | Description                                             |
 | ---------------- | ------------------------------------------------------- |
-| `-i`, `--input`  | Specify a file name to read from as the standard input. |
-| `-o`, `--output` | Specify a file name to write to as the standard output. |
+| `-i`, `--input`  | Specify a file path to read from as the standard input. |
+| `-o`, `--output` | Specify a file path to write to as the standard output. |
 
 ## Language Specification
 
 ### Virtual Machine
 
-The bed language runs on a virtual machine with the following configuration:
+The bed language runs on a virtual machine with the following configurations:
 
 #### Registers: Four 8-bit registers (D, A, B, C) and a 1-bit flag register (E)
 
@@ -46,31 +46,31 @@ The bed language runs on a virtual machine with the following configuration:
 - E (error) indicates whether an error occurred during instruction execution.
 - An 8-bit register can store a non-negative integer ranging from 0 to 255.
 - A 1-bit register can store 0 or 1.
-- At the beginning of the program, each register is initialized to 0.
+- At the beginning of the program execution, each register is initialized to 0.
 
 #### Memory: 65536 bytes organized as 256 blocks of 256 bytes each
 
 - The B register determines which block is being accessed.
 - The C register determines the position within that block.
-- At the beginning of the program, each memory cell is initialized to 0.
+- At the beginning of the program execution, each memory cell is initialized to 0.
 
 #### Additional Components: Macro Registry, Stream Map, and Input/Output Descriptors
 
 - Macro Registry: Manages macros recorded during program execution.
 - Stream Map: Associates streams (e.g., standard input/output, files, queues) with stream descriptors.
   - Contains 256 stream descriptors (0-255), each associated with at most one stream.
-  - At the beginning of the program, the following streams are associated with their respective descriptors:
+  - At the beginning of the program execution, the following streams are associated with their respective descriptors:
     - Standard input stream: descriptor 0
     - Standard output stream: descriptor 1
     - Standard error stream: descriptor 2
 - Input/Output Descriptors: Specifies descriptors for input/output streams that are the target of stream operation instructions.
-  - At the beginning of the program, the following descriptors are initialized to their respective numbers:
-    - input descriptor: 0
-    - output descriptor: 1
+  - At the beginning of the program execution, the following descriptors are initialized to their respective numbers:
+    - Input descriptor: 0
+    - Output descriptor: 1
 
 ### Instruction Set
 
-The source code of the BED language shall be interpreted as a sequence of bytes, with each byte basically corresponding to a specific instruction of the BED language.
+A source code of the BED language shall be interpreted as a sequence of bytes, with each byte basically corresponding to a specific instruction of the BED language.
 The following list illustrates the correspondence between byte values and their respective BED language instructions.
 
 | Byte Value                | Instruction                       |
@@ -148,7 +148,6 @@ The following list illustrates the correspondence between byte values and their 
 - Byte values not listed in this table, including non-ASCII characters, are treated as No-Operation (Nop) Instructions.
 - The `mod256` function is used in some descriptions below to ensure that results range from 0 to 255.
   - `mod256(x) = x % 256`
-  - For a given value `x`, it returns the remainder of `x` when divided by 256.
 
 ### Insert Instructions
 
@@ -369,7 +368,7 @@ The following list illustrates the correspondence between byte values and their 
 
 - `A := E;`
 
-#### Clear Flag (`\_`)
+#### Clear Flag (`_`)
 
 - `E := 0;`
 
@@ -396,7 +395,7 @@ The following list illustrates the correspondence between byte values and their 
 - Syntax: `'` _char_
   - _char_: any 1-byte character
 - Semantics:
-  - Write the ASCII code of _char_ to `memory[B][C]`.
+  - Write the value of _char_ as a byte to `memory[B][C]`.
 
 #### Quote (`"`)
 
@@ -461,14 +460,14 @@ Values of the D register other than those listed in the table are reserved.
 - Read a sequence of M bytes, where M is the value of the A register, from the standard input and interpret it in little-endian format to obtain a nonnegative integer N.
   - Raise the error flag if unable to obtain N.
 - Write the Nth command line argument string to the output stream as a byte string in UTF-8 format.
-  - Raise the error flag if an error occurs during writing to the output stream .
+  - Raise the error flag if an error occurs when writing to the output stream .
 - Raise the error flag if the Nth argument does not exist.
 
 ##### OpenQueue
 
 - Create a new queue stream on the heap.
 - Associate the new queue stream with the output descriptor in the Stream Map.
-- If a stream has already been associated with the output descriptor, close the old stream and overwrite it with the new queue stream.
+- If a stream has already been associated with the output descriptor, close the previous stream and replace it with the new queue stream.
 
 ##### OpenStandard
 
@@ -477,15 +476,15 @@ Values of the D register other than those listed in the table are reserved.
   - `A == 1`: associate standard output.
   - `A == 2`: associate standard error.
   - `A == 255`: close associated stream (special case).
-  - Otherwise, the operation is reserved.
-- If a stream is already associated with the output descriptor, close the old stream and overwrite it with the new standard stream.
+  - For other values of the A register, the operation is reserved.
+- If a stream is already associated with the output descriptor, close the previous stream and replace it with the new standard stream.
 - In the special case with `A == 255`, close the associated stream and leave the output descriptor with no associated stream.
 
 ##### OpenFile
 
 - Obtain the file path by extracting all bytes from the input queue stream as indicated by the input descriptor and interpreting them as a UTF-8 string.
   - Raise the error flag if the input stream is not a queue stream.
-- Open a file stream using the obtained file path and a open mode flags.
+- Open a file stream using the obtained file path and mode flags.
   - Use the bits in the A register to determine the mode flags for opening the file:
     - `A[0]`: read
     - `A[1]`: write
@@ -496,7 +495,7 @@ Values of the D register other than those listed in the table are reserved.
     - `A[i]` refers to the i-th least significant bit of the value of the A register.
   - Raise the error flag if the file opening fails.
 - Associate the opened file stream with the output descriptor in the Stream Map.
-- If a stream is already associated with the output descriptor, close the old stream and overwrite it with the new file stream.
+- If a stream is already associated with the output descriptor, close the previous stream and replace it with the new file stream.
 
 ### Meta Instructions
 
@@ -512,7 +511,7 @@ Values of the D register other than those listed in the table are reserved.
 - Syntax: `;` _name_ `\n` _body_ `;`
   - _name_: a string of zero or more characters, excluding newline character `\n`
   - _body_: a string of zero or more characters, excluding `;` at the beginning of the line
-  - The first `;` and the last `;` must be at the beginning of the line
+  - The first `;` and the last `;` shall be at the beginning of the line
 - Semantics:
   - Define the instruction sequence _body_ as a function with the name _name_.
   - In a program, functions with the same name shall not be defined multiple times; the first definition in the source code has precedence.
@@ -532,11 +531,11 @@ Values of the D register other than those listed in the table are reserved.
 - Syntax: `q` _reg_ _macro_ `q`
   - _reg_: any 1-byte character
   - _macro_: a string of zero or more characters excluding `q`
-    - _macro_ can contain `q` character within the following instructions: Direct, Quote, Execute Macro, Repeat, Comment, Invoke Function.
-    - _macro_ cannot contain function definition.
+    - _macro_ can contain a character `q` only within the following instructions: Direct, Quote, Comment, Invoke Function, Execute Macro, Repeat.
+    - _macro_ shall not contain function definition.
 - Semantics:
   - Register the instruction sequence _macro_ as a macro with the name _reg_ in the macro registry.
-  - The old macro with the name _reg_ in the macro registry is overwritten by the new macro with the same name.
+  - The previous macro with the name _reg_ in the macro registry is overwritten by the new macro with the same name.
   - Macro recording does not affect the current state of the VM, except for the macro registry.
 
 #### Execute Macro (`@`)
