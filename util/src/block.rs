@@ -1,16 +1,14 @@
+use crate::BYTE_COUNT;
 use std::ops::{Index, IndexMut};
 use std::slice::{Iter, IterMut};
 
-const BLOCK_SIZE: usize = 1 << u8::BITS;
-pub const BLOCK_SIDE: u8 = 1 << (u8::BITS / 2);
-
 #[derive(Clone, Copy, Debug)]
 pub struct Block<T> {
-    block: [T; BLOCK_SIZE],
+    block: [T; BYTE_COUNT],
 }
 impl<T: Copy + Default> Default for Block<T> {
     fn default() -> Self {
-        let block = [Default::default(); BLOCK_SIZE];
+        let block = [Default::default(); BYTE_COUNT];
         Self { block }
     }
 }

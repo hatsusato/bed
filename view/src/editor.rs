@@ -1,5 +1,5 @@
 use screen::Screen;
-use util::{Stream, BLOCK_SIDE};
+use util::{Stream, NIBBLE_COUNT};
 use vm::{Machine, State};
 
 #[derive(Default)]
@@ -44,8 +44,8 @@ impl Editor {
     }
     fn print_body(&self) {
         let state = self.vm.get_state();
-        for y in 0..BLOCK_SIDE {
-            for x in 0..BLOCK_SIDE {
+        for y in 0..NIBBLE_COUNT {
+            for x in 0..NIBBLE_COUNT {
                 move_cell(x, y);
                 print_cell(state, x, y);
             }
@@ -63,7 +63,7 @@ fn move_cell(x: u8, y: u8) {
 fn print_cell(state: &State, x: u8, y: u8) {
     let regs = state.get_registers();
     let block = &state.get_memory()[regs.block];
-    let index = x + y * BLOCK_SIDE;
+    let index = x + y * NIBBLE_COUNT;
     let highlight = regs.cell == index;
     Screen::print_display(util::as_hex(block[index]), highlight);
 }

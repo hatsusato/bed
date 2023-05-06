@@ -1,4 +1,4 @@
-use util::BLOCK_SIDE;
+use util::{BYTE_BITS, NIBBLE_BITS, NIBBLE_COUNT, NIBBLE_MAX};
 
 #[derive(Default, Clone, Debug)]
 pub struct Registers {
@@ -34,10 +34,10 @@ impl Registers {
         self.cell = overflow_sub(self.cell, 1);
     }
     pub fn down(&mut self) {
-        self.cell = overflow_add(self.cell, BLOCK_SIDE);
+        self.cell = overflow_add(self.cell, NIBBLE_COUNT);
     }
     pub fn up(&mut self) {
-        self.cell = overflow_sub(self.cell, BLOCK_SIDE);
+        self.cell = overflow_sub(self.cell, NIBBLE_COUNT);
     }
     pub fn goto(&mut self) {
         self.cell = self.data;
@@ -135,9 +135,7 @@ impl Registers {
 }
 
 fn nibble_combine(hi: u8, lo: u8) -> u8 {
-    const NIBBLE_SHIFT: u32 = u8::BITS / 2;
-    const MASK: u8 = (1 << NIBBLE_SHIFT) - 1;
-    ((hi & MASK) << NIBBLE_SHIFT) | (lo & MASK)
+    ((hi & NIBBLE_MAX) << NIBBLE_BITS) | (lo & NIBBLE_MAX)
 }
 fn shift(val: u8, forward: bool) -> u8 {
     let (val, _) = if forward {
@@ -148,8 +146,8 @@ fn shift(val: u8, forward: bool) -> u8 {
     val
 }
 fn rot(val: u8, forward: bool) -> u8 {
-    let left = if forward { 1 } else { u8::BITS - 1 };
-    let right = u8::BITS - left;
+    let left = if forward { 1 } else { BYTE_BITS - 1 };
+    let right = BYTE_BITS - left;
     (val << left) | (val >> right)
 }
 fn overflow_add(lhs: u8, rhs: u8) -> u8 {

@@ -1,8 +1,6 @@
 use crate::memory::Memory;
 use crate::reg::Registers;
-use util::{Select, Stream};
-
-const STREAM_COUNT: usize = 1 << u8::BITS;
+use util::{Select, Stream, BYTE_COUNT};
 
 #[derive(Clone, Copy)]
 struct Descriptor {
@@ -18,11 +16,11 @@ impl Descriptor {
 }
 
 struct StreamArray {
-    array: [Stream; STREAM_COUNT],
+    array: [Stream; BYTE_COUNT],
 }
 impl Default for StreamArray {
     fn default() -> Self {
-        let array = [(); STREAM_COUNT].map(|_| Stream::Empty);
+        let array = [(); BYTE_COUNT].map(|_| Stream::Empty);
         Self { array }
     }
 }
