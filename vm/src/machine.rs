@@ -28,6 +28,5 @@ impl Machine {
         for input in code {
             this.execute(*input);
         }
-        this.execute(b'\n');
     }
 }

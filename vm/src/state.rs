@@ -3,13 +3,35 @@ use crate::memory::Memory;
 use crate::reg::Registers;
 use crate::streams::StreamMap;
 use std::collections::HashMap;
-use util::{Block, Stream};
+use std::ops::{Index, IndexMut};
+use util::{Block, Stream, BYTE_COUNT};
+
+struct MacroRegistry {
+    array: [Seq; BYTE_COUNT],
+}
+impl Default for MacroRegistry {
+    fn default() -> Self {
+        let array = [(); BYTE_COUNT].map(|_| Seq::default());
+        Self { array }
+    }
+}
+impl Index<u8> for MacroRegistry {
+    type Output = Seq;
+    fn index(&self, index: u8) -> &Self::Output {
+        &self.array[usize::from(index)]
+    }
+}
+impl IndexMut<u8> for MacroRegistry {
+    fn index_mut(&mut self, index: u8) -> &mut Self::Output {
+        &mut self.array[usize::from(index)]
+    }
+}
 
 pub struct State {
     registers: Registers,
     memory: Memory,
     definition: HashMap<Name, Seq>,
-    registry: HashMap<u8, Seq>,
+    registry: MacroRegistry,
     streams: StreamMap,
 }
 impl Default for State {
@@ -17,8 +39,8 @@ impl Default for State {
         Self {
             registers: Registers::default(),
             memory: Memory::default(),
-            definition: HashMap::new(),
-            registry: HashMap::new(),
+            definition: HashMap::default(),
+            registry: MacroRegistry::default(),
             streams: StreamMap::new(),
         }
     }
@@ -99,11 +121,10 @@ impl State {
         seq.iter().for_each(|inst| self.issue(inst.clone()));
     }
     fn register(&mut self, key: u8, seq: Seq) {
-        self.registry.insert(key, seq);
+        self.registry[key] = seq;
     }
     fn exec(&mut self, key: u8) {
-        let seq = self.registry.get(&key).cloned().unwrap_or_default();
-        self.run(&seq);
+        self.run(&self.registry[key].clone());
     }
     fn repeat(&mut self, key: u8) {
         let count = self.registers.accum;
