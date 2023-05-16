@@ -15,12 +15,6 @@ impl Memory {
     pub fn store(&mut self, regs: &Registers) {
         self.putchar(regs, regs.data);
     }
-    pub fn restore(&mut self, regs: &mut Registers) {
-        regs.cell = self.blocks[regs.block][regs.data];
-    }
-    pub fn save(&mut self, regs: &Registers) {
-        self.blocks[regs.block][regs.data] = regs.cell;
-    }
     pub fn direct(&mut self, regs: &Registers, data: u8) {
         self.putchar(regs, data);
     }
@@ -65,26 +59,6 @@ mod memory_tests {
             regs.data = 0;
             mem.store(&regs);
         }
-        zero_test(&mem);
-    }
-    #[test]
-    fn save_test() {
-        let (mut mem, mut regs) = make();
-        regs.cell = 42;
-        mem.save(&regs);
-        assert_eq!(mem.blocks[0][0], 42);
-        regs.cell = 0;
-        mem.blocks[0][0] = 0;
-        zero_test(&mem);
-    }
-    #[test]
-    fn restore_test() {
-        let (mut mem, mut regs) = make();
-        mem.blocks[0][0] = 42;
-        mem.restore(&mut regs);
-        assert_eq!(regs.cell, 42);
-        regs.cell = 0;
-        mem.blocks[0][0] = 0;
         zero_test(&mem);
     }
     #[test]

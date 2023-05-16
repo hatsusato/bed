@@ -7,6 +7,7 @@ pub struct Registers {
     pub block: u8,
     pub cell: u8,
     pub error: bool,
+    pub bank: [u8; 4],
 }
 impl Registers {
     pub fn insert(&mut self, digit: u8) {
@@ -131,6 +132,14 @@ impl Registers {
         if flag.is_none() {
             self.error = true;
         }
+    }
+    pub fn save(&mut self) {
+        std::mem::swap(&mut self.bank[0], &mut self.data);
+        std::mem::swap(&mut self.bank[1], &mut self.accum);
+    }
+    pub fn mark(&mut self) {
+        std::mem::swap(&mut self.bank[2], &mut self.block);
+        std::mem::swap(&mut self.bank[3], &mut self.cell);
     }
 }
 
@@ -523,6 +532,60 @@ mod register_tests {
         reg.rotr();
         assert_eq!(reg.accum, 0x5a);
         reg.delete();
+        zero_test(&reg);
+    }
+    #[test]
+    fn save_restore_test() {
+        let mut reg = make();
+        reg.insert(1);
+        reg.insert(2);
+        reg.high();
+        reg.insert(3);
+        assert_eq!((reg.data, reg.accum), (0x12, 0x23));
+        assert_eq!((reg.block, reg.cell), (0x00, 0x00));
+        reg.save();
+        assert_eq!((reg.data, reg.accum), (0x00, 0x00));
+        assert_eq!((reg.block, reg.cell), (0x00, 0x00));
+        reg.insert(3);
+        reg.insert(4);
+        reg.high();
+        reg.jump();
+        reg.insert(5);
+        reg.high();
+        reg.goto();
+        assert_eq!((reg.data, reg.accum), (0x45, 0x45));
+        assert_eq!((reg.block, reg.cell), (0x34, 0x45));
+        reg.mark();
+        assert_eq!((reg.data, reg.accum), (0x45, 0x45));
+        assert_eq!((reg.block, reg.cell), (0x00, 0x00));
+        reg.insert(6);
+        reg.high();
+        reg.jump();
+        reg.insert(7);
+        reg.high();
+        reg.goto();
+        reg.insert(8);
+        reg.high();
+        reg.insert(9);
+        assert_eq!((reg.data, reg.accum), (0x78, 0x89));
+        assert_eq!((reg.block, reg.cell), (0x56, 0x67));
+        reg.save();
+        reg.mark();
+        assert_eq!((reg.data, reg.accum), (0x12, 0x23));
+        assert_eq!((reg.block, reg.cell), (0x34, 0x45));
+        reg.zero();
+        reg.delete();
+        reg.begin();
+        reg.origin();
+        zero_test(&reg);
+        reg.save();
+        reg.mark();
+        assert_eq!((reg.data, reg.accum), (0x78, 0x89));
+        assert_eq!((reg.block, reg.cell), (0x56, 0x67));
+        reg.zero();
+        reg.delete();
+        reg.begin();
+        reg.origin();
         zero_test(&reg);
     }
     fn make() -> Registers {
