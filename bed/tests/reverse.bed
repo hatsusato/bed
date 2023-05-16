@@ -1,0 +1,7 @@
+# RUN: echo 'Hello, World!' | @bed @file
+# CHECK: !dlroW ,olleH
+
+qal,r0a=!$aq
+qbux=!$cq
+qc.h@bq
+@ah@b0aiw.

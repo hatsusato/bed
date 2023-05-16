@@ -1,6 +1,5 @@
 # RUN: @bed @file
-# CHECK: こんにちは、世界！
+# CHECK: Hello, World!
 
-"こんにちは、世界！"
-qaig.q
-laiwluo$a
+"Hello, World!
+"luomqa.lq$a
