@@ -1,0 +1,5 @@
+# RUN: echo 4 9 | @bed @file
+# CHECK: 13
+
+qa30+iw.q
+,r30-iwl,,r30-hr+i0a/wliwhrx=!$alr@a0aiw.
