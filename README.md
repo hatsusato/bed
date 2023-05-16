@@ -283,20 +283,20 @@ The following list illustrates the correspondence between byte values and their 
 
 #### Add (`+`)
 
-- `x := A + D; D := x >> 8; A := mod256(x);`
+- `x := D + A; D := x >> 8; A := mod256(x);`
 
 #### Subtract (`-`)
 
-- `x := A - D; D := x < 0 ? mod256(-1) : 0; A := mod256(x);`
+- `x := D - A; D := x < 0 ? mod256(-1) : 0; A := mod256(x);`
 
 #### Multiply (`*`)
 
-- `x := A * D; D := x >> 8; A := mod256(x);`
+- `x := D * A; D := x >> 8; A := mod256(x);`
 
 #### Divide and Remainder (`/`)
 
-- If `D != 0`, `r := A % D; q := A / D; D := r; A := q;`.
-- If `D == 0`, raise the error flag (`E := 1;`).
+- If `A != 0`, `q := D / A; r := D % A; D := q; A := r;`.
+- If `A == 0`, raise the error flag (`E := 1;`).
 
 #### Increment (`[`)
 
