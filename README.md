@@ -17,9 +17,8 @@ cargo run -- bed/tests/hello.bed
 The "Hello, World!" example (hello.bed) looks like this:
 
 ```
-"Hello, World!"
-qaig.q
-laiwluo$a
+"Hello, World!
+"luomqa.lq$a
 ```
 
 Additional examples are available in the `bed/tests/` directory.
@@ -39,13 +38,14 @@ The bed interpreter supports the following command-line options:
 
 The bed language runs on a virtual machine with the following configurations:
 
-#### Registers: Four 8-bit registers (D, A, B, C) and a 1-bit flag register (E)
+#### Registers: Four 8-bit registers (D, A, B, C), a 1-bit flag register (E), and four bank registers
 
 - D (data) and A (accumulator) are computation registers.
 - B (block) and C (cell) are addressing registers.
 - E (error) indicates whether an error occurred during instruction execution.
 - An 8-bit register can store a non-negative integer ranging from 0 to 255.
 - A 1-bit register can store 0 or 1.
+- Bank registers are used for backing up D, A, B, and C registers.
 - At the beginning of the program execution, each register is initialized to 0.
 
 #### Memory: 65536 bytes organized as 256 blocks of 256 bytes each
@@ -132,10 +132,10 @@ The following list illustrates the correspondence between byte values and their 
 | 0x70 (`p`)                | Swap                              |
 | 0x71 (`q`)                | Record Macro                      |
 | 0x72 (`r`)                | Load                              |
-| 0x73 (`s`)                | Restore                           |
+| 0x73 (`s`)                | Save                              |
 | 0x74 (`t`)                | Jump                              |
 | 0x75 (`u`)                | Coordinate                        |
-| 0x76 (`v`)                | Save                              |
+| 0x76 (`v`)                | Mark                              |
 | 0x77 (`w`)                | Store                             |
 | 0x78 (`x`)                | Delete                            |
 | 0x79 (`y`)                | Page                              |
@@ -372,6 +372,18 @@ The following list illustrates the correspondence between byte values and their 
 
 - `E := 0;`
 
+### Bank Instructions
+
+#### Save (`s`)
+
+- `x := bank.D; bank.D := D; D := x;`
+- `x := bank.A; bank.A := A; A := x;`
+
+#### Mark (`v`)
+
+- `x := bank.B; bank.B := B; B := x;`
+- `x := bank.C; bank.C := C; C := x;`
+
 ### Memory Instruction
 
 #### Load (`r`)
@@ -381,14 +393,6 @@ The following list illustrates the correspondence between byte values and their 
 #### Store (`w`)
 
 - `memory[B][C] := D;`
-
-#### Restore (`s`)
-
-- `C := memory[B][D];`
-
-#### Save (`v`)
-
-- `memory[B][D] := C;`
 
 #### Direct (`'`)
 
