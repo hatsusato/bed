@@ -59,22 +59,22 @@ impl Registers {
         self.block = 0;
     }
     pub fn add(&mut self) {
-        let val = u16::from(self.accum) + u16::from(self.data);
+        let val = u16::from(self.data) + u16::from(self.accum);
         [self.data, self.accum] = val.to_be_bytes();
     }
     pub fn sub(&mut self) {
-        let (val, _) = u16::from(self.accum).overflowing_sub(self.data.into());
+        let (val, _) = u16::from(self.data).overflowing_sub(self.accum.into());
         [self.data, self.accum] = val.to_be_bytes();
     }
     pub fn mul(&mut self) {
-        let val = u16::from(self.accum) * u16::from(self.data);
+        let val = u16::from(self.data) * u16::from(self.accum);
         [self.data, self.accum] = val.to_be_bytes();
     }
     pub fn div(&mut self) {
-        if self.data == 0 {
+        if self.accum == 0 {
             self.raise(None);
         } else {
-            (self.data, self.accum) = (self.accum % self.data, self.accum / self.data);
+            (self.data, self.accum) = (self.data / self.accum, self.data % self.accum);
         }
     }
     pub fn inc(&mut self) {
@@ -327,8 +327,6 @@ mod register_tests {
         reg.insert(4);
         reg.insert(2);
         assert_eq!((reg.data, reg.accum), (0x00, 0x42));
-        reg.swap();
-        assert_eq!((reg.data, reg.accum), (0x42, 0x00));
         reg.sub();
         assert_eq!((reg.data, reg.accum), (0xff, 0xbe));
         reg.high();
@@ -368,18 +366,20 @@ mod register_tests {
         reg.inc();
         reg.inc();
         reg.inc();
-        assert_eq!((reg.data, reg.accum, reg.error), (0x42, 0x03, false));
-        reg.swap();
-        assert_eq!((reg.data, reg.accum, reg.error), (0x03, 0x42, false));
+        reg.inc();
+        assert_eq!((reg.data, reg.accum, reg.error), (0x42, 0x04, false));
         reg.div();
-        assert_eq!((reg.data, reg.accum, reg.error), (0x00, 0x16, false));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x10, 0x02, false));
         reg.div();
-        assert_eq!((reg.data, reg.accum, reg.error), (0x00, 0x16, true));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x08, 0x00, false));
+        reg.div();
+        assert_eq!((reg.data, reg.accum, reg.error), (0x08, 0x00, true));
         reg.check();
-        assert_eq!((reg.data, reg.accum, reg.error), (0x00, 0x01, true));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x08, 0x01, true));
         reg.clear();
-        assert_eq!((reg.data, reg.accum, reg.error), (0x00, 0x01, false));
+        assert_eq!((reg.data, reg.accum, reg.error), (0x08, 0x01, false));
         reg.delete();
+        reg.zero();
         zero_test(&reg);
     }
     #[test]
